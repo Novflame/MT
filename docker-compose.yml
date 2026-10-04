@@ -1,0 +1,19 @@
+services:
+  school-system:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      NEXT_PUBLIC_BETTER_AUTH_URL: ${NEXT_PUBLIC_BETTER_AUTH_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      INTERNAL_REGISTRATION_SECRET: ${INTERNAL_REGISTRATION_SECRET}
+      CENTRAL_DATABASE_PATH: /app/data/central/central.db
+      SCHOOL_DATABASE_DIR: /app/data/schools
+    volumes:
+      - school-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  school-data:
