@@ -1,404 +1,340 @@
+"use client";
 
-"use client"
-
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import {
-    LayoutDashboard,
-    Users,
-    GraduationCap,
-    School,
-    BookOpen,
-    ClipboardCheck,
-    FileText,
-    BarChart3,
-    Settings,
-    UserRound,
-    CalendarDays,
-    ClipboardList,
-    LogOut,
-    ChevronLeft,
-    ChevronRight,
-    X,
-    UserCircle,
-} from "lucide-react"
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  School,
+  BookOpen,
+  ClipboardCheck,
+  FileText,
+  BarChart3,
+  Settings,
+  UserRound,
+  CalendarDays,
+  ClipboardList,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  UserCircle,
+} from "lucide-react";
 
-import { authClient } from "@/auth/auth-client"
-
+import { authClient } from "@/auth/auth-client";
 
 // =====================================================
 // Types
 // =====================================================
 
 type MenuItem = {
-    label: string
-    href: string
-    icon: React.ElementType
-}
+  label: string;
+  href: string;
+  icon: React.ElementType;
+};
 
 type MenuGroup = {
-    title: string
-    items: MenuItem[]
-}
-
+  title: string;
+  items: MenuItem[];
+};
 
 // =====================================================
 // Navigation
 // =====================================================
 
 const menuGroups: MenuGroup[] = [
+  {
+    title: "Overview",
 
-    {
-        title: "Overview",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+      },
+    ],
+  },
 
-        items: [
-            {
-                label: "Dashboard",
-                href: "/dashboard",
-                icon: LayoutDashboard,
-            },
-        ],
-    },
+  {
+    title: "Academic",
 
+    items: [
+      {
+        label: "Classes",
+        href: "/classess",
+        icon: School,
+      },
 
-    {
-        title: "Academic",
+      {
+        label: "Subjects",
+        href: "/subjects",
+        icon: BookOpen,
+      },
 
-        items: [
-            {
-                label: "Classes",
-                href: "/classess",
-                icon: School,
-            },
+      {
+        label: "Teacher Assignments",
+        href: "/teacher-assignments",
+        icon: ClipboardList,
+      },
 
-            {
-                label: "Subjects",
-                href: "/subjects",
-                icon: BookOpen,
-            },
+      {
+        label: "Academic Years",
+        href: "/academic-year",
+        icon: CalendarDays,
+      },
+    ],
+  },
 
-            {
-                label: "Teacher Assignments",
-                href: "/teacher-assignments",
-                icon: ClipboardList,
-            },
+  {
+    title: "People",
 
-            {
-                label: "Academic Years",
-                href: "/academic-year",
-                icon: CalendarDays,
-            },
-        ],
-    },
+    items: [
+      {
+        label: "Students",
+        href: "/students",
+        icon: GraduationCap,
+      },
 
+      {
+        label: "Staff",
+        href: "/staff",
+        icon: Users,
+      },
 
-    {
-        title: "People",
+      {
+        label: "Parents",
+        href: "/parent-students",
+        icon: UserRound,
+      },
+    ],
+  },
 
-        items: [
-            {
-                label: "Students",
-                href: "/students",
-                icon: GraduationCap,
-            },
+  {
+    title: "Attendance",
 
-            {
-                label: "Staff",
-                href: "/staff",
-                icon: Users,
-            },
+    items: [
+      {
+        label: "Attendance",
+        href: "/attendance",
+        icon: ClipboardCheck,
+      },
+    ],
+  },
 
-            {
-                label: "Parents",
-                href: "/parent-students",
-                icon: UserRound,
-            },
-        ],
-    },
+  {
+    title: "Assessment",
 
+    items: [
+      {
+        label: "Tests",
+        href: "/tests",
+        icon: ClipboardList,
+      },
 
-    {
-        title: "Attendance",
+      {
+        label: "Exams",
+        href: "/exams",
+        icon: FileText,
+      },
 
-        items: [
-            {
-                label: "Attendance",
-                href: "/attendance",
-                icon: ClipboardCheck,
-            },
-        ],
-    },
+      {
+        label: "Grades",
+        href: "/grades",
+        icon: BarChart3,
+      },
 
+      {
+        label: "Results",
+        href: "/results",
+        icon: FileText,
+      },
+    ],
+  },
 
-    {
-        title: "Assessment",
+  {
+    title: "Reports",
 
-        items: [
-            {
-                label: "Tests",
-                href: "/tests",
-                icon: ClipboardList,
-            },
+    items: [
+      {
+        label: "Report Cards",
+        href: "/report-cards",
+        icon: FileText,
+      },
 
-            {
-                label: "Exams",
-                href: "/exams",
-                icon: FileText,
-            },
+      {
+        label: "Reports",
+        href: "/reports",
+        icon: FileText,
+      },
 
-            {
-                label: "Grades",
-                href: "/grades",
-                icon: BarChart3,
-            },
-
-            {
-                label: "Results",
-                href: "/results",
-                icon: FileText,
-            },
-        ],
-    },
-
-
-    {
-        title: "Reports",
-
-        items: [
-            {
-                label: "Report Cards",
-                href: "/report-cards",
-                icon: FileText,
-            },
-
-            {
-                label: "Reports",
-                href: "/reports",
-                icon: FileText,
-            },
-
-            {
-                label: "Analytics",
-                href: "/analytics",
-                icon: BarChart3,
-            },
-        ],
-    },
-
-]
-
+      {
+        label: "Analytics",
+        href: "/analytics",
+        icon: BarChart3,
+      },
+    ],
+  },
+];
 
 // =====================================================
 // Props
 // =====================================================
 
 type SidebarProps = {
-    mobileOpen: boolean
-    collapsed: boolean
-    onCloseMobile: () => void
-    onToggleCollapse: () => void
-}
+  mobileOpen: boolean;
+  collapsed: boolean;
+  onCloseMobile: () => void;
+  onToggleCollapse: () => void;
+};
 type School = {
-    id: number
-    name: string
-    slug: string
-}
+  id: number;
+  name: string;
+  slug: string;
+};
 
 // =====================================================
 // Component
 // =====================================================
 
 export default function Sidebar({
-    mobileOpen,
-    collapsed,
-    onCloseMobile,
-    onToggleCollapse,
+  mobileOpen,
+  collapsed,
+  onCloseMobile,
+  onToggleCollapse,
 }: SidebarProps) {
+  const pathname = usePathname();
 
-    const pathname = usePathname()
+  const router = useRouter();
 
-    const router = useRouter()
+  // logo , school name
+  const [school, setSchool] = useState<School | null>(null);
 
-    // logo , school name
-    const [school, setSchool] = useState<School | null>(null)
+  useEffect(() => {
+    async function loadSchool() {
+      try {
+        const response = await fetch("/api/school");
 
-
-    useEffect(() => {
-
-        async function loadSchool() {
-
-            try {
-
-                const response = await fetch("/api/school")
-
-                if (!response.ok) {
-                    return
-                }
-
-                const result = await response.json()
-
-                setSchool(result.school)
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to load school:",
-                    error,
-                )
-
-            }
-
+        if (!response.ok) {
+          return;
         }
 
-        loadSchool()
+        const result = await response.json();
 
-    }, [])
-
-
-
-    // =================================================
-    // User menu
-    // =================================================
-
-    const [userMenuOpen, setUserMenuOpen] =
-        useState(false)
-
-
-    // =================================================
-    // Session
-    // =================================================
-
-    const { data: session, isPending } =
-        authClient.useSession()
-
-
-    // =================================================
-    // Logout
-    // =================================================
-
-    async function handleLogout() {
-
-        await authClient.signOut()
-
-        router.replace("/login")
+        setSchool(result.school);
+      } catch (error) {
+        console.error("Failed to load school:", error);
+      }
     }
 
+    loadSchool();
+  }, []);
 
-    // =================================================
-    // Close user menu when route changes
-    // =================================================
+  // =================================================
+  // User menu
+  // =================================================
 
-    // useEffect(() => {
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-    //     setUserMenuOpen(false)
+  // =================================================
+  // Session
+  // =================================================
 
-    // }, [pathname])
+  const { data: session, isPending } = authClient.useSession();
 
+  // =================================================
+  // Logout
+  // =================================================
 
-    // =================================================
-    // Close mobile sidebar with Escape
-    // =================================================
+  async function handleLogout() {
+    await authClient.signOut();
 
-    useEffect(() => {
+    router.replace("/login");
+  }
 
-        function handleEscape(event: KeyboardEvent) {
+  // =================================================
+  // Close user menu when route changes
+  // =================================================
 
-            if (event.key === "Escape") {
-                onCloseMobile()
-            }
-        }
+  // useEffect(() => {
 
-        window.addEventListener(
-            "keydown",
-            handleEscape,
-        )
+  //     setUserMenuOpen(false)
 
-        return () => {
+  // }, [pathname])
 
-            window.removeEventListener(
-                "keydown",
-                handleEscape,
-            )
+  // =================================================
+  // Close mobile sidebar with Escape
+  // =================================================
 
-        }
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onCloseMobile();
+      }
+    }
 
-    }, [onCloseMobile])
+    window.addEventListener("keydown", handleEscape);
 
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [onCloseMobile]);
 
-    // =================================================
-    // User information
-    // =================================================
+  // =================================================
+  // User information
+  // =================================================
 
-    const userName =
-        session?.user?.name ||
-        "User"
+  const userName = session?.user?.name || "User";
 
-    const userEmail =
-        session?.user?.email ||
-        ""
+  const userEmail = session?.user?.email || "";
 
-    const schoolRole =
-        session?.user?.schoolRole ||
-        "User"
+  const schoolRole = session?.user?.schoolRole || "User";
 
+  const initials =
+    userName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "U";
 
-    const initials =
-        userName
-            .split(" ")
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(
-                part =>
-                    part.charAt(0).toUpperCase(),
-            )
-            .join("") || "U"
+  // =================================================
+  // Loading user
+  // =================================================
 
+  const displayName = isPending ? "Loading..." : userName;
 
-    // =================================================
-    // Loading user
-    // =================================================
+  // =================================================
+  // Render
+  // =================================================
 
-    const displayName =
-        isPending
-            ? "Loading..."
-            : userName
-
-
-    // =================================================
-    // Render
-    // =================================================
-
-    return (
-        <>
-
-            {/* =========================================
+  return (
+    <>
+      {/* =========================================
                 Mobile overlay
             ========================================= */}
 
-            {mobileOpen && (
-
-                <button
-                    type="button"
-                    aria-label="Close navigation"
-                    onClick={onCloseMobile}
-                    className="
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={onCloseMobile}
+          className="
                         fixed inset-0 z-40
                         bg-black/40
-                        md:hidden
+                        lg:hidden
                     "
-                />
+        />
+      )}
 
-            )}
-
-
-            {/* =========================================
+      {/* =========================================
                 Sidebar
             ========================================= */}
 
-            <aside
-                className={`
+      <aside
+        className={`
                     fixed inset-y-0 left-0 z-50
                     flex flex-col
                     border-r border-slate-800
@@ -406,50 +342,44 @@ export default function Sidebar({
                     text-slate-300
                     transition-all duration-200
 
-                    ${collapsed
-                        ? "w-20"
-                        : "w-64"
-                    }
+                    ${collapsed ? "w-20" : "w-64"}
 
-                    ${mobileOpen
+                    ${
+                      mobileOpen
                         ? "translate-x-0"
-                        : "-translate-x-full md:translate-x-0"
+                        : "-translate-x-full lg:translate-x-0"
                     }
                 `}
-            >
-
-
-                {/* =====================================
+      >
+        {/* =====================================
                     Brand
                 ===================================== */}
 
-                <div
-                    className={`
+        <div
+          className={`
                         flex h-20 shrink-0
                         items-center
                         border-b border-slate-800
 
-                        ${collapsed
+                        ${
+                          collapsed
                             ? "justify-center px-3"
                             : "justify-between px-5"
                         }
                     `}
-                >
-
-                   
-<Link
-    href="/dashboard"
-    onClick={onCloseMobile}
-    className="
+        >
+          <Link
+            href="/dashboard"
+            onClick={onCloseMobile}
+            className="
         flex min-w-0
         items-center gap-3
     "
->
+          >
+            {/* Logo */}
 
-    {/* Logo */}
-
-    <div
-        className="
+            <div
+              className="
             flex h-10 w-10
             shrink-0
             items-center
@@ -460,94 +390,76 @@ export default function Sidebar({
             font-bold
             text-slate-950
         "
-    >
-        SO
-    </div>
+            >
+              SO
+            </div>
 
+            {/* School name */}
 
-    {/* School name */}
-
-    {!collapsed && (
-
-        <div className="min-w-0">
-
-            <div
-                className="
+            {!collapsed && (
+              <div className="min-w-0">
+                <div
+                  className="
                     truncate
                     text-lg
                     font-bold
                     text-white
                 "
-            >
-                {school?.name ?? "School"}
-            </div>
+                >
+                  {school?.name ?? "School"}
+                </div>
 
-            <div
-                className="
+                <div
+                  className="
                     truncate
                     text-xs
                     text-slate-500
                 "
-            >
-                School Management
-            </div>
+                >
+                  School Management
+                </div>
+              </div>
+            )}
+          </Link>
 
-        </div>
+          {/* Mobile close */}
 
-    )}
-
-</Link>
-
-
-
-
-                    {/* Mobile close */}
-
-                    <button
-                        type="button"
-                        onClick={onCloseMobile}
-                        aria-label="Close navigation"
-                        className="
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            aria-label="Close navigation"
+            className="
                             rounded-lg
                             p-2
                             text-slate-400
                             hover:bg-slate-900
                             hover:text-white
-                            md:hidden
+                            lg:hidden
                         "
-                    >
-                        <X size={19} />
-                    </button>
+          >
+            <X size={19} />
+          </button>
+        </div>
 
-                </div>
-
-
-                {/* =====================================
+        {/* =====================================
                     Navigation
                 ===================================== */}
 
-                <nav
-                    className="
+        <nav
+          className="
                         flex-1
                         overflow-y-auto
                         px-3
                         py-5
                     "
-                >
+        >
+          {menuGroups.map((group) => (
+            <div key={group.title} className="mb-6">
+              {/* Group title */}
 
-                    {menuGroups.map(group => (
-
-                        <div
-                            key={group.title}
-                            className="mb-6"
-                        >
-
-                            {/* Group title */}
-
-                            {!collapsed && (
-
-                                <div
-                                    className="
+              {!collapsed && (
+                <div
+                  className="
                                         mb-2
                                         px-3
                                         text-[11px]
@@ -556,41 +468,28 @@ export default function Sidebar({
                                         tracking-wider
                                         text-slate-500
                                     "
-                                >
-                                    {group.title}
-                                </div>
+                >
+                  {group.title}
+                </div>
+              )}
 
-                            )}
+              {/* Items */}
 
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
 
-                            {/* Items */}
+                  const active =
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
 
-                            <div className="space-y-1">
-
-                                {group.items.map(item => {
-
-                                    const Icon = item.icon
-
-
-                                    const active =
-                                        pathname === item.href ||
-                                        pathname.startsWith(
-                                            `${item.href}/`,
-                                        )
-
-
-                                    return (
-
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            onClick={onCloseMobile}
-                                            title={
-                                                collapsed
-                                                    ? item.label
-                                                    : undefined
-                                            }
-                                            className={`
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onCloseMobile}
+                      title={collapsed ? item.label : undefined}
+                      className={`
                                                 flex
                                                 items-center
                                                 rounded-lg
@@ -598,71 +497,49 @@ export default function Sidebar({
                                                 text-sm
                                                 transition
 
-                                                ${collapsed
+                                                ${
+                                                  collapsed
                                                     ? "justify-center px-2"
                                                     : "gap-3 px-3"
                                                 }
 
-                                                ${active
+                                                ${
+                                                  active
                                                     ? "bg-slate-800 text-white"
                                                     : "text-slate-400 hover:bg-slate-900 hover:text-white"
                                                 }
                                             `}
-                                        >
+                    >
+                      <Icon size={18} strokeWidth={1.8} />
 
-                                            <Icon
-                                                size={18}
-                                                strokeWidth={1.8}
-                                            />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
 
-
-                                            {!collapsed && (
-
-                                                <span>
-                                                    {item.label}
-                                                </span>
-
-                                            )}
-
-                                        </Link>
-
-                                    )
-
-                                })}
-
-                            </div>
-
-                        </div>
-
-                    ))}
-
-                </nav>
-
-
-                {/* =====================================
+        {/* =====================================
                     Bottom area
                 ===================================== */}
 
-                <div
-                    className="
+        <div
+          className="
                         shrink-0
                         border-t
                         border-slate-800
                         p-3
                     "
-                >
+        >
+          {/* Settings */}
 
-                    {/* Settings */}
-
-                    <Link
-                        href="/settings"
-                        onClick={onCloseMobile}
-                        title={
-                            collapsed
-                                ? "Settings"
-                                : undefined
-                        }
-                        className={`
+          <Link
+            href="/settings"
+            onClick={onCloseMobile}
+            title={collapsed ? "Settings" : undefined}
+            className={`
                             flex
                             items-center
                             rounded-lg
@@ -673,43 +550,24 @@ export default function Sidebar({
                             hover:bg-slate-900
                             hover:text-white
 
-                            ${collapsed
-                                ? "justify-center px-2"
-                                : "gap-3 px-3"
-                            }
+                            ${collapsed ? "justify-center px-2" : "gap-3 px-3"}
                         `}
-                    >
+          >
+            <Settings size={18} />
 
-                        <Settings size={18} />
+            {!collapsed && <span>Settings</span>}
+          </Link>
 
-                        {!collapsed && (
-                            <span>
-                                Settings
-                            </span>
-                        )}
-
-                    </Link>
-
-
-                    {/* =================================
+          {/* =================================
                         User section
                     ================================= */}
 
-                    <div className="relative mt-2">
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setUserMenuOpen(
-                                    value => !value,
-                                )
-                            }
-                            title={
-                                collapsed
-                                    ? displayName
-                                    : undefined
-                            }
-                            className={`
+          <div className="relative mt-2">
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen((value) => !value)}
+              title={collapsed ? displayName : undefined}
+              className={`
                                 flex
                                 w-full
                                 items-center
@@ -719,17 +577,17 @@ export default function Sidebar({
                                 transition
                                 hover:bg-slate-900
 
-                                ${collapsed
+                                ${
+                                  collapsed
                                     ? "justify-center px-2"
                                     : "gap-3 px-2"
                                 }
                             `}
-                        >
+            >
+              {/* Avatar */}
 
-                            {/* Avatar */}
-
-                            <div
-                                className="
+              <div
+                className="
                                     flex
                                     h-9
                                     w-9
@@ -742,49 +600,41 @@ export default function Sidebar({
                                     font-semibold
                                     text-white
                                 "
-                            >
-                                {initials}
-                            </div>
+              >
+                {initials}
+              </div>
 
-
-                            {!collapsed && (
-
-                                <div className="min-w-0">
-
-                                    <p
-                                        className="
+              {!collapsed && (
+                <div className="min-w-0">
+                  <p
+                    className="
                                             truncate
                                             text-sm
                                             font-medium
                                             text-white
                                         "
-                                    >
-                                        {displayName}
-                                    </p>
+                  >
+                    {displayName}
+                  </p>
 
-                                    <p
-                                        className="
+                  <p
+                    className="
                                             truncate
                                             text-xs
                                             text-slate-500
                                         "
-                                    >
-                                        {schoolRole}
-                                    </p>
+                  >
+                    {schoolRole}
+                  </p>
+                </div>
+              )}
+            </button>
 
-                                </div>
+            {/* User menu */}
 
-                            )}
-
-                        </button>
-
-
-                        {/* User menu */}
-
-                        {userMenuOpen && (
-
-                            <div
-                                className={`
+            {userMenuOpen && (
+              <div
+                className={`
                                     absolute
                                     bottom-full
                                     mb-2
@@ -795,95 +645,80 @@ export default function Sidebar({
                                     bg-slate-900
                                     shadow-xl
 
-                                    ${collapsed
+                                    ${
+                                      collapsed
                                         ? "left-14 w-56"
                                         : "left-0 right-0"
                                     }
                                 `}
-                            >
+              >
+                {/* User information */}
 
-                                {/* User information */}
-
-                                <div
-                                    className="
+                <div
+                  className="
                                         border-b
                                         border-slate-800
                                         px-4
                                         py-3
                                     "
-                                >
+                >
+                  <div className="flex items-center gap-3">
+                    <UserCircle size={20} className="text-slate-400" />
 
-                                    <div className="flex items-center gap-3">
-
-                                        <UserCircle
-                                            size={20}
-                                            className="text-slate-400"
-                                        />
-
-                                        <div className="min-w-0">
-
-                                            <p
-                                                className="
+                    <div className="min-w-0">
+                      <p
+                        className="
                                                     truncate
                                                     text-sm
                                                     font-medium
                                                     text-white
                                                 "
-                                            >
-                                                {userName}
-                                            </p>
+                      >
+                        {userName}
+                      </p>
 
-                                            <p
-                                                className="
+                      <p
+                        className="
                                                     truncate
                                                     text-xs
                                                     text-slate-500
                                                 "
-                                            >
-                                                {userEmail}
-                                            </p>
+                      >
+                        {userEmail}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                                        </div>
+                {/* Profile */}
+                <Link
+                  href="/dashboard/profile"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    onCloseMobile();
+                  }}
+                  className="
+        flex
+        items-center
+        gap-3
+        px-4
+        py-3
+        text-sm
+        text-slate-300
+        hover:bg-slate-800
+        hover:text-white
+    "
+                >
+                  <UserCircle size={17} />
+                  Profile
+                </Link>
 
-                                    </div>
+                {/* Logout */}
 
-                                </div>
-
-
-                                {/* Profile */}
-
-                                <Link
-                                    href="/settings"
-                                    onClick={() => {
-                                        setUserMenuOpen(false)
-                                        onCloseMobile()
-                                    }}
-                                    className="
-                                        flex
-                                        items-center
-                                        gap-3
-                                        px-4
-                                        py-3
-                                        text-sm
-                                        text-slate-300
-                                        hover:bg-slate-800
-                                        hover:text-white
-                                    "
-                                >
-
-                                    <UserCircle size={17} />
-
-                                    Profile & Settings
-
-                                </Link>
-
-
-                                {/* Logout */}
-
-                                <button
-                                    type="button"
-                                    onClick={handleLogout}
-                                    className="
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="
                                         flex
                                         w-full
                                         items-center
@@ -897,34 +732,23 @@ export default function Sidebar({
                                         hover:bg-slate-800
                                         hover:text-red-300
                                     "
-                                >
+                >
+                  <LogOut size={17} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
 
-                                    <LogOut size={17} />
-
-                                    Logout
-
-                                </button>
-
-                            </div>
-
-                        )}
-
-                    </div>
-
-
-                    {/* =================================
+          {/* =================================
                         Collapse button
                     ================================= */}
 
-                    <button
-                        type="button"
-                        onClick={onToggleCollapse}
-                        aria-label={
-                            collapsed
-                                ? "Expand sidebar"
-                                : "Collapse sidebar"
-                        }
-                        className="
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="
                             mt-3
                             hidden
                             w-full
@@ -938,27 +762,13 @@ export default function Sidebar({
                             transition
                             hover:bg-slate-900
                             hover:text-white
-                            md:flex
+                            lg:flex
                         "
-                    >
-
-                        {collapsed ? (
-
-                            <ChevronRight size={18} />
-
-                        ) : (
-
-                            <ChevronLeft size={18} />
-
-                        )}
-
-                    </button>
-
-                </div>
-
-            </aside>
-
-        </>
-    )
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
 }
-

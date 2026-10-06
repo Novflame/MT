@@ -47,23 +47,23 @@ export default async function DashboardPage() {
 
         <DashboardShell>
 
-    <div className="mx-auto max-w-[1600px]">
+    <div className="mx-auto w-full min-w-0 max-w-[1600px]">
 
-        <div className="mb-8">
+        <header className="mb-6 space-y-1 sm:mb-8">
 
             <p className="text-sm font-medium text-slate-500">
                 School Overview
             </p>
 
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                 Dashboard
             </h1>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="text-sm text-slate-500">
                 Welcome back, {session.user.name}
             </p>
 
-        </div>
+        </header>
 
         <DashboardOverview />
 

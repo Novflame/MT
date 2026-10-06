@@ -1,4 +1,3 @@
-
 import { drizzle } from "drizzle-orm/better-sqlite3"
 import * as schema from "./schema"
 import { eq } from "drizzle-orm"
@@ -10,7 +9,6 @@ import Database from "better-sqlite3"
 
 import { headers } from "next/headers"
 import { auth } from "@/auth/auth"
-
 
 
 function createDB(
@@ -26,8 +24,14 @@ export type SchoolDB =
     ReturnType<typeof createDB>
 
 
+type SchoolConnection = {
+    sqlite: Database.Database
+    db: SchoolDB
+}
+
+
 const connectionCache:
-    Record<string, SchoolDB> = {}
+    Record<string, SchoolConnection> = {}
 
 
 
@@ -78,8 +82,12 @@ export async function getSchoolDB() {
     // Existing connection
     // =========================================
 
-    if (connectionCache[cacheKey]) {
-        return connectionCache[cacheKey]
+    const existingConnection =
+        connectionCache[cacheKey]
+
+
+    if (existingConnection) {
+        return existingConnection.db
     }
 
 
@@ -133,7 +141,11 @@ export async function getSchoolDB() {
     )
 
 
-   runSchoolMigrations(sqlite)
+    runSchoolMigrations(
+        sqlite,
+    )
+
+
 
     // =========================================
     // Create Drizzle instance
@@ -148,11 +160,51 @@ export async function getSchoolDB() {
     // Cache connection
     // =========================================
 
-    connectionCache[cacheKey] =
-        db
+    connectionCache[cacheKey] = {
+        sqlite,
+        db,
+    }
 
 
     return db
+}
+
+
+
+export function closeSchoolDB(
+    schoolId: string,
+) {
+
+    const connection =
+        connectionCache[
+            String(schoolId)
+        ]
+
+
+    if (!connection) {
+        return
+    }
+
+
+    connection.sqlite.close()
+
+
+    delete connectionCache[
+        String(schoolId)
+    ]
+}
+
+
+
+export function hasSchoolDBConnection(
+    schoolId: string,
+) {
+
+    return Boolean(
+        connectionCache[
+            String(schoolId)
+        ],
+    )
 }
 
 
@@ -181,4 +233,3 @@ export async function getActiveAcademicYear() {
 
     return academicYear
 }
-

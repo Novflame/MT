@@ -12,3 +12,7 @@ central.db-*
 .DS_Store
 
 tsconfig.tsbuildinfo
+
+# Local backup files and uploaded assets
+backups/
+public/uploads/

@@ -76,9 +76,9 @@ function StatCard({
 }: StatCardProps) {
 
     return (
-        <div className="flex items-center gap-4 px-5 py-4">
+        <div className="flex min-w-0 items-start gap-3 bg-white p-3 sm:items-center sm:gap-4 sm:p-4">
 
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 sm:h-10 sm:w-10">
                 <Icon
                     size={19}
                     strokeWidth={1.8}
@@ -94,11 +94,11 @@ function StatCard({
 
                 <div className="mt-0.5 flex items-baseline gap-2">
 
-                    <p className="text-2xl font-bold tracking-tight text-slate-900">
+                    <p className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
                         {value}
                     </p>
 
-                    <p className="truncate text-xs text-slate-400">
+                    <p className="text-xs leading-5 text-slate-500">
                         {description}
                     </p>
 
@@ -182,20 +182,20 @@ export default function DashboardOverview() {
     if (loading) {
 
         return (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-
-                {Array.from({ length: 6 }).map(
-                    (_, index) => (
-
+            <section role="status" aria-live="polite">
+                <p className="mb-3 text-sm font-medium text-slate-700">
+                    Loading analytics and charts...
+                </p>
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
                         <div
                             key={index}
-                            className="h-32 animate-pulse rounded-xl bg-slate-200"
+                            className="h-32 animate-pulse rounded-xl bg-slate-200 motion-reduce:animate-none"
+                            aria-hidden="true"
                         />
-
-                    ),
-                )}
-
-            </div>
+                    ))}
+                </div>
+            </section>
         )
     }
 
@@ -207,7 +207,10 @@ export default function DashboardOverview() {
     if (error) {
 
         return (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+            <div
+                className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"
+                role="alert"
+            >
 
                 {error}
 
@@ -226,6 +229,15 @@ export default function DashboardOverview() {
     // =========================
 
     const attendanceTrendOption = {
+
+        animation: false,
+        aria: {
+            enabled: true,
+            description: "Daily attendance record counts, separated into present, absent, late, and excused statuses.",
+            decal: {
+                show: true,
+            },
+        },
 
         tooltip: {
             trigger: "axis",
@@ -307,6 +319,15 @@ export default function DashboardOverview() {
     // =========================
 
     const attendanceDistributionOption = {
+
+        animation: false,
+        aria: {
+            enabled: true,
+            description: "Total attendance records by present, absent, late, and excused status.",
+            decal: {
+                show: true,
+            },
+        },
 
         tooltip: {
             trigger: "item",
@@ -393,6 +414,15 @@ export default function DashboardOverview() {
 
     const academicPerformanceOption = {
 
+        animation: false,
+        aria: {
+            enabled: true,
+            description: "Average student score as a percentage for each subject.",
+            decal: {
+                show: true,
+            },
+        },
+
         tooltip: {
             trigger: "axis",
 
@@ -472,6 +502,19 @@ export default function DashboardOverview() {
         ],
     }
 
+    const attendanceTotal =
+        data.attendanceSummary.present +
+        data.attendanceSummary.absent +
+        data.attendanceSummary.late +
+        data.attendanceSummary.excused
+
+    const attendanceStatuses = [
+        { name: "Present", value: data.attendanceSummary.present },
+        { name: "Absent", value: data.attendanceSummary.absent },
+        { name: "Late", value: data.attendanceSummary.late },
+        { name: "Excused", value: data.attendanceSummary.excused },
+    ]
+
 
     // =========================
     // UI
@@ -479,7 +522,7 @@ export default function DashboardOverview() {
 
     return (
 
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-5 sm:space-y-6">
 
 
             {/* ========================= */}
@@ -490,9 +533,9 @@ export default function DashboardOverview() {
             {/* SCHOOL OVERVIEW */}
             {/* ========================= */}
 
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
 
-                <div className="border-b border-slate-100 px-5 py-4">
+                <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
 
                     <h2 className="text-base font-semibold text-slate-900">
                         School Overview
@@ -505,7 +548,7 @@ export default function DashboardOverview() {
                 </div>
 
 
-                <div className="grid divide-y divide-slate-800 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 xl:divide-x xl:divide-y-0">
+                <div className="grid grid-cols-2 gap-px bg-slate-200 lg:grid-cols-3 2xl:grid-cols-6">
 
                     <StatCard
                         title="Students"
@@ -558,83 +601,141 @@ export default function DashboardOverview() {
             {/* ATTENDANCE CHARTS */}
             {/* ========================= */}
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid min-w-0 gap-4 xl:grid-cols-2 sm:gap-6">
 
 
                 {/* Attendance Trend */}
 
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <section
+                    className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+                    aria-labelledby="attendance-trend-title"
+                >
 
                     <div>
 
-                        <h2 className="text-lg font-semibold text-slate-900">
-                            Attendance Overview
+                        <h2 id="attendance-trend-title" className="text-lg font-semibold text-slate-900">
+                            Attendance Trend
                         </h2>
 
-                        <p className="mt-1 text-sm text-slate-500">
-                            Student attendance over time
+                        <p id="attendance-trend-description" className="mt-1 text-sm text-slate-600">
+                            Daily attendance record counts by status. Compare present, absent, late, and excused records across dates.
                         </p>
 
                     </div>
 
-                    <div className="mt-4 h-72">
-
-                        {data.attendanceTrend.length > 0 ? (
-
-                            <ReactECharts className="bg-gray-50"
-                                style={{
-                                    width: "100%",
-                                    height: "100%",
-                                }}
-                                option={
-                                    attendanceTrendOption
-                                }
+                    {data.attendanceTrend.length > 0 ? (
+                        <div
+                            className="mt-4 h-64 min-w-0 sm:h-72"
+                            role="img"
+                            aria-labelledby="attendance-trend-title"
+                            aria-describedby="attendance-trend-description"
+                        >
+                            <ReactECharts
+                                style={{ width: "100%", height: "100%" }}
+                                option={attendanceTrendOption}
                             />
+                        </div>
+                    ) : (
+                        <div className="mt-4 flex h-64 items-center justify-center text-sm text-slate-600 sm:h-72" role="status">
+                            No attendance data available
+                        </div>
+                    )}
 
-                        ) : (
+                    {data.attendanceTrend.length > 0 && (
+                        <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200" tabIndex={0} aria-label="Attendance trend data table. Scroll horizontally to read all columns.">
+                            <table className="w-full min-w-[34rem] text-left text-sm">
+                                <caption className="sr-only">Daily attendance record counts by status</caption>
+                                <thead className="bg-slate-50 text-slate-700">
+                                    <tr>
+                                        <th scope="col" className="px-3 py-2 font-semibold">Date</th>
+                                        <th scope="col" className="px-3 py-2 font-semibold">Present (records)</th>
+                                        <th scope="col" className="px-3 py-2 font-semibold">Absent (records)</th>
+                                        <th scope="col" className="px-3 py-2 font-semibold">Late (records)</th>
+                                        <th scope="col" className="px-3 py-2 font-semibold">Excused (records)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 text-slate-900">
+                                    {data.attendanceTrend.map(item => (
+                                        <tr key={item.date}>
+                                            <th scope="row" className="whitespace-nowrap px-3 py-2 font-medium">{item.date}</th>
+                                            <td className="px-3 py-2">{item.present}</td>
+                                            <td className="px-3 py-2">{item.absent}</td>
+                                            <td className="px-3 py-2">{item.late}</td>
+                                            <td className="px-3 py-2">{item.excused}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
 
-                            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-                                No attendance data available
-                            </div>
-
-                        )}
-
-                    </div>
-
-                </div>
+                </section>
 
 
                 {/* Attendance Distribution */}
 
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <section
+                    className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+                    aria-labelledby="attendance-distribution-title"
+                >
 
                     <div>
 
-                        <h2 className="text-lg font-semibold text-slate-900">
+                        <h2 id="attendance-distribution-title" className="text-lg font-semibold text-slate-900">
                             Attendance Distribution
                         </h2>
 
-                        <p className="mt-1 text-sm text-slate-500">
-                            Current attendance status
+                        <p id="attendance-distribution-description" className="mt-1 text-sm text-slate-600">
+                            Total attendance records by status. The table gives the exact count and share of all recorded statuses.
                         </p>
 
                     </div>
 
-                    <div className="mt-4 h-72">
+                    {attendanceTotal > 0 ? (
+                        <div
+                            className="mt-4 h-64 min-w-0 sm:h-72"
+                            role="img"
+                            aria-labelledby="attendance-distribution-title"
+                            aria-describedby="attendance-distribution-description"
+                        >
+                            <ReactECharts
+                                style={{ width: "100%", height: "100%" }}
+                                option={attendanceDistributionOption}
+                            />
+                        </div>
+                    ) : (
+                        <div className="mt-4 flex h-64 items-center justify-center text-sm text-slate-600 sm:h-72" role="status">
+                            No attendance records are available to chart; all status counts are zero.
+                        </div>
+                    )}
 
-                        <ReactECharts
-                            style={{
-                                width: "100%",
-                                height: "100%",
-                            }}
-                            option={
-                                attendanceDistributionOption
-                            }
-                        />
-
+                    <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+                        <table className="w-full text-left text-sm">
+                            <caption className="sr-only">Attendance record count and share by status</caption>
+                            <thead className="bg-slate-50 text-slate-700">
+                                <tr>
+                                    <th scope="col" className="px-3 py-2 font-semibold">Status</th>
+                                    <th scope="col" className="px-3 py-2 font-semibold">Records</th>
+                                    <th scope="col" className="px-3 py-2 font-semibold">Share</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 text-slate-900">
+                                {attendanceStatuses.map(status => (
+                                    <tr key={status.name}>
+                                        <th scope="row" className="px-3 py-2 font-medium">{status.name}</th>
+                                        <td className="px-3 py-2">{status.value}</td>
+                                        <td className="px-3 py-2">
+                                            {attendanceTotal === 0
+                                                ? "0%"
+                                                : `${((status.value / attendanceTotal) * 100).toFixed(1)}%`}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
 
-                </div>
+                </section>
 
             </div>
 
@@ -643,24 +744,27 @@ export default function DashboardOverview() {
             {/* ACADEMIC PERFORMANCE */}
             {/* ========================= */}
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section
+            className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+            aria-labelledby="academic-performance-title"
+            >
 
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
                     <div>
 
-                        <h2 className="text-lg font-semibold text-slate-900">
+                        <h2 id="academic-performance-title" className="text-lg font-semibold text-slate-900">
                             Academic Performance
                         </h2>
 
-                        <p className="mt-1 text-sm text-slate-500">
-                            Average student performance by subject
+                        <p id="academic-performance-description" className="mt-1 text-sm text-slate-600">
+                            Average grade score as a percentage for each subject. Compare subject averages; the table also shows the number of grades behind each average.
                         </p>
 
                     </div>
 
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-3 sm:gap-6">
 
                         <div>
 
@@ -675,7 +779,7 @@ export default function DashboardOverview() {
                         </div>
 
 
-                        <div className="h-9 w-px bg-slate-200" />
+                        <div className="hidden h-9 w-px bg-slate-200 sm:block" />
 
 
                         <div>
@@ -695,52 +799,65 @@ export default function DashboardOverview() {
                 </div>
 
 
-                <div className="mt-6">
-
+                <div className="mt-6 min-w-0">
                     {data.academicPerformance.length > 0 ? (
-
-                        <div className="h-80">
-
-                            <ReactECharts
-                                style={{
-                                    width: "100%",
-                                    height: "100%",
-                                }}
-                                option={academicPerformanceOption}
-                            />
-
-                        </div>
-
-                    ) : (
-
-                        <div className="flex h-64 items-center justify-center rounded-lg bg-slate-50">
-
-                            <div className="text-center">
-
-                                <p className="text-sm font-medium text-slate-600">
-                                    No academic performance data
-                                </p>
-
-                                <p className="mt-1 text-xs text-slate-400">
-                                    Grades will appear here once they are recorded.
-                                </p>
-
+                        <>
+                            <div
+                                className="h-72 min-w-0 overflow-hidden sm:h-80"
+                                role="img"
+                                aria-labelledby="academic-performance-title"
+                                aria-describedby="academic-performance-description"
+                            >
+                                <ReactECharts
+                                    style={{ width: "100%", height: "100%" }}
+                                    option={academicPerformanceOption}
+                                />
                             </div>
 
+                            <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200" tabIndex={0} aria-label="Academic performance data table. Scroll horizontally to read all columns.">
+                                <table className="w-full min-w-[24rem] text-left text-sm">
+                                    <caption className="sr-only">Average grade score and number of grades by subject</caption>
+                                    <thead className="bg-slate-50 text-slate-700">
+                                        <tr>
+                                            <th scope="col" className="px-3 py-2 font-semibold">Subject</th>
+                                            <th scope="col" className="px-3 py-2 font-semibold">Average score</th>
+                                            <th scope="col" className="px-3 py-2 font-semibold">Grades</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 text-slate-900">
+                                        {data.academicPerformance.map(item => (
+                                            <tr key={item.subjectId}>
+                                                <th scope="row" className="px-3 py-2 font-medium">{item.subjectName}</th>
+                                                <td className="px-3 py-2">{item.averageScore}%</td>
+                                                <td className="px-3 py-2">{item.gradesCount}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex h-56 items-center justify-center rounded-lg bg-slate-50 sm:h-64" role="status">
+                            <div className="text-center">
+                                <p className="text-sm font-medium text-slate-700">
+                                    No academic performance data
+                                </p>
+                                <p className="mt-1 text-sm text-slate-600">
+                                    Grades will appear here once they are recorded.
+                                </p>
+                            </div>
                         </div>
-
                     )}
-
                 </div>
 
-            </div>
+            </section>
 
 
             {/* ========================= */}
             {/* QUICK ACTIONS */}
             {/* ========================= */}
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
 
                 <div>
                     <h2 className="text-lg font-semibold text-slate-900">
@@ -753,7 +870,7 @@ export default function DashboardOverview() {
                 </div>
 
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
                     <Link
                         href="/students"

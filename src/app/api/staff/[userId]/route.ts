@@ -41,19 +41,18 @@ export async function GET(
         // Get current user's school
         // =========================================
 
-        const currentUser =
-            await centralDb
-                .select({
-                    schoolId: user.schoolId,
-                })
-                .from(user)
-                .where(
-                    eq(
-                        user.id,
-                        session.user.id,
-                    ),
-                )
-                .limit(1)
+        const currentUser = await centralDb
+            .select({
+                schoolId: user.schoolId,
+            })
+            .from(user)
+            .where(
+                eq(
+                    user.id,
+                    session.user.id,
+                ),
+            )
+            .limit(1)
 
 
         const schoolId =
@@ -315,7 +314,26 @@ export async function PATCH(
             typeof body.emergencyContactPhone === "string"
                 ? body.emergencyContactPhone.trim()
                 : null
+        // manege profile 
+        const gender =
+            typeof body.gender === "string"
+                ? body.gender.trim()
+                : null
 
+        const nationality =
+            typeof body.nationality === "string"
+                ? body.nationality.trim()
+                : null
+
+        const nationalId =
+            typeof body.nationalId === "string"
+                ? body.nationalId.trim()
+                : null
+
+        const city =
+            typeof body.city === "string"
+                ? body.city.trim()
+                : null
 
         // =========================================
         // School database
@@ -357,7 +375,11 @@ export async function PATCH(
                         phone,
                         profileImage,
                         dateOfBirth,
+                        gender,
+                        nationality,
+                        nationalId,
                         address,
+                        city,
                         qualification,
                         employmentDate,
                         specialization,
@@ -395,7 +417,11 @@ export async function PATCH(
                     phone,
                     profileImage,
                     dateOfBirth,
+                    gender,
+                    nationality,
+                    nationalId,
                     address,
+                    city,
                     qualification,
                     employmentDate,
                     specialization,

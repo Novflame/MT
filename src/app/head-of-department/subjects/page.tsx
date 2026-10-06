@@ -691,26 +691,27 @@ function SubjectPerformanceChart({
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                    Average score and pass rate by subject.
+                    Average score and pass rate as percentages for each subject. Compare the displayed values; bars show the average score.
                 </p>
             </div>
 
+            {subjects.length > 0 ? (
             <div className="space-y-5">
                 {subjects.map(subject => (
                     <div key={subject.id}>
-                        <div className="mb-2 flex items-center justify-between gap-4">
-                            <span className="truncate text-sm font-semibold text-slate-700">
+                        <div className="mb-2 flex items-start justify-between gap-4">
+                            <span className="min-w-0 break-words text-sm font-semibold text-slate-700">
                                 {subject.name}
                             </span>
 
-                            <span className="shrink-0 text-sm font-bold text-slate-900">
-                                {subject.averagePercentage.toFixed(1)}%
+                            <span className="min-w-0 break-words text-right text-sm font-bold text-slate-900">
+                                Average score: {subject.averagePercentage}%
                             </span>
                         </div>
 
-                        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-3 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
                             <div
-                                className="h-full rounded-full bg-slate-900 transition-all"
+                                className="h-full rounded-full bg-slate-900"
                                 style={{
                                     width: `${Math.min(
                                         Math.max(
@@ -724,14 +725,18 @@ function SubjectPerformanceChart({
                         </div>
 
                         <div className="mt-1 flex justify-end">
-                            <span className="text-xs text-slate-400">
-                                Pass rate{" "}
-                                {subject.passRate.toFixed(1)}%
+                            <span className="text-sm text-slate-600">
+                                Pass rate: {subject.passRate}%
                             </span>
                         </div>
                     </div>
                 ))}
             </div>
+            ) : (
+                <p className="text-sm text-slate-600" role="status">
+                    No subject performance data available.
+                </p>
+            )}
         </section>
     )
 }
@@ -763,26 +768,27 @@ function SubjectCoverageChart({
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                    Teaching assignments across department subjects.
+                    Teaching assignments, teachers, and classes per subject. Bar lengths compare assignment counts; exact counts are shown beside each subject.
                 </p>
             </div>
 
+            {subjects.length > 0 ? (
             <div className="space-y-5">
                 {subjects.map(subject => (
                     <div key={subject.id}>
-                        <div className="mb-2 flex items-center justify-between gap-4">
-                            <span className="truncate text-sm font-semibold text-slate-700">
+                        <div className="mb-2 flex items-start justify-between gap-4">
+                            <span className="min-w-0 break-words text-sm font-semibold text-slate-700">
                                 {subject.name}
                             </span>
 
-                            <span className="shrink-0 text-sm font-bold text-slate-900">
-                                {subject.assignmentCount}
+                            <span className="min-w-0 break-words text-right text-sm font-bold text-slate-900">
+                                Assignments: {subject.assignmentCount}
                             </span>
                         </div>
 
-                        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-3 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
                             <div
-                                className="h-full rounded-full bg-slate-500 transition-all"
+                                className="h-full rounded-full bg-slate-500"
                                 style={{
                                     width: `${
                                         (subject.assignmentCount /
@@ -793,18 +799,23 @@ function SubjectCoverageChart({
                             />
                         </div>
 
-                        <div className="mt-2 flex gap-4 text-xs text-slate-400">
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
                             <span>
-                                {subject.teacherCount} teachers
+                                Teachers: {subject.teacherCount}
                             </span>
 
                             <span>
-                                {subject.classCount} classes
+                                Classes: {subject.classCount}
                             </span>
                         </div>
                     </div>
                 ))}
             </div>
+            ) : (
+                <p className="text-sm text-slate-600" role="status">
+                    No subject coverage data available.
+                </p>
+            )}
         </section>
     )
 }
@@ -941,4 +952,3 @@ function MiniStat({
         </div>
     )
 }
-

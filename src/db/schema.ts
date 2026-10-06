@@ -498,6 +498,89 @@ export const notifications = sqliteTable("notifications", {
     createdAt: text("created_at").notNull(),
 })
 
+export const staffProfiles = sqliteTable(
+    "staff_profiles",
+    {
+        id: integer("id")
+            .primaryKey({
+                autoIncrement: true,
+            }),
+
+        userId: text("user_id")
+            .notNull()
+            .unique(),
+
+        // Personal Information
+        phone: text("phone"),
+
+        profileImage: text(
+            "profile_image",
+        ),
+
+        dateOfBirth: text(
+            "date_of_birth",
+        ),
+
+        gender: text("gender"),
+
+        nationality: text(
+            "nationality",
+        ),
+
+        nationalId: text(
+            "national_id",
+        ),
+
+        address: text("address"),
+
+        city: text("city"),
+
+        // Professional Information
+        employeeId: text("employee_id")
+            .unique(),
+
+        position: text("position"),
+
+        departmentId: text("department_id")
+            .references(
+                () => departments.id,
+            ),
+
+        qualification: text(
+            "qualification",
+        ),
+
+        employmentDate: text(
+            "employment_date",
+        ),
+
+        specialization: text(
+            "specialization",
+        ),
+
+        // Emergency Contact
+        emergencyContactName: text(
+            "emergency_contact_name",
+        ),
+
+        emergencyContactPhone: text(
+            "emergency_contact_phone",
+        ),
+
+        // Timestamps
+        createdAt: text("created_at")
+            .notNull()
+            .$defaultFn(
+                () => new Date().toISOString(),
+            ),
+
+        updatedAt: text("updated_at")
+            .notNull()
+            .$defaultFn(
+                () => new Date().toISOString(),
+            ),
+    },
+)
 // =========================
 // RELATIONS
 // =========================
@@ -695,6 +778,9 @@ export const departmentsRelations = relations(
         departmentHeads: many(
             departmentHeads,
         ),
+         staffProfiles: many(
+            staffProfiles,
+        ),
     }),
 )
 export const teacherAssignmentsRelations =
@@ -786,63 +872,7 @@ export const studentUsersRelations = relations(studentUsers, ({ one }) => ({
     student: one(students, { fields: [studentUsers.studentId], references: [students.id] }),
 }))
 
-export const staffProfiles = sqliteTable(
-    "staff_profiles",
-    {
-        id: integer("id")
-            .primaryKey({
-                autoIncrement: true,
-            }),
 
-        userId: text("user_id")
-            .notNull()
-            .unique(),
-
-        phone: text("phone"),
-
-        profileImage: text(
-            "profile_image",
-        ),
-
-        dateOfBirth: text(
-            "date_of_birth",
-        ),
-
-        address: text("address"),
-
-        qualification: text(
-            "qualification",
-        ),
-
-        employmentDate: text(
-            "employment_date",
-        ),
-
-        specialization: text(
-            "specialization",
-        ),
-
-        emergencyContactName: text(
-            "emergency_contact_name",
-        ),
-
-        emergencyContactPhone: text(
-            "emergency_contact_phone",
-        ),
-
-        createdAt: text("created_at")
-            .notNull()
-            .$defaultFn(
-                () => new Date().toISOString(),
-            ),
-
-        updatedAt: text("updated_at")
-            .notNull()
-            .$defaultFn(
-                () => new Date().toISOString(),
-            ),
-    },
-)
 export const coreSubjectsRelations =
     relations(
         coreSubjects,
@@ -924,5 +954,22 @@ export const promotionDecisionsRelations =
                     schoolClases.id,
                 ],
             }),
+        }),
+    )
+  export const staffProfilesRelations =
+    relations(
+        staffProfiles,
+        ({ one }) => ({
+            department: one(
+                departments,
+                {
+                    fields: [
+                        staffProfiles.departmentId,
+                    ],
+                    references: [
+                        departments.id,
+                    ],
+                },
+            ),
         }),
     )

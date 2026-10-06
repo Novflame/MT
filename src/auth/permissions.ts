@@ -97,6 +97,12 @@ export const permissions = [
   // Settings
   "settings.read",
   "settings.update",
+
+    // Backups
+  "backups.read",
+  "backups.create",
+  "backups.restore",
+  "backups.delete",
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -112,8 +118,12 @@ const rolePermissions: Record<Role, Permission[]> = {
   // DEPUTY
   // =========================
 
-  deputy: permissions.filter((permission) => permission !== "school.delete"),
-
+  deputy: permissions.filter(
+  (permission) =>
+    permission !== "school.delete" &&
+    permission !== "backups.restore" &&
+    permission !== "backups.delete",
+),
   // =========================
   // HEAD OF CLASS
   // =========================

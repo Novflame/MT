@@ -12,8 +12,6 @@ children: React.ReactNode
 export default function DashboardShell({
 children,
 }: Props) {
-
-
 const [collapsed, setCollapsed] =
     useState(false)
 
@@ -21,7 +19,7 @@ const [mobileOpen, setMobileOpen] =
     useState(false)
 
 return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-dvh min-w-0 bg-slate-100">
 
         <Sidebar
             collapsed={collapsed}
@@ -36,9 +34,8 @@ return (
 
         <div
             className={`
-                min-h-screen
+                min-h-dvh min-w-0
                 transition-[margin] duration-200
-                md:ml-20
                 ${collapsed
                     ? "lg:ml-20"
                     : "lg:ml-64"
@@ -52,7 +49,7 @@ return (
                 }
             />
 
-            <main className="p-4 sm:p-6 lg:p-8">
+            <main className="min-w-0 px-4 py-5 sm:px-6 sm:py-6 lg:p-8">
                 {children}
             </main>
 
@@ -60,6 +57,4 @@ return (
 
     </div>
 )
-
-
 }
