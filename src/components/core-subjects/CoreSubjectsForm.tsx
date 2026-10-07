@@ -420,8 +420,8 @@ export default function CoreSubjectsForm({
     //     </div>
     // )
     return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-5xl">
+    <div className="min-h-dvh w-full bg-slate-50 px-4 py-6 sm:px-6 lg:px-8 dark:bg-slate-950">
+        <div className="mx-auto w-full min-w-0 max-w-5xl">
 
             {/* Header */}
             <div className="mb-6 text-center">

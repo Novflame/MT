@@ -89,9 +89,9 @@ export default function UsersSettingsPage() {
     if (loading) {
 
         return (
-            <main className="min-h-screen bg-slate-50 p-6">
+            <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-                <div className="mx-auto max-w-6xl">
+                <div className="mx-auto w-full max-w-6xl">
 
                     <p className="text-sm text-slate-500">
                         Loading users...
@@ -109,9 +109,9 @@ export default function UsersSettingsPage() {
     // =========================================
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
+        <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto w-full max-w-6xl">
 
 
                 {/* Header */}
@@ -119,8 +119,8 @@ export default function UsersSettingsPage() {
                 <div
                     className="
                         mb-8
-                        flex
-                        items-start
+                        flex flex-col
+                        items-stretch sm:flex-row sm:items-start
                         justify-between
                         gap-4
                     "
@@ -157,6 +157,7 @@ export default function UsersSettingsPage() {
                     <Link
                         href="/settings/users/new"
                         className="
+                            w-full text-center sm:w-auto
                             rounded-lg
                             bg-slate-900
                             px-4
@@ -215,7 +216,7 @@ export default function UsersSettingsPage() {
                         className="
                             border-b
                             border-slate-200
-                            px-6
+                            px-4 sm:px-6
                             py-4
                         "
                     >
@@ -252,7 +253,7 @@ export default function UsersSettingsPage() {
 
                         <div
                             className="
-                                px-6
+                                px-4 sm:px-6
                                 py-12
                                 text-center
                             "
@@ -297,9 +298,9 @@ export default function UsersSettingsPage() {
 
                     ) : (
 
-                        <div className="overflow-x-auto">
+                        <div className="max-w-full overflow-x-auto">
 
-                            <table className="w-full">
+                            <table className="w-full min-w-[640px]">
 
                                 <thead>
 
@@ -313,7 +314,7 @@ export default function UsersSettingsPage() {
 
                                         <th
                                             className="
-                                                px-6
+                                                px-4 sm:px-6
                                                 py-3
                                                 text-left
                                                 text-xs
@@ -328,7 +329,7 @@ export default function UsersSettingsPage() {
 
                                         <th
                                             className="
-                                                px-6
+                                                px-4 sm:px-6
                                                 py-3
                                                 text-left
                                                 text-xs
@@ -343,7 +344,7 @@ export default function UsersSettingsPage() {
 
                                         <th
                                             className="
-                                                px-6
+                                                px-4 sm:px-6
                                                 py-3
                                                 text-left
                                                 text-xs
@@ -358,7 +359,7 @@ export default function UsersSettingsPage() {
 
                                         <th
                                             className="
-                                                px-6
+                                                px-4 sm:px-6
                                                 py-3
                                                 text-right
                                                 text-xs
@@ -403,7 +404,7 @@ export default function UsersSettingsPage() {
 
                                                     <td
                                                         className="
-                                                            px-6
+                                                            px-4 sm:px-6
                                                             py-4
                                                         "
                                                     >
@@ -438,7 +439,7 @@ export default function UsersSettingsPage() {
 
                                                     <td
                                                         className="
-                                                            px-6
+                                                            px-4 sm:px-6
                                                             py-4
                                                         "
                                                     >
@@ -466,7 +467,7 @@ export default function UsersSettingsPage() {
 
                                                     <td
                                                         className="
-                                                            px-6
+                                                            px-4 sm:px-6
                                                             py-4
                                                         "
                                                     >
@@ -512,7 +513,7 @@ export default function UsersSettingsPage() {
 
                                                     <td
                                                         className="
-                                                            px-6
+                                                            px-4 sm:px-6
                                                             py-4
                                                             text-right
                                                         "
@@ -556,4 +557,3 @@ export default function UsersSettingsPage() {
         </main>
     )
 }
-

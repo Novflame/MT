@@ -64,9 +64,9 @@ export default function SchoolSettingsPage() {
     if (loading) {
 
         return (
-            <main className="min-h-screen bg-slate-50 p-6">
+            <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto w-full max-w-4xl">
 
                     <p className="text-sm text-slate-500">
                         Loading school information...
@@ -82,11 +82,11 @@ export default function SchoolSettingsPage() {
     if (error || !school) {
 
         return (
-            <main className="min-h-screen bg-slate-50 p-6">
+            <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto w-full max-w-4xl">
 
-                    <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 sm:p-6">
 
                         <p className="text-sm text-red-600">
                             {error || "School not found"}
@@ -102,9 +102,9 @@ export default function SchoolSettingsPage() {
 
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
+        <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto w-full max-w-4xl">
 
                 {/* Header */}
 
@@ -125,7 +125,7 @@ export default function SchoolSettingsPage() {
 
                 <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
 
-                    <div className="border-b border-slate-200 p-6">
+                    <div className="border-b border-slate-200 p-4 sm:p-6">
 
                         <h2 className="text-lg font-semibold text-slate-900">
                             School Identity
@@ -139,7 +139,7 @@ export default function SchoolSettingsPage() {
                     </div>
 
 
-                    <div className="space-y-6 p-6">
+                    <div className="space-y-6 p-4 sm:p-6">
 
                         {/* Logo */}
 
@@ -149,7 +149,7 @@ export default function SchoolSettingsPage() {
                                 School Logo
                             </label>
 
-                            <div className="mt-3 flex items-center gap-4">
+                            <div className="mt-3 flex flex-wrap items-center gap-4">
 
                                 <div
                                     className="
@@ -186,6 +186,7 @@ export default function SchoolSettingsPage() {
                                     <button
                                         type="button"
                                         className="
+                                            w-full sm:w-auto
                                             rounded-lg
                                             border border-slate-300
                                             bg-white
@@ -318,7 +319,7 @@ export default function SchoolSettingsPage() {
 
                     {/* Footer */}
 
-                    <div className="flex justify-end border-t border-slate-200 p-6">
+                    <div className="flex justify-end border-t border-slate-200 p-4 sm:p-6">
 
                         <button
                             type="button"

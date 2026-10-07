@@ -203,7 +203,7 @@ export default function GradesManager({
         assessments.length === 0
     ) {
         return (
-            <section className="rounded-lg border bg-white p-6">
+            <section className="min-w-0 rounded-lg border bg-white p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">
                     Enter Grades
                 </h2>
@@ -227,7 +227,7 @@ export default function GradesManager({
     // =========================================================
 
     return (
-        <section className="rounded-lg border bg-white p-6">
+        <section className="min-w-0 rounded-lg border bg-white p-4 sm:p-6">
 
             <h2 className="text-xl font-semibold">
                 Enter Grades
@@ -345,7 +345,7 @@ export default function GradesManager({
                                     key={
                                         enrollment.id
                                     }
-                                    className="flex items-center justify-between gap-3 rounded border p-3"
+                                    className="flex flex-col gap-3 rounded border p-3 sm:flex-row sm:items-center sm:justify-between"
                                 >
                                     <span className="font-medium">
                                         {
@@ -356,7 +356,7 @@ export default function GradesManager({
                                     </span>
 
                                     <input
-                                        className="w-32 rounded border px-3 py-2"
+                                        className="w-full rounded border px-3 py-2 sm:w-32"
                                         type="number"
                                         min="0"
                                         max={
@@ -401,7 +401,7 @@ export default function GradesManager({
                         onClick={
                             save
                         }
-                        className="mt-4 rounded bg-black px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        className="mt-4 w-full rounded bg-black px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                     >
                         {saving
                             ? "Saving..."
@@ -412,4 +412,3 @@ export default function GradesManager({
         </section>
     )
 }
-

@@ -397,7 +397,7 @@ useEffect(() => {
             {/* Filters */}
             {/* ================================================== */}
 
-            <div className="rounded-lg border bg-white p-6">
+            <div className="min-w-0 rounded-lg border bg-white p-4 sm:p-6">
 
                 <div className="flex flex-col gap-4">
 
@@ -415,7 +415,7 @@ useEffect(() => {
                     </div>
 
 
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
                         {/* Search */}
 
@@ -561,7 +561,7 @@ useEffect(() => {
 
             {loading && (
 
-                <div className="rounded-lg border bg-white p-6 text-gray-500">
+                <div className="rounded-lg border bg-white p-4 text-gray-500 sm:p-6">
                     Loading results...
                 </div>
 
@@ -574,7 +574,7 @@ useEffect(() => {
 
             {!loading && error && (
 
-                <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 sm:p-6">
 
                     <p className="font-medium">
                         Unable to load results
@@ -611,7 +611,7 @@ useEffect(() => {
                     {/* Summary */}
                     {/* ================================================= */}
 
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
                         <div className="rounded-lg border bg-white p-5">
 
@@ -707,7 +707,7 @@ useEffect(() => {
                                             {/* Header */}
                                             {/* ================================================= */}
 
-                                            <div className="p-6">
+                                            <div className="p-4 sm:p-6">
 
                                                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
@@ -732,7 +732,7 @@ useEffect(() => {
                                                     </div>
 
 
-                                                    <div className="flex items-center gap-6">
+                                                    <div className="flex flex-wrap items-center justify-between gap-4 sm:justify-start sm:gap-6">
 
                                                         <div className="text-right">
 
@@ -792,7 +792,7 @@ useEffect(() => {
                                                 {/* Summary */}
                                                 {/* ================================================= */}
 
-                                                <div className="mt-6 grid gap-4 border-t pt-5 md:grid-cols-4">
+                                                <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-5 sm:grid-cols-4">
 
                                                     <div>
 
@@ -879,11 +879,11 @@ useEffect(() => {
 
                                             {isExpanded && (
 
-                                                <div className="border-t px-6 pb-6">
+                                                <div className="border-t px-4 pb-4 sm:px-6 sm:pb-6">
 
                                                     <div className="overflow-x-auto">
 
-                                                        <table className="mt-5 w-full text-sm">
+                                                        <table className="mt-5 w-full min-w-[640px] text-sm">
 
                                                             <thead>
 
@@ -1057,4 +1057,3 @@ useEffect(() => {
         </section>
     )
 }
-

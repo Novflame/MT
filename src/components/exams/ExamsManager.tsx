@@ -121,13 +121,13 @@ const availableSubjects =
 }
 
     return (
-       <section className="rounded-lg border bg-white p-6 shadow-sm">
+       <section className="min-w-0 rounded-lg border bg-white p-4 shadow-sm sm:p-6">
 
     <h2 className="text-xl font-semibold text-blue-600">
         Create Exam
     </h2>
 
-    <div className="mt-6 space-y-4 ">
+    <div className="mt-6 grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4">
 
         <input
             value={name}
@@ -135,7 +135,7 @@ const availableSubjects =
                 setName(e.target.value)
             }
             placeholder="Exam name"
-            className="w-full rounded border px-3 py-2 bg-gray-500"
+            className="w-full min-w-0 rounded border px-3 py-2 bg-gray-500 sm:col-span-2"
         />
 
         <select
@@ -144,7 +144,7 @@ const availableSubjects =
                 setDepartmentId(e.target.value)
                 setSubjectId("")
             }}
-            className="w-full rounded border px-3 py-2 bg-gray-500"
+            className="w-full min-w-0 rounded border px-3 py-2 bg-gray-500"
         >
             <option value="">
                 Select department
@@ -168,7 +168,7 @@ const availableSubjects =
                 setSubjectId(e.target.value)
             }
             disabled={!departmentId}
-            className="w-full rounded border px-3 py-2 bg-gray-500"
+            className="w-full min-w-0 rounded border px-3 py-2 bg-gray-500"
         >
             <option value="">
                 Select subject
@@ -192,7 +192,7 @@ const availableSubjects =
     onChange={(e) =>
         setClassId(e.target.value)
     }
-    className="w-full rounded border px-3 py-2 bg-gray-500"
+    className="w-full min-w-0 rounded border px-3 py-2 bg-gray-500"
 >
     <option value="">
         Select class
@@ -216,7 +216,7 @@ const availableSubjects =
     onChange={(e) =>
         setType(e.target.value)
     }
-    className="w-full rounded border px-3 py-2 bg-gray-500"
+    className="w-full min-w-0 rounded border px-3 py-2 bg-gray-500"
 >
     <option value="">
         Select exam type
@@ -247,7 +247,7 @@ const availableSubjects =
     onChange={(e) =>
         setExamDate(e.target.value)
     }
-    className="w-full rounded border px-3 py-2 bg-gray-500"
+    className="w-full min-w-0 rounded border px-3 py-2 bg-gray-500"
 />
 
  {/* MAXIMUM score */}
@@ -267,7 +267,7 @@ const availableSubjects =
 <button
     onClick={createExam}
     disabled={loading}
-    className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+    className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50 sm:col-span-2 sm:w-auto"
 >
     {loading
         ? "Creating..."

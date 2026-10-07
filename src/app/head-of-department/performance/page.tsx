@@ -28,10 +28,10 @@ export default async function HeadOfDepartmentPerformancePage() {
     if (!departmentHead) {
         return (
             <HeadOfDepartmentShell>
-                <main className="mx-auto max-w-7xl">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <main className="mx-auto w-full min-w-0 max-w-7xl">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-8 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Head of Department</p>
-                        <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-50">Performance</h1>
+                        <h1 className="mt-1 text-2xl break-words font-bold text-slate-900 dark:text-slate-50">Performance</h1>
                         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                             You are not assigned to a department for the active academic year.
                         </p>
@@ -132,10 +132,10 @@ export default async function HeadOfDepartmentPerformancePage() {
 
     return (
         <HeadOfDepartmentShell>
-            <main className="mx-auto max-w-7xl space-y-6">
-                <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <main className="mx-auto w-full min-w-0 max-w-7xl space-y-6">
+                <header className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Head of Department</p>
-                    <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                    <h1 className="mt-2 text-2xl sm:text-3xl break-words font-bold tracking-tight text-slate-900 dark:text-slate-50">
                         {departmentHead.department.name}
                     </h1>
                     <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -151,15 +151,15 @@ export default async function HeadOfDepartmentPerformancePage() {
                 </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Subject performance</h2>
                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Department-wide academic progress</p>
                         </div>
                     </div>
 
-                    <div className="mt-5 overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
+                    <div className="mt-5 min-w-0 overflow-x-auto overscroll-x-contain">
+                        <table className="min-w-[36rem] divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
                             <thead>
                                 <tr className="text-slate-600 dark:text-slate-300">
                                     <th className="pb-3 pr-4 font-semibold">Subject</th>

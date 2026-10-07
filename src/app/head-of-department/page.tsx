@@ -56,9 +56,9 @@ export default async function HeadOfDepartmentPage() {
     if (!departmentHead) {
         return (
             <main className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-7xl">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                        <h1 className="text-2xl font-bold text-slate-900">
+                <div className="mx-auto w-full min-w-0 max-w-7xl">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-8 shadow-sm">
+                        <h1 className="text-2xl break-words font-bold text-slate-900">
                             Head of Department
                         </h1>
 
@@ -438,17 +438,17 @@ export default async function HeadOfDepartmentPage() {
     // =========================================================
 
     return (
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
             {/* HEADER */}
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <p className="text-sm font-semibold text-slate-500">
                             Head of Department
                         </p>
 
-                        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">
+                        <h1 className="mt-1 text-2xl sm:text-3xl break-words font-bold tracking-tight text-slate-950">
                             {departmentHead.department.name}
                         </h1>
 
@@ -569,8 +569,8 @@ export default async function HeadOfDepartmentPage() {
             <section className="grid gap-6 lg:grid-cols-3">
                 {/* SUBJECT PERFORMANCE */}
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-                    <div className="flex items-start justify-between gap-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm lg:col-span-2">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
                         <div>
                             <h2 className="text-lg font-bold text-slate-900">
                                 Subject Performance
@@ -674,7 +674,7 @@ export default async function HeadOfDepartmentPage() {
 
                 {/* QUICK ACCESS */}
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                     <h2 className="text-lg font-bold text-slate-900">
                         Quick Access
                     </h2>
@@ -734,8 +734,8 @@ export default async function HeadOfDepartmentPage() {
             <section className="grid gap-6 lg:grid-cols-2">
                 {/* TEACHERS */}
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="flex items-center justify-between">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-bold text-slate-900">
                                 Department Teachers
@@ -807,7 +807,7 @@ export default async function HeadOfDepartmentPage() {
 
                 {/* DEPARTMENT COVERAGE */}
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                     <div>
                         <h2 className="text-lg font-bold text-slate-900">
                             Department Coverage
@@ -826,7 +826,7 @@ export default async function HeadOfDepartmentPage() {
                                         subject.id
                                     }
                                 >
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-sm font-semibold text-slate-800">
                                             {
                                                 subject.name
@@ -868,7 +868,7 @@ export default async function HeadOfDepartmentPage() {
             {/* RECENT RESULTS */}
 
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-lg font-bold text-slate-900">
                             Recent Results
@@ -890,7 +890,7 @@ export default async function HeadOfDepartmentPage() {
                 {recentResults.length === 0 ? (
                     <EmptyState text="No results have been recorded yet." />
                 ) : (
-                    <div className="overflow-x-auto">
+                    <div className="min-w-0 overflow-x-auto overscroll-x-contain">
                         <table className="min-w-190 w-full text-left">
                             <thead className="border-b border-slate-200 bg-slate-50">
                                 <tr>
@@ -1063,7 +1063,7 @@ function DashboardCard({
             href={href}
             className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
         >
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
                 <div>
                     <p className="text-sm font-medium text-slate-500">
                         {label}
@@ -1186,7 +1186,7 @@ function EmptyState({
     text: string
 }) {
     return (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 sm:p-6 text-center">
             <p className="text-sm text-slate-500">
                 {text}
             </p>

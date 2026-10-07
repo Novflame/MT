@@ -151,7 +151,7 @@ export default function StudentProfile({ profile }: Props) {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
             {/* ========================= */}
             {/* Header */}
             {/* ========================= */}
@@ -200,9 +200,9 @@ export default function StudentProfile({ profile }: Props) {
                                     </span>
                                 </div>
 
-                                <p className="mt-2 text-sm text-slate-400">
+                                <p className="mt-2 break-words text-sm text-slate-400">
                                     Admission No:
-                                    <span className="ml-2 text-slate-200">
+                                    <span className="ml-2 break-all text-slate-200">
                                         {student.admissionNumber}
                                     </span>
                                 </p>
@@ -460,8 +460,10 @@ function Academic({ profile }: { profile: StudentProfileType }) {
                     ) : (
                         profile.academic.subjects.map((subject) => (
                             <div key={subject.id} className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span>{subject.name}</span>
+                                <div className="flex min-w-0 items-start justify-between gap-3 text-sm">
+                                    <span className="min-w-0 break-words">
+                                        {subject.name}
+                                    </span>
 
                                     <span className="text-slate-400">
                                         {subject.average}%
@@ -769,7 +771,7 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <section className="rounded-2xl border border-white/10 bg-white/4 p-6">
+        <section className="min-w-0 rounded-2xl border border-white/10 bg-white/4 p-4 sm:p-6">
             <h2 className="mb-5 text-lg font-semibold">{title}</h2>
 
             {children}
@@ -785,12 +787,12 @@ function Info({
     value: string;
 }) {
     return (
-        <div className="flex items-start justify-between gap-6 border-b border-white/5 py-3 last:border-0">
-            <span className="text-sm text-slate-400">
+        <div className="flex min-w-0 items-start justify-between gap-4 border-b border-white/5 py-3 last:border-0">
+            <span className="shrink-0 text-sm text-slate-400">
                 {label}
             </span>
 
-            <span className="text-right text-sm font-medium wrap-break-words">
+            <span className="min-w-0 text-right text-sm font-medium wrap-break-words">
                 {value}
             </span>
         </div>

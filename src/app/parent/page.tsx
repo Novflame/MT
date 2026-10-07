@@ -58,26 +58,26 @@ const links =
     }),
   );
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <div className="mx-auto max-w-5xl">
-        <h1 className="text-3xl font-bold">Parent Portal</h1>
-        <p className="mt-2 text-gray-600">
+    <main className="min-h-screen bg-gray-100 p-4 sm:p-8">
+      <div className="mx-auto min-w-0 max-w-5xl">
+        <h1 className="break-words text-2xl font-bold sm:text-3xl">Parent Portal</h1>
+        <p className="mt-2 break-words text-gray-600">
           Monitor your children’s attendance and academic progress.
         </p>
         <div className="mt-6 space-y-5">
           {children.map((c) => (
-            <section key={c.id} className="rounded-lg border bg-white p-6">
-              <div className="flex justify-between">
-                <div>
-<h2 className="text-xl font-semibold">
+            <section key={c.id} className="min-w-0 rounded-lg border bg-white p-4 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                <div className="min-w-0">
+<h2 className="break-words text-lg font-semibold sm:text-xl">
   {getStudentFullName(c)}
 </h2>                  <p className="text-gray-500">
                     {c.enrollment?.class.name ?? "No active enrollment"}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <div className="font-semibold">{c.grades.length} grades</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="break-words text-sm text-gray-500">
                     {c.attendance.length} attendance records
                   </div>
                 </div>

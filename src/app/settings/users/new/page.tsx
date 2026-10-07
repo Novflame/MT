@@ -101,9 +101,9 @@ export default function NewUserPage() {
 
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
+        <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-            <div className="mx-auto max-w-3xl">
+            <div className="mx-auto w-full max-w-3xl">
 
 
                 {/* Header */}
@@ -168,7 +168,7 @@ export default function NewUserPage() {
                         className="
                             border-b
                             border-slate-200
-                            p-6
+                            p-4 sm:p-6
                         "
                     >
 
@@ -196,7 +196,7 @@ export default function NewUserPage() {
                     </div>
 
 
-                    <div className="space-y-6 p-6">
+                    <div className="space-y-6 p-4 sm:p-6">
 
 
                         {/* Name */}
@@ -443,17 +443,18 @@ export default function NewUserPage() {
 
                     <div
                         className="
-                            flex
-                            justify-between
+                            flex flex-col-reverse gap-3
+                            sm:flex-row sm:items-center sm:justify-between
                             border-t
                             border-slate-200
-                            p-6
+                            p-4 sm:p-6
                         "
                     >
 
                         <Link
                             href="/settings/users"
                             className="
+                                w-full sm:w-auto
                                 rounded-lg
                                 border
                                 border-slate-300
@@ -474,6 +475,7 @@ export default function NewUserPage() {
                             type="submit"
                             disabled={saving}
                             className="
+                                w-full sm:w-auto
                                 rounded-lg
                                 bg-slate-900
                                 px-5
@@ -500,4 +502,3 @@ export default function NewUserPage() {
         </main>
     )
 }
-

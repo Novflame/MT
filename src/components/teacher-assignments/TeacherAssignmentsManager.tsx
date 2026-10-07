@@ -923,7 +923,7 @@ export default function TeacherAssignmentsManager({
                         <button
                             type="submit"
                             disabled={loading}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                         >
 
                             {loading ? (
@@ -1112,7 +1112,7 @@ export default function TeacherAssignmentsManager({
                 ) : (
                     <div className="overflow-x-auto">
 
-<table className="w-full min-w-180 border-collapse">
+<table className="w-full min-w-[720px] border-collapse">
 
                             <thead>
                                 <tr className="border-b border-slate-200 bg-slate-50/60 text-left">
@@ -1260,4 +1260,3 @@ export default function TeacherAssignmentsManager({
         </div>
     )
 }
-

@@ -480,14 +480,14 @@ export default async function HeadOfDepartmentPage() {
         <div className="space-y-6">
             {/* HEADER */}
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <p className="text-sm font-semibold text-slate-500">
                             Head of Department
                         </p>
 
-                        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">
+                        <h1 className="mt-1 text-2xl sm:text-3xl break-words font-bold tracking-tight text-slate-950">
                             {
                                 departmentHead
                                     .department
@@ -579,8 +579,8 @@ export default async function HeadOfDepartmentPage() {
             {/* ACADEMIC OVERVIEW */}
 
             <section className="grid gap-6 lg:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-                    <div className="flex items-center justify-between">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm lg:col-span-2">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-bold text-slate-900">
                                 Academic Performance
@@ -680,7 +680,7 @@ export default async function HeadOfDepartmentPage() {
 
                 {/* QUICK ACTIONS */}
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                     <h2 className="text-lg font-bold text-slate-900">
                         Quick Access
                     </h2>
@@ -733,8 +733,8 @@ export default async function HeadOfDepartmentPage() {
             {/* TEACHERS + ASSESSMENTS */}
 
             <section className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="flex items-center justify-between">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-bold text-slate-900">
                                 Teacher Workload
@@ -809,8 +809,8 @@ export default async function HeadOfDepartmentPage() {
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="flex items-center justify-between">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-bold text-slate-900">
                                 Recent Assessments
@@ -1067,8 +1067,8 @@ function Message({
     children: React.ReactNode
 }) {
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h1 className="text-xl font-bold text-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-8 shadow-sm">
+            <h1 className="text-xl break-words font-bold text-slate-900">
                 Head of Department
             </h1>
 

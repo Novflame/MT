@@ -76,9 +76,9 @@ export default function AcademicYearsManager({ initialAcademicYears }: Props) {
   }
 
   return (
-    <main className={styles.container}>
+    <main className={`${styles.container} min-h-dvh w-full px-4 py-6 sm:px-6`}>
       {" "}
-      <div className={styles.book}>
+      <div className={`${styles.book} mx-auto w-full min-w-0 max-w-6xl`}>
         ```
         {/* ========================= */}
         {/* CREATE PAGE */}
@@ -161,7 +161,7 @@ export default function AcademicYearsManager({ initialAcademicYears }: Props) {
               {academicYears.map((year) => (
                 <article
                   key={year.id}
-                  className={`${styles.yearCard} ${
+                  className={`${styles.yearCard} flex flex-wrap items-start justify-between gap-3 ${
                     year.isActive ? styles.activeCard : ""
                   }`}
                 >
@@ -173,7 +173,7 @@ export default function AcademicYearsManager({ initialAcademicYears }: Props) {
                     </p>
                   </div>
 
-                  <div className={styles.yearActions}>
+                  <div className={`${styles.yearActions} flex flex-wrap gap-2`}>
                     {year.isActive ? (
                       <span className={styles.active}>Active</span>
                     ) : (

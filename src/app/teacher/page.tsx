@@ -90,19 +90,19 @@ export default async function TeacherPage() {
     // =========================
 
     return (
-        <main className="min-h-screen bg-gray-100 p-8">
+        <main className="min-h-screen bg-gray-100 p-4 sm:p-8">
 
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto min-w-0 max-w-6xl">
 
                 {/* Header */}
 
                 <header className="mb-8">
 
-                    <h1 className="text-3xl font-bold">
+                    <h1 className="break-words text-2xl font-bold sm:text-3xl">
                         Teacher Dashboard
                     </h1>
 
-                    <p className="mt-2 text-gray-600">
+                    <p className="mt-2 break-words text-gray-600">
                         Welcome,{" "}
                         {session.user.name}
                     </p>
@@ -152,7 +152,7 @@ export default async function TeacherPage() {
 
                 <section>
 
-                    <h2 className="mb-4 text-2xl font-semibold">
+                    <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
                         My Teaching Assignments
                     </h2>
 
@@ -247,7 +247,7 @@ function AssignmentCard({
             className="block rounded-lg border bg-white p-6 shadow-sm transition hover:shadow-md"
         >
 
-            <h3 className="text-xl font-semibold">
+            <h3 className="break-words text-lg font-semibold sm:text-xl">
                 {assignment.className}
             </h3>
 
@@ -257,7 +257,7 @@ function AssignmentCard({
 
             <div className="mt-4">
 
-                <p className="font-medium">
+                <p className="break-words font-medium">
                     {assignment.subjectName}
                 </p>
 

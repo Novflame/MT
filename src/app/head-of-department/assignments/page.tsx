@@ -47,13 +47,13 @@ export default async function HeadOfDepartmentAssignmentsPage() {
     if (!departmentHead) {
         return (
             <HeadOfDepartmentShell>
-                <main className="mx-auto max-w-7xl">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+                <main className="mx-auto w-full min-w-0 max-w-7xl">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-8 shadow-sm">
                         <p className="text-sm font-medium text-slate-500">
                             Head of Department
                         </p>
 
-                        <h1 className="mt-1 text-2xl font-bold text-slate-900">
+                        <h1 className="mt-1 text-2xl break-words font-bold text-slate-900">
                             Assignments
                         </h1>
 
@@ -255,16 +255,16 @@ export default async function HeadOfDepartmentAssignmentsPage() {
 
     return (
         <HeadOfDepartmentShell>
-            <main className="mx-auto max-w-7xl space-y-6">
+            <main className="mx-auto w-full min-w-0 max-w-7xl space-y-6">
                 {/* Header */}
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-sm font-medium text-slate-500">
                                 {departmentHead.department.name}
                             </p>
 
-                            <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+                            <h1 className="mt-1 text-2xl sm:text-3xl break-words font-bold tracking-tight text-slate-900">
                                 Assignments
                             </h1>
 
@@ -315,8 +315,8 @@ export default async function HeadOfDepartmentAssignmentsPage() {
 
                 {/* Load summary */}
                 <section className="grid gap-6 lg:grid-cols-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-start justify-between gap-4">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                        <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">
                                     Teacher Workload
@@ -399,7 +399,7 @@ export default async function HeadOfDepartmentAssignmentsPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                         <div>
                             <h2 className="text-lg font-bold text-slate-900">
                                 Subject Coverage
@@ -457,7 +457,7 @@ export default async function HeadOfDepartmentAssignmentsPage() {
 
                 {/* Assignment table */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-200 px-6 py-5">
+                    <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
                         <h2 className="text-lg font-bold text-slate-900">
                             Department Assignments
                         </h2>
@@ -468,7 +468,7 @@ export default async function HeadOfDepartmentAssignmentsPage() {
                         </p>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="min-w-0 overflow-x-auto overscroll-x-contain">
                         <table className="w-full min-w-190 text-left">
                             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                                 <tr>

@@ -90,13 +90,13 @@ export default async function HeadOfClassPage() {
     if (!assignment) {
         return (
             <main className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6">
-                <div className="mx-auto max-w-5xl">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                <div className="mx-auto min-w-0 max-w-5xl">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm sm:p-8">
                         <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
                             Head of Class
                         </p>
 
-                        <h1 className="mt-2 text-2xl font-bold text-slate-900">
+                        <h1 className="mt-2 break-words text-2xl font-bold text-slate-900">
                             No Class Assigned
                         </h1>
 
@@ -460,7 +460,7 @@ export default async function HeadOfClassPage() {
 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl space-y-6">
+            <div className="mx-auto min-w-0 max-w-7xl space-y-6">
 
                 {/* =====================================================
                     HEADER
@@ -469,16 +469,16 @@ export default async function HeadOfClassPage() {
                 <header className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                                 Head of Class
                             </p>
 
-                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                            <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                                 {assignment.class.name}
                             </h1>
 
-                            <p className="mt-2 text-sm text-slate-500">
+                            <p className="mt-2 break-words text-sm text-slate-500">
                                 {academicYear.name}
                                 {" · "}
                                 {session.user.name ??
@@ -656,7 +656,7 @@ export default async function HeadOfClassPage() {
                     </div>
 
                     <div className="overflow-x-auto">
-    <table className="w-full `min-w-162.5` text-left">
+    <table className="w-full min-w-[40rem] text-left">
                             <thead>
                                 <tr className="border-b border-slate-100 bg-slate-50">
                                     <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -824,4 +824,3 @@ export default async function HeadOfClassPage() {
         </main>
     )
 }
-

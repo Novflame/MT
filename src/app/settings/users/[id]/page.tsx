@@ -111,8 +111,8 @@ const staffProfile =
   // =========================================
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-3xl">
+    <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
+      <div className="mx-auto w-full max-w-3xl">
         {/* Header */}
 
         <div className="mb-8">

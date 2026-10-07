@@ -1,5 +1,10 @@
+
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import { getLocale } from "@/lib/i18n/server"
+import LanguageProvider from "@/components/providers/LanguageProvider"
+
+
 import "./globals.css"
 
 const geistSans = Geist({
@@ -11,15 +16,39 @@ const geistMono = Geist_Mono({
     variable: "--font-geist-mono",
     subsets: ["latin"],
 })
+
 export const metadata: Metadata = {
-  title: "School Management System",
-  description: "Multi-school academic and administration management system",
+    title: "School Management System",
+    description:
+        "School Management System",
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
-    </html>
-  )
+export default async function RootLayout({
+    children,
+}: {
+    children: React.ReactNode
+}) {
+    const locale = await getLocale()
+
+    const direction =
+        locale === "ar"
+            ? "rtl"
+            : "ltr"
+
+    return (
+        <html
+            lang={locale}
+            dir={direction}
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+            <body>
+                <LanguageProvider
+                    initialLocale={locale}
+                >
+                    {children}
+                </LanguageProvider>
+            </body>
+        </html>
+    )
 }
+

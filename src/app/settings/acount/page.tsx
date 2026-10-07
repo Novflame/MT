@@ -152,9 +152,9 @@ export default function AccountSettingsPage() {
     if (loading) {
 
         return (
-            <main className="min-h-screen bg-slate-50 p-6">
+            <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto w-full max-w-4xl">
 
                     <p className="text-sm text-slate-500">
                         Loading account information...
@@ -174,15 +174,15 @@ export default function AccountSettingsPage() {
     if (error && !user) {
 
         return (
-            <main className="min-h-screen bg-slate-50 p-6">
+            <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto w-full max-w-4xl">
 
                     <div className="
                         rounded-xl
                         border border-red-200
                         bg-red-50
-                        p-6
+                        p-4 sm:p-6
                         text-sm
                         text-red-600
                     ">
@@ -206,9 +206,9 @@ export default function AccountSettingsPage() {
     // =========================================
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
+        <main className="min-h-dvh bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
 
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto w-full max-w-4xl">
 
                 {/* Header */}
 
@@ -248,7 +248,7 @@ export default function AccountSettingsPage() {
                     <div className="
                         border-b
                         border-slate-200
-                        p-6
+                        p-4 sm:p-6
                     ">
 
                         <h2 className="
@@ -271,7 +271,7 @@ export default function AccountSettingsPage() {
                     </div>
 
 
-                    <div className="space-y-6 p-6">
+                    <div className="space-y-6 p-4 sm:p-6">
 
                         {/* Name */}
 
@@ -445,18 +445,19 @@ export default function AccountSettingsPage() {
                     {/* Footer */}
 
                     <div className="
-                        flex
+                        flex flex-col-reverse gap-3 sm:flex-row
                         justify-end
                         border-t
                         border-slate-200
-                        p-6
+                        p-4 sm:p-6
                     ">
 
                         <button
                             type="submit"
                             disabled={saving}
                             className="
-                                rounded-lg
+                                    w-full sm:w-auto
+                                    rounded-lg
                                 bg-slate-900
                                 px-5 py-2.5
                                 text-sm

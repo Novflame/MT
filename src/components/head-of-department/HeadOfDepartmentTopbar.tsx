@@ -19,10 +19,12 @@ import { authClient } from "@/auth/auth-client"
 import type { NotificationItem } from "@/components/notifications/NotificationsPanel"
 
 type Props = {
+    mobileOpen: boolean
     onOpenMobile: () => void
 }
 
 export default function HeadOfDepartmentTopbar({
+    mobileOpen,
     onOpenMobile,
 }: Props) {
     const router = useRouter()
@@ -126,8 +128,10 @@ export default function HeadOfDepartmentTopbar({
                     <button
                         type="button"
                         onClick={onOpenMobile}
-                        className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                        className="min-h-11 min-w-11 rounded-xl p-2.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 motion-reduce:transition-none lg:hidden dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                         aria-label="Open navigation"
+                        aria-expanded={mobileOpen}
+                        aria-controls="head-of-department-navigation"
                     >
                         <Menu className="h-5 w-5" />
                     </button>

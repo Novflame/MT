@@ -15,7 +15,7 @@ export default async function AnalyticsPage(){
         db.select().from(teacherAssignments)]);
         const present=a.filter(x=>x.status==='present').length;
         const ar=a.length?Math.round(present/a.length*100):0;
-        return <main className="min-h-screen bg-gray-100 p-8">
+        return <main className="min-h-dvh bg-gray-100 p-4 sm:p-8">
             <div className="mx-auto max-w-6xl">
                 <h1 className="text-3xl font-bold">
                     Analytics</h1>

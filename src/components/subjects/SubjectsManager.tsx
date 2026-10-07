@@ -179,13 +179,13 @@ async function deleteSubject(id: string) {
 }
 
     return (
-        <section className="rounded-lg border bg-gray-500 p-5 shadow-sm">
+        <section className="min-w-0 rounded-lg border bg-gray-500 p-4 shadow-sm sm:p-5">
 
             <h2 className="text-xl font-semibold">
                 Subjects
             </h2>
 
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row">
 
                 <input
                     value={name}
@@ -195,7 +195,7 @@ async function deleteSubject(id: string) {
                         )
                     }
                     placeholder="Subject name"
-                    className="rounded border px-3 py-2"
+                    className="w-full min-w-0 flex-1 rounded border px-3 py-2"
                 />
 
                 <select
@@ -205,7 +205,7 @@ async function deleteSubject(id: string) {
                             e.target.value,
                         )
                     }
-                    className="rounded border bg-blue-700 px-3 py-2"
+                    className="w-full min-w-0 rounded border bg-blue-700 px-3 py-2 sm:w-auto"
                 >
                     <option value="" className="bg-amber-900">
                         Select department
@@ -234,7 +234,7 @@ async function deleteSubject(id: string) {
                         createSubject
                     }
                     disabled={loading}
-                    className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+                    className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50 sm:w-auto"
                 >
                     {loading
                         ? "Creating..."
@@ -254,7 +254,7 @@ async function deleteSubject(id: string) {
 
             {editingId === subject.id ? (
 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
 
                     <input
                         value={editingName}
@@ -263,7 +263,7 @@ async function deleteSubject(id: string) {
                                 e.target.value,
                             )
                         }
-                        className="rounded border px-3 py-2"
+                        className="w-full min-w-0 rounded border px-3 py-2 sm:flex-1"
                     />
 
                     <select
@@ -273,7 +273,7 @@ async function deleteSubject(id: string) {
                                 e.target.value,
                             )
                         }
-                        className="rounded border px-3 py-2"
+                        className="w-full min-w-0 rounded border px-3 py-2 sm:flex-1"
                     >
 
                         {departments.map(
@@ -312,13 +312,13 @@ async function deleteSubject(id: string) {
 
             ) : (
 
-                <div className="flex items-center justify-between bg-gray-500">
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-gray-500">
 
                     <span className="pl-2">
                         {subject.name}
                     </span>
 
-                    <div className="flex gap-2 bg-gray-500">
+                    <div className="flex flex-wrap gap-2 bg-gray-500">
 
                         <button
                             onClick={() => {

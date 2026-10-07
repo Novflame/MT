@@ -699,12 +699,12 @@ const [showImport, setShowImport] =
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-slate-900">
+                    <p className="break-words font-semibold text-slate-900">
                       {student.name}
                     </p>
 
                     <p className="mt-0.5 text-xs text-slate-500">
-                      ID: {student.id}
+                      ID: <span className="break-all">{student.id}</span>
                     </p>
 
                     <div className="mt-3 grid grid-cols-2 gap-3">
@@ -713,7 +713,7 @@ const [showImport, setShowImport] =
                           Parent
                         </p>
 
-                        <p className="mt-0.5 truncate text-sm text-slate-700">
+                        <p className="mt-0.5 break-words text-sm text-slate-700">
                           {student.parentName}
                         </p>
                       </div>
@@ -723,8 +723,8 @@ const [showImport, setShowImport] =
                           Class
                         </p>
 
-                        <span className="mt-0.5 inline-flex rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
-                          {student.className}
+                        <span className="mt-0.5 inline-flex max-w-full whitespace-normal break-words rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                          <span className="break-words">{student.className}</span>
                         </span>
                       </div>
                     </div>

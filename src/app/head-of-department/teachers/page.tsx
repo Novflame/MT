@@ -59,13 +59,13 @@ export default async function HeadOfDepartmentTeachersPage() {
     if (!departmentHead) {
         return (
             <HeadOfDepartmentShell>
-                <main className="mx-auto max-w-7xl">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+                <main className="mx-auto w-full min-w-0 max-w-7xl">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-8 shadow-sm">
                         <p className="text-sm font-medium text-slate-500">
                             Head of Department
                         </p>
 
-                        <h1 className="mt-1 text-2xl font-bold text-slate-900">
+                        <h1 className="mt-1 text-2xl break-words font-bold text-slate-900">
                             Teachers
                         </h1>
 
@@ -242,7 +242,7 @@ export default async function HeadOfDepartmentTeachersPage() {
    
 return (
     <HeadOfDepartmentShell>
-        <main className="mx-auto w-full max-w-7xl space-y-8">
+        <main className="mx-auto w-full min-w-0 max-w-7xl space-y-8">
 
             {/* PAGE HEADER */}
 
@@ -278,7 +278,7 @@ return (
                                     Department Management
                                 </p>
 
-                                <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl dark:text-white">
+                                <h1 className="mt-2 text-2xl break-words font-bold tracking-tight text-slate-950 sm:text-4xl dark:text-white">
                                     Teachers
                                 </h1>
 
@@ -371,7 +371,7 @@ return (
 
                 {/* TABLE */}
 
-                <div className="overflow-x-auto">
+                <div className="min-w-0 overflow-x-auto overscroll-x-contain">
 
                     <table className="w-full min-w-190 text-left">
 

@@ -39,8 +39,8 @@ export default function PortalUsersManager(
         }
         catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
         finally { setSaving(false) }
-    } return <section className="mt-6 rounded-lg border bg-white p-6">
-        <div className="grid gap-3 md:grid-cols-2">
+    } return <section className="mt-6 min-w-0 rounded-lg border bg-white p-4 sm:p-6">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
 
             <input className="rounded border px-3 py-2" placeholder="Full name"
                 value={name}
@@ -75,7 +75,7 @@ export default function PortalUsersManager(
         </div>
         <button onClick={save}
             disabled={saving}
-            className="mt-4 rounded bg-black px-4 py-2 text-white">
+            className="mt-4 w-full rounded bg-black px-4 py-2 text-white sm:w-auto">
             {saving ? 'Creating...' : 'Create portal account'}
         </button>
     </section>

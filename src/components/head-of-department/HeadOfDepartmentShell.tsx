@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import HeadOfDepartmentSidebar from "./HeadOfDepartmentSidebar"
 import HeadOfDepartmentTopbar from "./HeadOfDepartmentTopbar"
@@ -24,6 +24,19 @@ export default function HeadOfDepartmentShell({
         setCollapsed((value) => !value)
     }
 
+    useEffect(() => {
+        if (!mobileOpen) return
+
+        function handleEscape(event: KeyboardEvent) {
+            if (event.key === "Escape") {
+                setMobileOpen(false)
+            }
+        }
+
+        window.addEventListener("keydown", handleEscape)
+        return () => window.removeEventListener("keydown", handleEscape)
+    }, [mobileOpen])
+
     return (
         <div className="min-h-dvh w-full bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
             <HeadOfDepartmentSidebar
@@ -40,8 +53,6 @@ export default function HeadOfDepartmentShell({
                     w-full
                     transition-[margin]
                     duration-200
-                    md:ml-20
-                    md:w-[calc(100%-5rem)]
                     ${collapsed
                         ? "lg:ml-20 lg:w-[calc(100%-5rem)]"
                         : "lg:ml-64 lg:w-[calc(100%-16rem)]"
@@ -49,7 +60,11 @@ export default function HeadOfDepartmentShell({
                 `}
             >
                 <HeadOfDepartmentTopbar
-                    onOpenMobile={() => setMobileOpen(true)}
+                    mobileOpen={mobileOpen}
+                    onOpenMobile={() => {
+                        setCollapsed(false)
+                        setMobileOpen(true)
+                    }}
                 />
 
                 <main className="min-w-0 w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
@@ -61,4 +76,3 @@ export default function HeadOfDepartmentShell({
         </div>
     )
 }
-

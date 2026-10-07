@@ -1,78 +1,66 @@
-import { notFound } from "next/navigation"
 
-import { requirePermission } from "@/auth/session"
-import { getCertificate } from "@/certificates/get-certificate"
+import { notFound } from "next/navigation";
 
-import CertificateClient from "./CertificateClient"
+import { requirePermission } from "@/auth/session";
+import { getCertificate } from "@/certificates/get-certificate";
 
+import CertificateClient from "./CertificateClient";
 
 type CertificatePageProps = {
-    params: Promise<{
-        enrollmentId: string
-    }>
-}
-
+  params: Promise<{
+    enrollmentId: string;
+  }>;
+};
 
 export default async function CertificatePage({
-    params,
+  params,
 }: CertificatePageProps) {
+  // ============================================================
+  // AUTHENTICATION + AUTHORIZATION
+  // ============================================================
 
-    // ============================================================
-    // AUTHENTICATION + AUTHORIZATION
-    // ============================================================
+  const session = await requirePermission(
+    "results.read",
+  );
 
-    const session =
-        await requirePermission(
-            "results.read",
-        )
+  // ============================================================
+  // ROUTE PARAMETER
+  // ============================================================
 
+  const { enrollmentId } = await params;
 
-    // ============================================================
-    // ROUTE PARAMETER
-    // ============================================================
+  if (!enrollmentId) {
+    notFound();
+  }
 
-    const {
-        enrollmentId,
-    } = await params
+  // ============================================================
+  // GET CERTIFICATE
+  // ============================================================
 
+  let certificate;
 
-    if (!enrollmentId) {
-        notFound()
-    }
+  try {
+    certificate = await getCertificate(
+      enrollmentId,
+      session,
+    );
+  } catch (error) {
+    console.error(
+      "Certificate page error:",
+      error,
+    );
 
+    notFound();
+  }
 
-    // ============================================================
-    // GET CERTIFICATE
-    // ============================================================
+  // ============================================================
+  // CLIENT UI
+  // ============================================================
 
-    let certificate
-
-    try {
-
-        certificate =
-            await getCertificate(
-                enrollmentId,
-                session,
-            )
-
-    } catch (error) {
-
-        console.error(
-            "Certificate page error:",
-            error,
-        )
-
-        notFound()
-    }
-
-
-    // ============================================================
-    // CLIENT UI
-    // ============================================================
-
-    return (
-        <CertificateClient
-            certificate={certificate}
-        />
-    )
+  return (
+    <CertificateClient
+      certificate={certificate}
+    />
+  );
 }
+

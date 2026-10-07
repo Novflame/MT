@@ -19,7 +19,7 @@ export default async function DepartmentHeadsPage() {
     .from(user)
     .where(eq(user.schoolId, session.user.schoolId));
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
+    <main className="min-h-dvh bg-gray-100 p-4 sm:p-8">
       <div className="mx-auto max-w-5xl">
         <h1 className="text-3xl font-bold">Heads of Department</h1>
         <p className="mt-2 text-gray-600">

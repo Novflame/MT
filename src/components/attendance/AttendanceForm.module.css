@@ -1,113 +1,206 @@
 
+/* ================================================================
+   ATTENDANCE FORM
+   Mobile-first / blue-white school-system UI
+================================================================ */
+
 .container {
     width: 100%;
-    min-height: calc(100vh - 2rem);
-
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-
-    padding: 2rem 1rem;
+    min-width: 0;
+    min-height: 100%;
+    padding: 0;
+    overflow-x: hidden;
 }
 
 .book {
-    width: min(100%, 900px);
+    width: min(100%, 1100px);
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 auto;
 
-    background: #f8f3e8;
+    background: #ffffff;
 
-    border: 1px solid #d8ccb5;
-    border-radius: 6px;
+    border: 1px solid #dbe4f0;
+    border-radius: 16px;
 
     box-shadow:
-        0 20px 45px rgba(0, 0, 0, 0.14),
-        inset 0 0 35px rgba(120, 90, 40, 0.04);
+        0 12px 35px rgba(15, 23, 42, 0.07),
+        0 2px 8px rgba(15, 23, 42, 0.03);
 
-    position: relative;
-}
-
-.book::before {
-    content: "";
-
-    position: absolute;
-
-    left: 0;
-    top: 0;
-    bottom: 0;
-
-    width: 14px;
-
-    background: #e7ddca;
-
-    border-right: 1px solid #cfc1a8;
-
-    border-radius: 6px 0 0 6px;
+    overflow: hidden;
 }
 
 .page {
-    padding: 2.5rem 3rem 3rem 3.5rem;
+    width: 100%;
+    min-width: 0;
+    padding: 2rem;
 }
 
 
-/* =====================================
-   Header
-   ===================================== */
+/* ================================================================
+   HEADER
+================================================================ */
 
 .header {
-    text-align: center;
-    margin-bottom: 2rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.headerTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1.5rem;
+}
+
+.headerText {
+    min-width: 0;
 }
 
 .eyebrow {
     margin: 0;
 
-    font-size: 0.72rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    color: #2563eb;
 
-    color: #806f55;
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
 }
 
 .title {
-    margin: 0.5rem 0 0;
+    margin: 0.3rem 0 0;
 
-    font-family: Georgia, "Times New Roman", serif;
+    color: #0f172a;
 
-    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-size: clamp(1.6rem, 4vw, 2.25rem);
+    line-height: 1.15;
 
-    font-weight: 700;
-
-    color: #30291f;
-}
-
-.divider {
-    width: 80px;
-    height: 1px;
-
-    margin: 1rem auto;
-
-    background: #9b896d;
+    font-weight: 800;
+    letter-spacing: -0.025em;
 }
 
 .subtitle {
-    margin: 0;
+    max-width: 560px;
+    margin: 0.5rem 0 0;
 
-    color: #746a5c;
+    color: #64748b;
 
-    font-size: 0.95rem;
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
+
+.headerStats {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: stretch;
+
+    border: 1px solid #dbe4f0;
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background: #ffffff;
+}
+
+.totalStat,
+.presentStat,
+.absentStat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.45rem;
+
+    min-height: 48px;
+
+    padding: 0.55rem 0.8rem;
+
+    font-size: 0.68rem;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.totalStat {
+    color: #475569;
+    background: #f8fafc;
+}
+
+.presentStat {
+    color: #15803d;
+    background: #f0fdf4;
+    border-inline-start: 1px solid #dcfce7;
+}
+
+.absentStat {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-inline-start: 1px solid #fee2e2;
+}
+
+.totalStat strong,
+.presentStat strong,
+.absentStat strong {
+    font-size: 0.9rem;
+}
+
+.headerDivider {
+    width: 100%;
+    height: 1px;
+
+    margin-top: 1.35rem;
+
+    background: #e2e8f0;
+}
+
+.context {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.55rem;
+
+    margin-top: 0.75rem;
+
+    color: #475569;
+
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.context i {
+    width: 4px;
+    height: 4px;
+
+    flex: 0 0 auto;
+
+    border-radius: 50%;
+
+    background: #94a3b8;
 }
 
 
-/* =====================================
-   Selection
-   ===================================== */
+/* ================================================================
+   SELECTION
+================================================================ */
 
 .selection {
     display: grid;
 
     grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        auto;
 
-    gap: 1rem;
+    align-items: end;
+
+    gap: 0.75rem;
+
+    margin-top: 1.25rem;
 }
 
 .field {
@@ -119,78 +212,100 @@
 
     margin-bottom: 0.4rem;
 
-    color: #4a4032;
+    color: #334155;
 
-    font-size: 0.8rem;
-
-    font-weight: 600;
+    font-size: 0.73rem;
+    font-weight: 800;
 }
 
 .input {
     width: 100%;
-
-    min-height: 42px;
+    min-width: 0;
+    min-height: 44px;
 
     padding: 0.65rem 0.75rem;
 
-    border: 1px solid #cfc3ae;
-
-    border-radius: 4px;
-
-    background: #fffdf8;
-
-    color: #30291f;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
 
     outline: none;
 
+    background: #ffffff;
+    color: #0f172a;
+
+    font-size: 0.8rem;
+
     transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
+}
+
+.input:hover:not(:disabled) {
+    border-color: #94a3b8;
 }
 
 .input:focus {
-    border-color: #806f55;
+    border-color: #2563eb;
 
     box-shadow:
-        0 0 0 2px rgba(128, 111, 85, 0.12);
+        0 0 0 3px
+        rgba(37, 99, 235, 0.12);
 }
 
 .input:disabled {
-    background: #eee8dc;
+    background: #f1f5f9;
+    color: #94a3b8;
+
     cursor: not-allowed;
 }
 
 
-/* =====================================
-   Load button
-   ===================================== */
+/* ================================================================
+   LOAD BUTTON
+================================================================ */
 
 .loadButton {
-    width: 100%;
+    display: inline-flex;
 
-    margin-top: 1.25rem;
+    align-items: center;
+    justify-content: center;
 
-    padding: 0.75rem 1rem;
+    min-height: 44px;
 
-    border: 1px solid #30291f;
+    padding: 0.65rem 1rem;
 
-    border-radius: 4px;
+    border: 1px solid #2563eb;
+    border-radius: 8px;
 
-    background: #30291f;
+    background: #2563eb;
+    color: #ffffff;
 
-    color: #fffdf8;
+    font-size: 0.76rem;
+    font-weight: 800;
 
-    font-weight: 600;
+    white-space: nowrap;
 
     cursor: pointer;
 
+    box-shadow:
+        0 4px 10px
+        rgba(37, 99, 235, 0.14);
+
     transition:
-        background 0.2s ease,
-        transform 0.15s ease;
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .loadButton:hover:not(:disabled) {
-    background: #473d30;
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+
+    box-shadow:
+        0 6px 14px
+        rgba(37, 99, 235, 0.18);
 }
 
 .loadButton:active:not(:disabled) {
@@ -200,199 +315,228 @@
 .loadButton:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
 
-/* =====================================
-   Messages
-   ===================================== */
+/* ================================================================
+   MESSAGES
+================================================================ */
 
 .error,
 .success {
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.25rem;
+
     margin-top: 1rem;
 
-    padding: 0.85rem 1rem;
+    padding: 0.75rem 0.9rem;
 
-    border-radius: 4px;
+    border-radius: 8px;
 
-    font-size: 0.85rem;
+    font-size: 0.76rem;
+    line-height: 1.5;
 }
 
 .error {
-    display: flex;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
 
-    flex-direction: column;
-
-    gap: 0.2rem;
-
-    border: 1px solid #d9aaa4;
-
-    background: #f8e9e7;
-
-    color: #7a2922;
+.error strong {
+    color: #991b1b;
 }
 
 .success {
-    border: 1px solid #aebfa5;
-
-    background: #edf3e9;
-
-    color: #3e5a35;
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #15803d;
 }
 
 
-/* =====================================
-   Roster
-   ===================================== */
+/* ================================================================
+   ATTENDANCE SECTION
+================================================================ */
 
-.roster {
-    margin-top: 2rem;
+.attendanceSection {
+    width: 100%;
+    min-width: 0;
 
-    border: 1px solid #d7cbb7;
+    margin-top: 1.25rem;
+}
 
-    border-radius: 6px;
+.tableShell {
+    width: 100%;
+    min-width: 0;
+
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
 
     overflow: hidden;
 
-    background: #faf6ed;
+    background: #ffffff;
+
+    box-shadow:
+        0 5px 18px
+        rgba(37, 99, 235, 0.06);
 }
 
 
-/* =====================================
-   FIXED ROSTER HEADER
-   ===================================== */
+/* ================================================================
+   TABLE HEADER
+================================================================ */
 
-.rosterHeader {
+.tableHeader {
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
 
     gap: 1rem;
 
-    padding: 1.1rem 1.25rem;
+    padding: 0.9rem 1rem;
 
-    border-bottom: 1px solid #d7cbb7;
+    border-top: 3px solid #2563eb;
+    border-bottom: 1px solid #dbeafe;
 
-    background: #f8f3e8;
-
-    position: sticky;
-
-    top: 0;
-
-    z-index: 5;
+    background:
+        linear-gradient(
+            90deg,
+            #eff6ff 0%,
+            #ffffff 100%
+        );
 }
 
-.rosterLabel {
-    font-size: 0.7rem;
+.tableEyebrow {
+    display: block;
 
-    letter-spacing: 0.12em;
+    color: #2563eb;
 
+    font-size: 0.62rem;
+    font-weight: 800;
+
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-
-    color: #806f55;
 }
 
-.rosterTitle {
+.tableTitle {
     margin: 0.2rem 0 0;
 
-    font-family: Georgia, "Times New Roman", serif;
+    color: #0f172a;
 
-    font-size: 1.3rem;
-
-    color: #30291f;
+    font-size: 1rem;
+    font-weight: 800;
 }
 
+.tableMeta {
+    flex: 0 0 auto;
 
-/* =====================================
-   Summary
-   ===================================== */
+    padding: 0.3rem 0.55rem;
 
-.summary {
-    display: flex;
-
-    align-items: center;
-
-    gap: 0.5rem;
-}
-
-.presentSummary,
-.absentSummary {
-    display: inline-flex;
-
-    align-items: center;
-
-    padding: 0.4rem 0.65rem;
-
+    border: 1px solid #dbeafe;
     border-radius: 999px;
 
-    font-size: 0.72rem;
+    background: #ffffff;
+    color: #2563eb;
 
-    font-weight: 700;
-}
-
-.presentSummary {
-    color: #176534;
-
-    background: #e8f5e9;
-
-    border: 1px solid #b8dfbd;
-}
-
-.absentSummary {
-    color: #a52828;
-
-    background: #fbeaea;
-
-    border: 1px solid #e5b5b5;
+    font-size: 0.66rem;
+    font-weight: 800;
 }
 
 
-/* =====================================
+/* ================================================================
+   TABLE COLUMNS
+================================================================ */
+
+.tableColumns {
+    display: grid;
+
+    grid-template-columns: minmax(0, 1fr) 140px;
+
+    align-items: center;
+
+    min-height: 38px;
+
+    padding: 0 1rem;
+
+    border-bottom: 1px solid #e2e8f0;
+
+    background: #f8fafc;
+
+    color: #64748b;
+
+    font-size: 0.65rem;
+    font-weight: 800;
+
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.tableColumns span:last-child {
+    text-align: center;
+}
+
+
+/* ================================================================
    STUDENT SCROLL AREA
-   ===================================== */
+================================================================ */
 
 .students {
-    display: flex;
+    width: 100%;
+    min-width: 0;
 
-    flex-direction: column;
-
-    /*
-     * THIS is the only scrolling area.
-     *
-     * Header stays visible.
-     * Footer stays visible.
-     */
-
-    max-height: 480px;
+    max-height: 58vh;
 
     overflow-y: auto;
+    overflow-x: hidden;
 
     overscroll-behavior: contain;
 
     scrollbar-width: thin;
+    scrollbar-color:
+        #cbd5e1
+        transparent;
+}
+
+.students::-webkit-scrollbar {
+    width: 7px;
+}
+
+.students::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.students::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
 }
 
 
-/* =====================================
-   Student row
-   ===================================== */
+/* ================================================================
+   STUDENT ROW
+================================================================ */
 
 .student {
-    display: flex;
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        140px;
 
     align-items: center;
 
-    justify-content: space-between;
+    gap: 1rem;
 
-    gap: 1.5rem;
+    width: 100%;
+    min-width: 0;
 
-    padding: 0.9rem 1.25rem;
+    padding: 0.7rem 1rem;
 
-    border-bottom: 1px solid #ded5c5;
+    border-bottom: 1px solid #e2e8f0;
 
-    background: #fffdf8;
+    background: #ffffff;
 
     transition:
         background 0.15s ease,
@@ -403,154 +547,181 @@
     border-bottom: none;
 }
 
-
-/* Present row */
+.student:hover {
+    background: #f8fafc;
+}
 
 .studentPresent {
-    background: #f6fbf5;
+    background: #fbfffc;
 }
 
-
-/* Absent row */
+.studentPresent:hover {
+    background: #f0fdf4;
+}
 
 .studentAbsent {
-    background: #fff5f4;
+    background: #fffdfd;
+}
+
+.studentAbsent:hover {
+    background: #fef2f2;
 }
 
 
-/* =====================================
-   Student info
-   ===================================== */
+/* ================================================================
+   STUDENT INFO
+================================================================ */
 
 .studentInfo {
-    min-width: 0;
-
     display: flex;
-
     align-items: center;
 
-    gap: 0.85rem;
+    gap: 0.7rem;
+
+    min-width: 0;
 }
 
 .number {
+    display: grid;
+    place-items: center;
+
     flex: 0 0 auto;
 
     width: 32px;
     height: 32px;
 
-    display: grid;
-
-    place-items: center;
-
-    border: 1px solid #cfc3ae;
-
+    border: 1px solid #bfdbfe;
     border-radius: 50%;
 
-    color: #806f55;
+    background: #eff6ff;
+    color: #2563eb;
 
-    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.64rem;
+    font-weight: 800;
+}
 
-    font-size: 0.75rem;
+.studentDetails {
+    min-width: 0;
 }
 
 .studentName {
     margin: 0;
 
-    color: #30291f;
+    color: #0f172a;
 
-    font-size: 0.95rem;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    font-weight: 750;
 
-    font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 .current {
-    margin: 0.2rem 0 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
 
-    color: #8a8174;
+    gap: 0.3rem;
 
-    font-size: 0.72rem;
+    margin: 0.18rem 0 0;
+
+    color: #94a3b8;
+
+    font-size: 0.65rem;
+    line-height: 1.35;
 }
 
 .current span {
-    font-weight: 700;
+    font-weight: 800;
 }
 
-.studentPresent .current span {
-    color: #176534;
+.statusPresent {
+    color: #15803d;
 }
 
-.studentAbsent .current span {
-    color: #a52828;
+.statusAbsent {
+    color: #b91c1c;
+}
+
+.statusOther {
+    color: #2563eb;
 }
 
 
-/* =====================================
-   Present / Absent toggle
-   ===================================== */
+/* ================================================================
+   ATTENDANCE TOGGLE
+================================================================ */
 
 .attendanceToggle {
-    flex: 0 0 auto;
+    position: relative;
 
     display: inline-flex;
 
     align-items: center;
+    justify-content: center;
 
-    gap: 0.55rem;
+    gap: 0.45rem;
 
-    min-width: 120px;
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
 
-    padding: 0.55rem 0.75rem;
+    padding: 0.45rem 0.6rem;
 
     border: 1px solid;
-
-    border-radius: 6px;
+    border-radius: 8px;
 
     cursor: pointer;
-
     user-select: none;
 
     transition:
         background 0.15s ease,
         border-color 0.15s ease,
-        color 0.15s ease;
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.attendanceToggle:hover {
+    transform: translateY(-1px);
 }
 
 .attendanceToggle input {
     position: absolute;
 
-    opacity: 0;
+    width: 1px;
+    height: 1px;
 
+    opacity: 0;
     pointer-events: none;
 }
 
+.attendanceToggle:has(input:focus-visible) {
+    outline: 3px solid
+        rgba(37, 99, 235, 0.2);
 
-/* =====================================
-   Checkbox
-   ===================================== */
+    outline-offset: 2px;
+}
 
 .checkbox {
+    display: grid;
+    place-items: center;
+
     width: 18px;
     height: 18px;
 
     flex: 0 0 auto;
 
-    display: grid;
-
-    place-items: center;
-
     border: 2px solid;
-
     border-radius: 4px;
 
-    background: white;
+    background: #ffffff;
 }
 
 .checkbox::after {
     content: "✓";
 
-    font-size: 12px;
-
-    font-weight: 800;
+    font-size: 10px;
+    font-weight: 900;
 
     opacity: 0;
 
@@ -561,221 +732,678 @@
         transform 0.12s ease;
 }
 
+.toggleText {
+    min-width: 0;
 
-/* =====================================
-   Present
-   ===================================== */
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    white-space: nowrap;
+}
+
+
+/* ================================================================
+   PRESENT
+================================================================ */
 
 .togglePresent {
-    border-color: #9cc9a4;
+    border-color: #86efac;
 
-    background: #eaf7ec;
+    background: #f0fdf4;
+    color: #15803d;
+}
 
-    color: #176534;
+.togglePresent:hover {
+    background: #dcfce7;
 }
 
 .togglePresent .checkbox {
-    border-color: #299447;
-
-    background: #299447;
-
-    color: white;
+    border-color: #22c55e;
+    background: #22c55e;
+    color: #ffffff;
 }
 
 .togglePresent .checkbox::after {
     opacity: 1;
-
     transform: scale(1);
 }
 
 
-/* =====================================
-   Absent
-   ===================================== */
+/* ================================================================
+   ABSENT
+================================================================ */
 
 .toggleAbsent {
-    border-color: #dfaaaa;
+    border-color: #fca5a5;
 
-    background: #fcebea;
+    background: #fef2f2;
+    color: #b91c1c;
+}
 
-    color: #a52828;
+.toggleAbsent:hover {
+    background: #fee2e2;
 }
 
 .toggleAbsent .checkbox {
-    border-color: #c43b3b;
+    border-color: #ef4444;
 
-    background: #fff;
-
-    color: #c43b3b;
+    background: #ffffff;
+    color: #ef4444;
 }
 
 .toggleAbsent .checkbox::after {
     content: "×";
 
     opacity: 1;
-
     transform: scale(1);
 }
 
 
-/* =====================================
-   Toggle text
-   ===================================== */
+/* ================================================================
+   OTHER STATUS
+================================================================ */
 
-.toggleText {
-    font-size: 0.78rem;
+.toggleOther {
+    border-color: #bfdbfe;
 
-    font-weight: 700;
+    background: #eff6ff;
+    color: #2563eb;
 }
 
 
-/* =====================================
-   FIXED FOOTER
-   ===================================== */
+/* ================================================================
+   TABLE FOOTER
+================================================================ */
 
-.rosterFooter {
+.tableFooter {
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
 
     gap: 1rem;
 
-    padding: 0.9rem 1.25rem;
+    min-height: 46px;
 
-    border-top: 1px solid #d7cbb7;
+    padding: 0.7rem 1rem;
 
-    background: #f8f3e8;
+    border-top: 1px solid #e2e8f0;
 
-    color: #746a5c;
+    background: #f8fafc;
 
-    font-size: 0.8rem;
+    color: #64748b;
+
+    font-size: 0.68rem;
 }
 
-.rosterFooter strong {
-    color: #30291f;
-
-    font-size: 0.9rem;
+.tableFooter strong {
+    color: #0f172a;
+    font-size: 0.8rem;
 }
 
 .footerStats {
     display: flex;
-
     align-items: center;
+    flex-wrap: wrap;
 
-    gap: 0.5rem;
+    gap: 0.7rem;
+}
+
+.footerPresent {
+    color: #15803d;
+    font-weight: 800;
+}
+
+.footerAbsent {
+    color: #b91c1c;
+    font-weight: 800;
 }
 
 
-/* =====================================
-   Empty
-   ===================================== */
+/* ================================================================
+   EMPTY
+================================================================ */
 
 .empty {
-    margin-top: 2rem;
+    margin-top: 1.25rem;
 
-    padding: 2rem;
+    padding: 2rem 1rem;
 
-    border: 1px dashed #cfc3ae;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+
+    background: #f8fafc;
 
     text-align: center;
-
-    color: #746a5c;
 }
 
 .empty h3 {
     margin: 0;
 
-    font-family: Georgia, "Times New Roman", serif;
+    color: #334155;
 
-    color: #40372c;
+    font-size: 0.95rem;
+    font-weight: 800;
 }
 
 .empty p {
-    margin: 0.4rem 0 0;
+    max-width: 420px;
 
-    font-size: 0.85rem;
+    margin: 0.45rem auto 0;
+
+    color: #64748b;
+
+    font-size: 0.76rem;
+    line-height: 1.5;
 }
 
 
-/* =====================================
-   Loading
-   ===================================== */
+/* ================================================================
+   LOADING
+================================================================ */
 
 .loading {
-    padding: 4rem 2rem;
+    min-height: 260px;
 
-    text-align: center;
+    display: grid;
+    place-items: center;
 
-    color: #746a5c;
+    padding: 2rem;
 
-    font-family: Georgia, "Times New Roman", serif;
+    color: #64748b;
+
+    font-size: 0.85rem;
+    font-weight: 700;
 }
 
 
-/* =====================================
-   Responsive
-   ===================================== */
+/* ================================================================
+   DARK MODE
+================================================================ */
 
-@media (max-width: 700px) {
+:global(.dark) .book {
+    background: #0f172a;
+    border-color: #1e293b;
 
+    box-shadow:
+        0 12px 35px
+        rgba(0, 0, 0, 0.28);
+}
+
+:global(.dark) .title,
+:global(.dark) .tableTitle,
+:global(.dark) .studentName {
+    color: #f8fafc;
+}
+
+:global(.dark) .subtitle,
+:global(.dark) .current {
+    color: #94a3b8;
+}
+
+:global(.dark) .headerDivider {
+    background: #1e293b;
+}
+
+:global(.dark) .context {
+    color: #cbd5e1;
+}
+
+:global(.dark) .input {
+    border-color: #334155;
+    background: #111827;
+    color: #f8fafc;
+}
+
+:global(.dark) .input:disabled {
+    background: #1e293b;
+    color: #64748b;
+}
+
+:global(.dark) .headerStats {
+    border-color: #334155;
+}
+
+:global(.dark) .totalStat {
+    background: #111827;
+    color: #cbd5e1;
+}
+
+:global(.dark) .presentStat {
+    background: #0d1f16;
+    border-color: #14532d;
+}
+
+:global(.dark) .absentStat {
+    background: #241313;
+    border-color: #7f1d1d;
+}
+
+:global(.dark) .tableShell {
+    border-color: #1d4ed8;
+    background: #0f172a;
+}
+
+:global(.dark) .tableHeader {
+    border-color: #1d4ed8;
+
+    background:
+        linear-gradient(
+            90deg,
+            #172554 0%,
+            #0f172a 100%
+        );
+}
+
+:global(.dark) .tableMeta {
+    border-color: #334155;
+    background: #111827;
+}
+
+:global(.dark) .tableColumns {
+    border-color: #1e293b;
+    background: #111827;
+    color: #94a3b8;
+}
+
+:global(.dark) .student {
+    border-color: #1e293b;
+    background: #0f172a;
+}
+
+:global(.dark) .student:hover {
+    background: #111827;
+}
+
+:global(.dark) .studentPresent {
+    background: #0d1f16;
+}
+
+:global(.dark) .studentPresent:hover {
+    background: #0f2a1a;
+}
+
+:global(.dark) .studentAbsent {
+    background: #241313;
+}
+
+:global(.dark) .studentAbsent:hover {
+    background: #2b1515;
+}
+
+:global(.dark) .number {
+    border-color: #1d4ed8;
+    background: #172554;
+    color: #60a5fa;
+}
+
+:global(.dark) .tableFooter {
+    border-color: #1e293b;
+    background: #111827;
+}
+
+:global(.dark) .tableFooter strong {
+    color: #f8fafc;
+}
+
+:global(.dark) .empty {
+    border-color: #334155;
+    background: #111827;
+}
+
+:global(.dark) .empty h3 {
+    color: #e2e8f0;
+}
+
+:global(.dark) .empty p,
+:global(.dark) .loading {
+    color: #94a3b8;
+}
+
+
+/* ================================================================
+   TABLET
+================================================================ */
+
+@media (max-width: 900px) {
+    .page {
+        padding: 1.5rem;
+    }
+
+    .headerTop {
+        gap: 1rem;
+    }
+
+    .selection {
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        align-items: stretch;
+    }
+
+    .loadButton {
+        width: 100%;
+    }
+
+    .students {
+        max-height: 60vh;
+    }
+}
+
+
+/* ================================================================
+   MOBILE
+================================================================ */
+
+@media (max-width: 640px) {
     .container {
-        padding: 1rem 0.5rem;
+        padding: 0;
+    }
+
+    .book {
+        border-radius: 12px;
     }
 
     .page {
-        padding: 2rem 1rem 2rem 1.5rem;
+        padding: 1rem 0.75rem 1.25rem;
+    }
+
+    .headerTop {
+        flex-direction: column;
+        gap: 0.9rem;
+    }
+
+    .eyebrow {
+        font-size: 0.58rem;
+    }
+
+    .title {
+        font-size: 1.45rem;
+    }
+
+    .subtitle {
+        margin-top: 0.4rem;
+
+        font-size: 0.75rem;
+    }
+
+    /*
+     * The three statistics remain in ONE LINE
+     * on normal phones.
+     */
+    .headerStats {
+        width: 100%;
+    }
+
+    .totalStat,
+    .presentStat,
+    .absentStat {
+        flex: 1;
+
+        min-width: 0;
+
+        padding-inline: 0.45rem;
+
+        gap: 0.25rem;
+
+        font-size: 0.61rem;
+    }
+
+    .totalStat strong,
+    .presentStat strong,
+    .absentStat strong {
+        font-size: 0.82rem;
+    }
+
+    .headerDivider {
+        margin-top: 1rem;
+    }
+
+    .context {
+        gap: 0.4rem;
+
+        margin-top: 0.65rem;
+
+        font-size: 0.68rem;
     }
 
     .selection {
         grid-template-columns: 1fr;
+
+        gap: 0.7rem;
+
+        margin-top: 1rem;
     }
 
-    .rosterHeader {
-        align-items: flex-start;
+    .input {
+        min-height: 46px;
 
-        flex-direction: column;
+        font-size: 0.82rem;
     }
 
-    .summary {
+    .loadButton {
+        min-height: 46px;
+
         width: 100%;
     }
 
-    .student {
-        align-items: center;
+    .error,
+    .success {
+        margin-top: 0.8rem;
 
-        gap: 0.8rem;
-
-        padding: 0.85rem 1rem;
+        font-size: 0.72rem;
     }
 
-    .studentInfo {
+    .attendanceSection {
+        margin-top: 1rem;
+    }
+
+    .tableShell {
+        border-radius: 10px;
+    }
+
+    .tableHeader {
+        align-items: flex-start;
+
+        padding: 0.8rem;
+
         gap: 0.6rem;
     }
 
-    .studentName {
-        font-size: 0.88rem;
+    .tableTitle {
+        font-size: 0.95rem;
     }
 
-    .attendanceToggle {
-        min-width: 105px;
+    .tableMeta {
+        padding: 0.28rem 0.45rem;
 
-        padding: 0.5rem 0.6rem;
+        font-size: 0.6rem;
     }
 
+    /*
+     * Hide desktop-style column labels on phones.
+     * Each row identifies its own information.
+     */
+    .tableColumns {
+        display: none;
+    }
+
+    /*
+     * Only this area scrolls.
+     * Individual student rows never get a max-height.
+     */
     .students {
-        max-height: 55vh;
+        max-height: 58vh;
+
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
-    .rosterFooter {
+    .student {
+        grid-template-columns: 1fr;
+
+        gap: 0.65rem;
+
+        padding: 0.75rem;
+    }
+
+    .studentInfo {
+        width: 100%;
+    }
+
+    .number {
+        width: 30px;
+        height: 30px;
+
+        font-size: 0.6rem;
+    }
+
+    .studentName {
+        font-size: 0.8rem;
+    }
+
+    .current {
+        font-size: 0.63rem;
+    }
+
+    /*
+     * Large touch target.
+     * Full width is much easier to use on mobile.
+     */
+    .attendanceToggle {
+        width: 100%;
+
+        min-height: 44px;
+    }
+
+    .toggleText {
+        font-size: 0.7rem;
+    }
+
+    .tableFooter {
         align-items: flex-start;
 
         flex-direction: column;
+
+        gap: 0.5rem;
+
+        padding: 0.7rem 0.75rem;
     }
 
     .footerStats {
         width: 100%;
+
+        justify-content: space-between;
     }
+
+    .empty {
+        margin-top: 1rem;
+
+        padding: 1.5rem 0.8rem;
+    }
+}
+
+
+/* ================================================================
+   SMALL PHONES — 375px / 390px
+================================================================ */
+
+@media (max-width: 390px) {
+    .page {
+        padding-inline: 0.6rem;
+    }
+
+    .title {
+        font-size: 1.35rem;
+    }
+
+    .totalStat,
+    .presentStat,
+    .absentStat {
+        padding-inline: 0.35rem;
+
+        gap: 0.2rem;
+
+        font-size: 0.56rem;
+    }
+
+    .totalStat strong,
+    .presentStat strong,
+    .absentStat strong {
+        font-size: 0.78rem;
+    }
+
+    .tableHeader {
+        padding: 0.7rem;
+    }
+
+    .student {
+        padding: 0.7rem;
+    }
+
+    .studentName {
+        font-size: 0.78rem;
+    }
+
+    .attendanceToggle {
+        min-height: 44px;
+    }
+}
+
+
+/* ================================================================
+   VERY SMALL PHONES
+================================================================ */
+
+@media (max-width: 350px) {
+    .headerStats {
+        overflow-x: auto;
+    }
+
+    .totalStat,
+    .presentStat,
+    .absentStat {
+        flex: 0 0 auto;
+    }
+}
+
+
+/* ================================================================
+   RTL
+================================================================ */
+
+:global(html[dir="rtl"]) .headerText,
+:global(html[dir="rtl"]) .studentDetails,
+:global(html[dir="rtl"]) .tableHeader,
+:global(html[dir="rtl"]) .tableFooter {
+    text-align: right;
+}
+
+:global(html[dir="rtl"]) .tableColumns span:last-child {
+    text-align: center;
+}
+
+:global(html[dir="rtl"]) .student {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .studentInfo {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .attendanceToggle {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .context {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .error,
+:global(html[dir="rtl"]) .success {
+    text-align: right;
 }
 

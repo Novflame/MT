@@ -165,6 +165,7 @@ export default function HeadOfDepartmentSidebar({
             )}
 
             <aside
+                id="head-of-department-navigation"
                 className={`
                     fixed inset-y-0 left-0 z-50
                     flex h-dvh flex-col
@@ -179,12 +180,12 @@ export default function HeadOfDepartmentSidebar({
                     dark:bg-slate-950
                     dark:text-slate-100
 
-                    ${collapsed ? "w-20" : "w-64"}
+                    ${collapsed ? "w-64 lg:w-20" : "w-64"}
 
                     ${
                         mobileOpen
                             ? "translate-x-0"
-                            : "-translate-x-full lg:translate-x-0"
+                            : "hidden -translate-x-full lg:flex lg:translate-x-0"
                     }
                 `}
             >
@@ -272,6 +273,7 @@ export default function HeadOfDepartmentSidebar({
 
                 {/* Navigation */}
                 <nav
+                    aria-label="Department navigation"
                     className="
                         min-h-0 flex-1
                         overflow-y-auto overflow-x-hidden
@@ -543,4 +545,3 @@ export default function HeadOfDepartmentSidebar({
         </>
     )
 }
-

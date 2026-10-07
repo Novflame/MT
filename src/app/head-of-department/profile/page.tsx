@@ -51,7 +51,7 @@ export default async function HeadOfDepartmentProfilePage() {
                     <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
                         Account
                     </p>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50 sm:text-3xl">
+                    <h1 className="text-2xl break-words font-bold tracking-tight text-slate-950 dark:text-slate-50 sm:text-3xl">
                         Profile
                     </h1>
                     <p className="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">

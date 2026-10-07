@@ -1,14 +1,18 @@
+
 import { requirePermission } from "@/auth/session";
 import { getSchoolDB } from "@/db";
 import { getStudentFullName } from "@/lib/student-name";
-import { eq, isNotNull } from "drizzle-orm";
+import { getLocale } from "@/lib/i18n/server";
+import { eq } from "drizzle-orm";
 import Link from "next/link";
 
 import {
+  coreSubjects,
   exams,
   grades,
   parentStudents,
   parents,
+  studentEnrollments,
   studentUsers,
   teacherAssignments,
 } from "@/db/schema";
@@ -23,9 +27,125 @@ function letterGrade(percent: number) {
   if (percent >= 70) return "B";
   if (percent >= 60) return "C";
   if (percent >= 50) return "D";
-
   return "F";
 }
+
+// ============================================================
+// Localized labels
+// ============================================================
+
+const resultTranslations = {
+  en: {
+    school: "School",
+    results: "Results",
+    myResults: "My Results",
+    studentsResults: "Students Results",
+    finalResults: "Final Results",
+
+    myFinalResultsDescription: "Your final examination results.",
+    studentsFinalResultsDescription:
+      "Final examination results for the students linked to you.",
+    teacherFinalResultsDescription:
+      "Final examination results for your assigned classes and subjects.",
+    finalResultsDescription: "Final examination results.",
+
+    examResults: "Exam Results",
+
+    students: "Students",
+    complete: "Complete",
+    incomplete: "Incomplete",
+    final: "Final",
+    examination: "Examination",
+
+    class: "Class",
+    student: "Student",
+    subjects: "Subjects",
+    completed: "Completed",
+
+    result: "Result",
+    status: "Status",
+    action: "Action",
+    viewResults: "View Results",
+
+    noResultsAvailable: "No results available",
+    noResultsDescription:
+      "Final examination results have not been published yet.",
+  },
+
+  ar: {
+    school: "المدرسة",
+    results: "النتائج",
+    myResults: "نتائجي",
+    studentsResults: "نتائج الطلاب",
+    finalResults: "النتائج النهائية",
+
+    myFinalResultsDescription: "نتائج امتحاناتك النهائية.",
+    studentsFinalResultsDescription:
+      "نتائج الامتحانات النهائية للطلاب المرتبطين بك.",
+    teacherFinalResultsDescription:
+      "نتائج الامتحانات النهائية للفصول والمواد المسندة إليك.",
+    finalResultsDescription: "نتائج الامتحانات النهائية.",
+
+    examResults: "نتائج الامتحانات",
+
+    students: "الطلاب",
+    complete: "مكتملة",
+    incomplete: "غير مكتملة",
+    final: "نهائي",
+    examination: "امتحان",
+
+    class: "الفصل",
+    student: "الطالب",
+    subjects: "المواد",
+    completed: "مكتملة",
+
+    result: "النتيجة",
+    status: "الحالة",
+    action: "الإجراء",
+    viewResults: "عرض النتائج",
+
+    noResultsAvailable: "لا توجد نتائج متاحة",
+    noResultsDescription:
+      "لم يتم نشر نتائج الامتحانات النهائية بعد.",
+  },
+
+  fr: {
+    school: "École",
+    results: "Résultats",
+    myResults: "Mes résultats",
+    studentsResults: "Résultats des élèves",
+    finalResults: "Résultats finaux",
+
+    myFinalResultsDescription: "Vos résultats des examens finaux.",
+    studentsFinalResultsDescription:
+      "Résultats des examens finaux des élèves qui vous sont liés.",
+    teacherFinalResultsDescription:
+      "Résultats des examens finaux pour vos classes et matières attribuées.",
+    finalResultsDescription: "Résultats des examens finaux.",
+
+    examResults: "Résultats des examens",
+
+    students: "Élèves",
+    complete: "Complets",
+    incomplete: "Incomplets",
+    final: "Final",
+    examination: "Examen",
+
+    class: "Classe",
+    student: "Élève",
+    subjects: "Matières",
+    completed: "Terminées",
+
+    result: "Résultat",
+    status: "Statut",
+    action: "Action",
+    viewResults: "Voir les résultats",
+
+    noResultsAvailable: "Aucun résultat disponible",
+    noResultsDescription:
+      "Les résultats des examens finaux n'ont pas encore été publiés.",
+  },
+} as const;
 
 // ============================================================
 // Results page
@@ -33,43 +153,44 @@ function letterGrade(percent: number) {
 
 export default async function ResultsPage() {
   const session = await requirePermission("results.read");
-
   const db = await getSchoolDB();
 
+  const locale = await getLocale();
+  const t = resultTranslations[locale];
+
+  const role = session.user.schoolRole;
+
   // ============================================================
-  // Determine student visibility
+  // Student / parent visibility
   // ============================================================
 
-  let allowedStudentIds: string[] | null = null;
+  let allowedStudentIds: Set<string> | null = null;
 
-  // ------------------------------------------------------------
-  // Student
-  // ------------------------------------------------------------
-
-  if (session.user.schoolRole === "student") {
-    const link = await db.query.studentUsers.findFirst({
+  if (role === "student") {
+    const studentUser = await db.query.studentUsers.findFirst({
       where: eq(studentUsers.userId, session.user.id),
     });
 
-    allowedStudentIds = link ? [link.studentId] : [];
+    allowedStudentIds = new Set(
+      studentUser ? [studentUser.studentId] : [],
+    );
   }
 
-  // ------------------------------------------------------------
-  // Parent
-  // ------------------------------------------------------------
-  else if (session.user.schoolRole === "parent") {
+  if (role === "parent") {
     const parent = await db.query.parents.findFirst({
       where: eq(parents.userId, session.user.id),
     });
 
     if (!parent) {
-      allowedStudentIds = [];
+      allowedStudentIds = new Set();
     } else {
-      const links = await db.query.parentStudents.findMany({
+      const children = await db.query.parentStudents.findMany({
         where: eq(parentStudents.parentId, parent.id),
       });
 
-      allowedStudentIds = links.map((link) => link.studentId);
+      allowedStudentIds = new Set(
+        children.map((child) => child.studentId),
+      );
     }
   }
 
@@ -79,9 +200,12 @@ export default async function ResultsPage() {
 
   let teacherAssignmentKeys: Set<string> | null = null;
 
-  if (session.user.schoolRole === "teacher") {
+  if (role === "teacher") {
     const assignments = await db.query.teacherAssignments.findMany({
-      where: eq(teacherAssignments.teacherId, session.user.id),
+      where: eq(
+        teacherAssignments.teacherId,
+        session.user.id,
+      ),
     });
 
     teacherAssignmentKeys = new Set(
@@ -98,15 +222,10 @@ export default async function ResultsPage() {
 
   const [
     enrollments,
-    allSubjects,
-    allCoreSubjects,
-    allFinalExams,
-    allFinalGrades,
+    coreSubjectRows,
+    finalExams,
+    finalGrades,
   ] = await Promise.all([
-    // --------------------------------------------------------
-    // Student enrollments
-    // --------------------------------------------------------
-
     db.query.studentEnrollments.findMany({
       with: {
         student: true,
@@ -114,32 +233,16 @@ export default async function ResultsPage() {
       },
     }),
 
-    // --------------------------------------------------------
-    // Subjects
-    // --------------------------------------------------------
-
-    db.query.subjects.findMany(),
-
-    // --------------------------------------------------------
-    // Core subjects
-    // --------------------------------------------------------
-
     db.query.coreSubjects.findMany(),
-
-    // --------------------------------------------------------
-    // Final exams only
-    // --------------------------------------------------------
 
     db.query.exams.findMany({
       where: eq(exams.type, "FINAL"),
+      with: {
+        subject: true,
+      },
     }),
 
-    // --------------------------------------------------------
-    // Grades belonging to exams
-    // --------------------------------------------------------
-
     db.query.grades.findMany({
-      where: isNotNull(grades.examId),
       with: {
         exam: true,
       },
@@ -147,302 +250,259 @@ export default async function ResultsPage() {
   ]);
 
   // ============================================================
-  // Create quick subject lookup
+  // Lookup maps
   // ============================================================
 
-  const subjectMap = new Map(
-    allSubjects.map((subject) => [subject.id, subject]),
-  );
+  const coreSubjectsByClassYear = new Map<
+    string,
+    typeof coreSubjectRows
+  >();
+
+  for (const row of coreSubjectRows) {
+    const key = `${row.academicYearId}:${row.classId}`;
+
+    const existing = coreSubjectsByClassYear.get(key);
+
+    if (existing) {
+      existing.push(row);
+    } else {
+      coreSubjectsByClassYear.set(key, [row]);
+    }
+  }
+
+  const finalExamsByClassYearSubject = new Map<
+    string,
+    typeof finalExams
+  >();
+
+  for (const exam of finalExams) {
+    const key = `${exam.academicYearId}:${exam.classId}:${exam.subjectId}`;
+
+    const existing =
+      finalExamsByClassYearSubject.get(key);
+
+    if (existing) {
+      existing.push(exam);
+    } else {
+      finalExamsByClassYearSubject.set(key, [exam]);
+    }
+  }
+
+  for (const examsForSubject of finalExamsByClassYearSubject.values()) {
+    examsForSubject.sort((a, b) =>
+      b.examDate.localeCompare(a.examDate),
+    );
+  }
+
+  const gradesByEnrollment = new Map<
+    string,
+    typeof finalGrades
+  >();
+
+  for (const grade of finalGrades) {
+    if (!grade.exam || grade.exam.type !== "FINAL") {
+      continue;
+    }
+
+    const existing = gradesByEnrollment.get(
+      grade.studentEnrollmentId,
+    );
+
+    if (existing) {
+      existing.push(grade);
+    } else {
+      gradesByEnrollment.set(
+        grade.studentEnrollmentId,
+        [grade],
+      );
+    }
+  }
 
   // ============================================================
   // Visible enrollments
   // ============================================================
 
-  const visibleEnrollments = enrollments.filter((enrollment) => {
-    // ------------------------------------------------
-    // Student / parent restriction
-    // ------------------------------------------------
-
-    if (
-      allowedStudentIds !== null &&
-      !allowedStudentIds.includes(enrollment.studentId)
-    ) {
-      return false;
-    }
-
-    // ------------------------------------------------
-    // Teacher restriction
-    //
-    // A teacher must have at least one assignment
-    // for this academic year + class.
-    // ------------------------------------------------
-
-    if (teacherAssignmentKeys !== null) {
-      const hasClassAssignment = Array.from(teacherAssignmentKeys).some((key) =>
-        key.startsWith(`${enrollment.academicYearId}:${enrollment.classId}:`),
-      );
-
-      if (!hasClassAssignment) {
+  const visibleEnrollments = enrollments.filter(
+    (enrollment) => {
+      if (
+        allowedStudentIds !== null &&
+        !allowedStudentIds.has(enrollment.studentId)
+      ) {
         return false;
       }
-    }
 
-    return true;
-  });
+      if (teacherAssignmentKeys !== null) {
+        const hasClassAssignment = Array.from(
+          teacherAssignmentKeys,
+        ).some((key) =>
+          key.startsWith(
+            `${enrollment.academicYearId}:${enrollment.classId}:`,
+          ),
+        );
+
+        if (!hasClassAssignment) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+  );
 
   // ============================================================
-  // Build results
+  // Build student summary rows
   // ============================================================
 
   const results = visibleEnrollments.map((enrollment) => {
-    // ------------------------------------------------
-    // Core subjects for this class/year
-    // ------------------------------------------------
+    const classYearKey =
+      `${enrollment.academicYearId}:${enrollment.classId}`;
 
-    let requiredSubjects = allCoreSubjects.filter(
-      (core) =>
-        core.classId === enrollment.classId &&
-        core.academicYearId === enrollment.academicYearId,
-    );
-
-    // ------------------------------------------------
-    // Teacher can only see assigned subjects
-    // ------------------------------------------------
+    let requiredSubjects =
+      coreSubjectsByClassYear.get(classYearKey) ?? [];
 
     if (teacherAssignmentKeys !== null) {
-      requiredSubjects = requiredSubjects.filter((requiredSubject) =>
-        teacherAssignmentKeys.has(
-          `${enrollment.academicYearId}:${enrollment.classId}:${requiredSubject.subjectId}`,
-        ),
+      requiredSubjects = requiredSubjects.filter(
+        (requiredSubject) =>
+          teacherAssignmentKeys!.has(
+            `${enrollment.academicYearId}:${enrollment.classId}:${requiredSubject.subjectId}`,
+          ),
       );
     }
 
-    // ------------------------------------------------
-    // Final exams for this class/year
-    // ------------------------------------------------
-
-    const finalExams = allFinalExams.filter(
-      (exam) =>
-        exam.classId === enrollment.classId &&
-        exam.academicYearId === enrollment.academicYearId,
-    );
-
-    // ------------------------------------------------
-    // Student final grades
-    // ------------------------------------------------
-
-    const studentFinalGrades = allFinalGrades.filter(
-      (grade) =>
-        grade.studentEnrollmentId === enrollment.id &&
-        grade.exam !== null &&
-        grade.exam.type === "FINAL" &&
-        grade.exam.classId === enrollment.classId &&
-        grade.exam.academicYearId === enrollment.academicYearId,
-    );
-
-    // ------------------------------------------------
-    // Build subject results
-    // ------------------------------------------------
-
-    const subjectResults = requiredSubjects.map((requiredSubject) => {
-      const subject = subjectMap.get(requiredSubject.subjectId);
-
-      // ------------------------------------------------
-      // Find Final exam for this subject
-      //
-      // If more than one exists, use the latest date.
-      // ------------------------------------------------
-
-      const subjectExams = finalExams
-        .filter((exam) => exam.subjectId === requiredSubject.subjectId)
-        .sort((a, b) => b.examDate.localeCompare(a.examDate));
-
-      const exam = subjectExams[0] ?? null;
-
-      // ------------------------------------------------
-      // No Final exam exists
-      // ------------------------------------------------
-
-      if (!exam) {
-        return {
-          subjectId: requiredSubject.subjectId,
-
-          subjectName: subject?.name ?? "Unknown",
-
-          examId: null,
-
-          examName: null,
-
-          score: null,
-
-          maxScore: null,
-
-          percentage: null,
-
-          letter: null,
-
-          status: "missing" as const,
-        };
-      }
-
-      // ------------------------------------------------
-      // Find student's grade for this exact exam
-      // ------------------------------------------------
-
-      const examGrade = studentFinalGrades.find(
-        (grade) => grade.examId === exam.id,
-      );
-
-      // ------------------------------------------------
-      // Final exam exists but grade is missing
-      // ------------------------------------------------
-
-      if (!examGrade) {
-        return {
-          subjectId: requiredSubject.subjectId,
-
-          subjectName: subject?.name ?? "Unknown",
-
-          examId: exam.id,
-
-          examName: exam.name,
-
-          score: null,
-
-          maxScore: exam.maxScore,
-
-          percentage: null,
-
-          letter: null,
-
-          status: "missing" as const,
-        };
-      }
-
-      // ------------------------------------------------
-      // Calculate percentage
-      // ------------------------------------------------
-
-      const percentage =
-        exam.maxScore > 0
-          ? Number(((examGrade.score / exam.maxScore) * 100).toFixed(1))
-          : 0;
-
-      // ------------------------------------------------
-      // Completed subject
-      // ------------------------------------------------
-
-      return {
-        subjectId: requiredSubject.subjectId,
-
-        subjectName: subject?.name ?? "Unknown",
-
-        examId: exam.id,
-
-        examName: exam.name,
-
-        score: examGrade.score,
-
-        maxScore: exam.maxScore,
-
-        percentage,
-
-        letter: letterGrade(percentage),
-
-        status: "completed" as const,
-      };
-    });
-
-    // ------------------------------------------------
-    // Calculate total
-    // ------------------------------------------------
+    const studentGrades =
+      gradesByEnrollment.get(enrollment.id) ?? [];
 
     let earned = 0;
     let possible = 0;
+    let completedSubjects = 0;
 
-    for (const subject of subjectResults) {
-      if (subject.score === null || subject.maxScore === null) {
+    for (const requiredSubject of requiredSubjects) {
+      const examKey =
+        `${enrollment.academicYearId}:${enrollment.classId}:${requiredSubject.subjectId}`;
+
+      const subjectExams =
+        finalExamsByClassYearSubject.get(examKey) ?? [];
+
+      const exam = subjectExams[0];
+
+      if (!exam) {
         continue;
       }
 
-      earned += subject.score;
+      const grade = studentGrades.find(
+        (item) => item.examId === exam.id,
+      );
 
-      possible += subject.maxScore;
+      if (!grade) {
+        continue;
+      }
+
+      completedSubjects += 1;
+      earned += grade.score;
+      possible += exam.maxScore;
     }
 
+    const totalSubjects = requiredSubjects.length;
+
     const percentage =
-      possible > 0 ? Number(((earned / possible) * 100).toFixed(1)) : 0;
+      possible > 0
+        ? Number(((earned / possible) * 100).toFixed(1))
+        : 0;
 
-    // ------------------------------------------------
-    // Missing subjects
-    // ------------------------------------------------
-
-    const missingSubjects = subjectResults.filter(
-      (subject) => subject.status === "missing",
-    );
-
-    // ------------------------------------------------
-    // Completion
-    // ------------------------------------------------
-
-    const complete = subjectResults.length > 0 && missingSubjects.length === 0;
-
-    // ------------------------------------------------
-    // Final result
-    // ------------------------------------------------
+    const complete =
+      totalSubjects > 0 &&
+      completedSubjects === totalSubjects;
 
     return {
       enrollmentId: enrollment.id,
-
-      student: enrollment.student,
-
-      class: enrollment.class,
-
+      studentId: enrollment.studentId,
+      studentName: getStudentFullName(
+        enrollment.student,
+      ),
+      classId: enrollment.classId,
+      className: enrollment.class.name,
+      gradeLevel: enrollment.class.gradeLevel,
       academicYearId: enrollment.academicYearId,
-
-      status: complete ? "complete" : "incomplete",
-
-      earned,
-
-      possible,
-
+      completedSubjects,
+      totalSubjects,
+      status: complete
+        ? ("complete" as const)
+        : ("incomplete" as const),
       percentage,
-
-      letter: complete ? letterGrade(percentage) : null,
-
-      completedSubjects: subjectResults.filter(
-        (subject) => subject.status === "completed",
-      ).length,
-
-      totalSubjects: subjectResults.length,
-
-      missingSubjects,
-
-      subjects: subjectResults,
+      letter: complete
+        ? letterGrade(percentage)
+        : null,
     };
   });
+
+  // ============================================================
+  // Group by class
+  // ============================================================
+
+  const classGroups = Array.from(
+    results
+      .reduce(
+        (map, result) => {
+          const key =
+            `${result.academicYearId}:${result.classId}`;
+
+          const existing = map.get(key);
+
+          if (existing) {
+            existing.results.push(result);
+          } else {
+            map.set(key, {
+              key,
+              classId: result.classId,
+              className: result.className,
+              gradeLevel: result.gradeLevel,
+              academicYearId: result.academicYearId,
+              results: [result],
+            });
+          }
+
+          return map;
+        },
+        new Map<
+          string,
+          {
+            key: string;
+            classId: string;
+            className: string;
+            gradeLevel: number;
+            academicYearId: string;
+            results: typeof results;
+          }
+        >(),
+      )
+      .values(),
+  );
+
+  for (const classGroup of classGroups) {
+    classGroup.results.sort((a, b) =>
+      a.studentName.localeCompare(b.studentName),
+    );
+  }
 
   // ============================================================
   // Page information
   // ============================================================
 
-  const role = session.user.schoolRole;
-
   const pageTitle =
     role === "student"
-      ? "My Results"
+      ? t.myResults
       : role === "parent"
-        ? "Students Results"
-        : "Results";
+        ? t.studentsResults
+        : t.finalResults;
 
   const pageDescription =
     role === "student"
-      ? "Your final examination results."
+      ? t.myFinalResultsDescription
       : role === "parent"
-        ? "Final examination results for your students."
+        ? t.studentsFinalResultsDescription
         : role === "teacher"
-          ? "Final examination results for your assigned classes and subjects."
-          : "Final examination results.";
+          ? t.teacherFinalResultsDescription
+          : t.finalResultsDescription;
 
   // ============================================================
   // Summary
@@ -454,327 +514,299 @@ export default async function ResultsPage() {
     (result) => result.status === "complete",
   ).length;
 
-  const incompleteResults = results.filter(
-    (result) => result.status === "incomplete",
-  ).length;
+  const incompleteResults =
+    totalStudents - completedResults;
 
   // ============================================================
   // UI
   // ============================================================
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        {/* ================================================= */}
+    <main className="min-h-dvh bg-slate-50 px-3 py-4 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-5">
         {/* Header */}
-        {/* ================================================= */}
 
-        <header className="mb-4 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <span>School</span>
-
-                <span className="text-slate-300">/</span>
-
-                <span>Results</span>
+        <header className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm sm:h-11 sm:w-11">
+                <svg
+                  width="21"
+                  height="21"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <path d="M4 4h16v16H4z" />
+                  <path d="M8 8h8" />
+                  <path d="M8 12h8" />
+                  <path d="M8 16h5" />
+                </svg>
               </div>
 
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-                {pageTitle}
-              </h1>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>{t.school}</span>
+                  <span className="text-slate-300 dark:text-slate-600">
+                    /
+                  </span>
+                  <span>{t.results}</span>
+                </div>
 
-              <p className="mt-1 text-sm text-slate-500">{pageDescription}</p>
+                <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                  {pageTitle}
+                </h1>
+
+                <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  {pageDescription}
+                </p>
+              </div>
             </div>
 
-            <div className="hidden h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white sm:flex">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="M4 4h16v16H4z" />
-                <path d="M8 8h8" />
-                <path d="M8 12h8" />
-                <path d="M8 16h5" />
-              </svg>
-            </div>
+            <Link
+              href="/results/exams"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
+            >
+              {t.examResults}
+            </Link>
           </div>
-
-          <Link
-            href="/results/exams"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm 
-            font-semibold text-white transition hover:bg-slate-800"
-          >
-            <span> Exam Results </span>
-
-           
-          </Link>
         </header>
 
-        {/* ================================================= */}
         {/* Summary */}
-        {/* ================================================= */}
 
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 sm:p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Students
+              {t.students}
             </p>
 
-            <p className="mt-1 text-2xl font-bold text-slate-900">
+            <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white sm:text-2xl">
               {totalStudents}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 sm:p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Complete
+              {t.complete}
             </p>
 
-            <p className="mt-1 text-2xl font-bold text-emerald-600">
+            <p className="mt-1 text-xl font-bold text-emerald-600 sm:text-2xl">
               {completedResults}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 sm:p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Incomplete
+              {t.incomplete}
             </p>
 
-            <p className="mt-1 text-2xl font-bold text-orange-500">
+            <p className="mt-1 text-xl font-bold text-red-600 dark:text-red-400 sm:text-2xl">
               {incompleteResults}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 sm:p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Final
+              {t.final}
             </p>
 
-            <p className="mt-1 text-sm font-semibold text-slate-700">
-              Examination
+            <p className="mt-1 text-sm font-bold text-blue-700 dark:text-blue-400">
+              {t.examination}
             </p>
           </div>
-        </div>
+        </section>
 
-        {/* ================================================= */}
-        {/* Results */}
-        {/* ================================================= */}
+        {/* Results by class */}
 
-        <div className="space-y-4">
-          {results.map((result) => (
-            <section
-              key={result.enrollmentId}
-              className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
-            >
-              {/* Student header */}
-
-              <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <h2 className="truncate text-lg font-bold text-slate-900">
-                    {getStudentFullName(result.student)}
-                  </h2>
-
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                    <span>{result.class.name}</span>
-
-                    <span className="text-slate-300">•</span>
-
-                    <span>
-                      {result.completedSubjects} / {result.totalSubjects}{" "}
-                      subjects completed
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div
-                    className={
-                      result.status === "complete"
-                        ? "rounded-xl bg-emerald-50 px-4 py-2 text-right"
-                        : "rounded-xl bg-orange-50 px-4 py-2 text-right"
-                    }
-                  >
-                    <p
-                      className={
-                        result.status === "complete"
-                          ? "text-xs font-medium text-emerald-600"
-                          : "text-xs font-medium text-orange-600"
-                      }
-                    >
-                      {result.status === "complete" ? "Final Result" : "Status"}
-                    </p>
-
-                    <p
-                      className={
-                        result.status === "complete"
-                          ? "text-xl font-bold text-emerald-700"
-                          : "text-sm font-bold text-orange-700"
-                      }
-                    >
-                      {result.status === "complete"
-                        ? `${result.percentage}% ${result.letter}`
-                        : "Incomplete"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Subjects */}
-
-              <div className="overflow-x-auto">
-                <table className="w-full `min-w-175` text-sm">
-                  <thead className="bg-slate-50">
-                    <tr className="border-b border-slate-200 text-left">
-                      <th className="px-5 py-3 font-semibold text-slate-600">
-                        Subject
-                      </th>
-
-                      <th className="px-4 py-3 font-semibold text-slate-600">
-                        Final Exam
-                      </th>
-
-                      <th className="px-4 py-3 font-semibold text-slate-600">
-                        Score
-                      </th>
-
-                      <th className="px-4 py-3 font-semibold text-slate-600">
-                        Max
-                      </th>
-
-                      <th className="px-4 py-3 font-semibold text-slate-600">
-                        Percent
-                      </th>
-
-                      <th className="px-5 py-3 font-semibold text-slate-600">
-                        Grade
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {result.subjects.map((subject) => (
-                      <tr
-                        key={subject.subjectId}
-                        className="border-b border-slate-100 last:border-0"
-                      >
-                        <td className="px-5 py-3 font-medium text-slate-800">
-                          {subject.subjectName}
-                        </td>
-
-                        <td className="px-4 py-3 text-slate-500">
-                          {subject.examName ?? "No final exam"}
-                        </td>
-
-                        <td className="px-4 py-3 font-semibold text-slate-800">
-                          {subject.score ?? "-"}
-                        </td>
-
-                        <td className="px-4 py-3 text-slate-500">
-                          {subject.maxScore ?? "-"}
-                        </td>
-
-                        <td className="px-4 py-3">
-                          {subject.percentage !== null ? (
-                            <span className="font-semibold text-slate-800">
-                              {subject.percentage}%
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-3">
-                          {subject.letter ? (
-                            <span
-                              className={
-                                subject.percentage !== null &&
-                                subject.percentage >= 50
-                                  ? "inline-flex min-w-9 justify-center rounded-lg bg-emerald-50 px-2 py-1 font-bold text-emerald-700"
-                                  : "inline-flex min-w-9 justify-center rounded-lg bg-red-50 px-2 py-1 font-bold text-red-700"
-                              }
-                            >
-                              {subject.letter}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Missing results */}
-
-              {result.missingSubjects.length > 0 && (
-                <div className="border-t border-orange-100 bg-orange-50 px-5 py-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-                      !
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold text-orange-800">
-                        Missing results
-                      </p>
-
-                      <p className="mt-1 text-sm text-orange-700">
-                        {result.missingSubjects
-                          .map((subject) => subject.subjectName)
-                          .join(", ")}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Total */}
-
-              {result.status === "complete" && (
-                <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-end">
-                  <div className="text-left sm:text-right">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                      Final Total
-                    </p>
-
-                    <p className="mt-1 text-lg font-bold text-slate-900">
-                      {result.earned} / {result.possible}
-                    </p>
-
-                    <p className="text-sm font-semibold text-slate-600">
-                      {result.percentage}%
-                    </p>
-                  </div>
-                </div>
-              )}
-            </section>
-          ))}
-
-          {/* Empty */}
-
-          {results.length === 0 && (
-            <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-sm ring-1 ring-slate-200">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
-                —
-              </div>
-
-              <h2 className="mt-4 text-lg font-semibold text-slate-900">
-                No results available
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Final examination results have not been published yet.
-              </p>
+        {classGroups.length === 0 ? (
+          <section className="rounded-2xl bg-white px-5 py-12 text-center shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              —
             </div>
-          )}
-        </div>
+
+            <h2 className="mt-4 text-lg font-semibold text-slate-950 dark:text-white">
+              {t.noResultsAvailable}
+            </h2>
+
+            <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
+              {t.noResultsDescription}
+            </p>
+          </section>
+        ) : (
+          <div className="space-y-5">
+            {classGroups.map((classGroup) => {
+              const classCompleted =
+                classGroup.results.filter(
+                  (result) =>
+                    result.status === "complete",
+                ).length;
+
+              const classIncomplete =
+                classGroup.results.length -
+                classCompleted;
+
+              return (
+                <section
+                  key={classGroup.key}
+                  className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
+                >
+                  {/* Class header */}
+
+                  <div className="border-b border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/80 sm:px-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                            {t.class}
+                          </span>
+
+                          <h2 className="text-lg font-bold text-slate-950 dark:text-white sm:text-xl">
+                            {classGroup.className}
+                          </h2>
+                        </div>
+
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                          {t.final} {t.examination}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-xl bg-white px-3 py-2 text-center ring-1 ring-slate-200 dark:bg-slate-950 dark:ring-slate-800">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                            {t.students}
+                          </p>
+                          <p className="mt-0.5 font-bold text-slate-900 dark:text-white">
+                            {classGroup.results.length}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl bg-emerald-50 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:ring-emerald-900/50">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                            {t.complete}
+                          </p>
+                          <p className="mt-0.5 font-bold text-emerald-700 dark:text-emerald-400">
+                            {classCompleted}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl bg-red-50 px-3 py-2 text-center ring-1 ring-red-100 dark:bg-red-950/30 dark:ring-red-900/50">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">
+                            {t.incomplete}
+                          </p>
+                          <p className="mt-0.5 font-bold text-red-700 dark:text-red-400">
+                            {classIncomplete}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Class table */}
+
+                  <div className="max-w-full overflow-x-auto">
+                    <table className="w-full min-w-190 text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-white text-start dark:border-slate-800 dark:bg-slate-900">
+                          <th className="px-4 py-3 text-start font-semibold text-slate-600 dark:text-slate-300 sm:px-5">
+                            {t.student}
+                          </th>
+
+                          <th className="px-4 py-3 text-start font-semibold text-slate-600 dark:text-slate-300">
+                            {t.subjects}
+                          </th>
+
+                          <th className="px-4 py-3 text-start font-semibold text-slate-600 dark:text-slate-300">
+                            {t.status}
+                          </th>
+
+                          <th className="px-4 py-3 text-start font-semibold text-slate-600 dark:text-slate-300">
+                            {t.result}
+                          </th>
+
+                          <th className="px-4 py-3 text-start font-semibold text-slate-600 dark:text-slate-300 sm:px-5">
+                            {t.action}
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {classGroup.results.map((result) => (
+                          <tr
+                            key={result.enrollmentId}
+                            className="border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+                          >
+                            <td className="px-4 py-4 sm:px-5">
+                              <Link
+                                href={`/results/student/${result.studentId}`}
+                                className="font-semibold text-blue-700 underline-offset-4 hover:underline dark:text-blue-400"
+                              >
+                                {result.studentName}
+                              </Link>
+                            </td>
+
+                            <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
+                              <span className="font-semibold">
+                                {result.completedSubjects}
+                              </span>
+
+                              <span className="text-slate-400">
+                                {" "}
+                                / {result.totalSubjects}
+                              </span>
+                            </td>
+
+                            <td className="px-4 py-4">
+                              {result.status === "complete" ? (
+                                <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                  {t.complete}
+                                </span>
+                              ) : (
+                                <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400">
+                                  {t.incomplete}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-4">
+                              {result.status === "complete" ? (
+                                <div>
+                                  <p className="font-bold text-slate-900 dark:text-white">
+                                    {result.percentage}%
+                                  </p>
+
+                                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                                    {result.letter}
+                                  </p>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">
+                                  —
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-4 sm:px-5">
+                              <Link
+                                href={`/results/student/${result.studentId}`}
+                                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+                              >
+                                {t.viewResults}
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );
 }
+

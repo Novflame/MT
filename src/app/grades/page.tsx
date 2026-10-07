@@ -250,7 +250,7 @@ export default async function GradesPage({
     // =========================================================
 
     return (
-        <main className="min-h-screen bg-gray-100 p-8">
+        <main className="min-h-dvh bg-gray-100 p-4 sm:p-8">
             <div className="mx-auto max-w-6xl">
 
                 {/* Header */}
@@ -314,4 +314,3 @@ export default async function GradesPage({
         </main>
     )
 }
-

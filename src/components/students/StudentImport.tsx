@@ -250,7 +250,7 @@ export default function StudentImport({
 
                 <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
 
-                    <div>
+                    <div className="min-w-0">
                         <h2 className="text-lg font-bold text-slate-900">
                             Import Students
                         </h2>
@@ -264,7 +264,7 @@ export default function StudentImport({
                         type="button"
                         onClick={onClose}
                         disabled={loading}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                     >
                         ×
                     </button>
@@ -622,7 +622,7 @@ function Preview({
                                                         </p>
                                                     )}
 
-                                                    <p className="mt-0.5 text-sm text-slate-600">
+                                                    <p className="mt-0.5 break-words text-sm text-slate-600">
                                                         {
                                                             item.message
                                                         }

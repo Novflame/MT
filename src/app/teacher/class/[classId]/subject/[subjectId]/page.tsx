@@ -64,21 +64,21 @@ export default async function TeacherSubjectPage({
     // =========================
 
     return (
-        <main className="min-h-screen bg-gray-100 p-8">
+        <main className="min-h-screen bg-gray-100 p-4 sm:p-8">
 
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto min-w-0 max-w-6xl">
 
                 <header className="mb-8">
 
-                    <h1 className="text-3xl font-bold">
+                    <h1 className="break-words text-2xl font-bold sm:text-3xl">
                         Teaching Class
                     </h1>
 
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 break-all text-sm text-gray-500">
                         Class ID: {classId}
                     </p>
 
-                    <p className="text-sm text-gray-500">
+                    <p className="break-all text-sm text-gray-500">
                         Subject ID: {subjectId}
                     </p>
 
@@ -121,14 +121,14 @@ function ActionCard({
     return (
         <a
             href={href}
-            className="block rounded-lg border bg-white p-6 shadow-sm transition hover:shadow-md"
+            className="block min-w-0 rounded-lg border bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6"
         >
 
-            <h2 className="text-xl font-semibold">
+            <h2 className="break-words text-lg font-semibold sm:text-xl">
                 {title}
             </h2>
 
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 break-words text-sm text-gray-600">
                 {description}
             </p>
 

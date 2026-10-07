@@ -280,7 +280,7 @@ export default function ManageUserForm({
             <div className="
                 border-b
                 border-slate-200
-                p-6
+                p-4 sm:p-6
             ">
 
                 <h2 className="
@@ -296,7 +296,7 @@ export default function ManageUserForm({
 
             <div className="
                 space-y-6
-                p-6
+                p-4 sm:p-6
             ">
 
                 {/* Name */}
@@ -475,7 +475,7 @@ export default function ManageUserForm({
             <div className="
                 border-y
                 border-slate-200
-                p-6
+                p-4 sm:p-6
             ">
 
                 <h2 className="
@@ -594,7 +594,7 @@ export default function ManageUserForm({
             {/* Messages */}
             {/* ================================= */}
 
-            <div className="space-y-3 px-6">
+            <div className="space-y-3 px-4 sm:px-6">
 
                 {error && (
 
@@ -640,12 +640,12 @@ export default function ManageUserForm({
 
             <div className="
                 mt-6
-                flex
-                items-center
-                justify-between
+                flex flex-col-reverse
+                items-stretch gap-3 sm:flex-row
+                sm:items-center sm:justify-between
                 border-t
                 border-slate-200
-                p-6
+                p-4 sm:p-6
             ">
 
                 <button
@@ -653,6 +653,7 @@ export default function ManageUserForm({
                     onClick={handleDelete}
                     disabled={disabled}
                     className="
+                        w-full sm:w-auto
                         rounded-lg
                         border
                         border-red-200
@@ -678,6 +679,7 @@ export default function ManageUserForm({
                     onClick={handleSave}
                     disabled={disabled}
                     className="
+                        w-full sm:w-auto
                         rounded-lg
                         bg-slate-900
                         px-5
@@ -767,4 +769,3 @@ function Field({
         </div>
     )
 }
-
