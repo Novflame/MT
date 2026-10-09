@@ -26,14 +26,19 @@ type ParentMatch = {
 type Props = {
   classes: SchoolClass[];
   students: Student[];
+  academicYearName: string;
 };
 
-export default function StudentsManager({ classes, students }: Props) {
+export default function StudentsManager({ classes, students, academicYearName }: Props) {
+  const gradeOneClass = classes.find(
+    (schoolClass) => schoolClass.gradeLevel === 1 && schoolClass.name.trim().toLowerCase() === "ola",
+  );
   // =========================
   // Student form
   // =========================
-const [showImport, setShowImport] =
-    useState(false)
+const [showImport, setShowImport] = useState(false);
+  const [importDefaultClassName, setImportDefaultClassName] = useState<string | undefined>(undefined);
+  const [gradeOneAdmission, setGradeOneAdmission] = useState(false);
   const [admissionNumber, setAdmissionNumber] = useState("");
 
   const [firstName, setFirstName] = useState("");
@@ -350,6 +355,14 @@ const [showImport, setShowImport] =
     setShowParentChoice(false);
 
     setShowForm(false);
+    setGradeOneAdmission(false);
+  }
+
+  function openCreateForm(defaultClassId = "", isGradeOneAdmission = false) {
+    resetForm();
+    setClassId(defaultClassId);
+    setGradeOneAdmission(isGradeOneAdmission);
+    setShowForm(true);
   }
 
   // =========================
@@ -511,18 +524,17 @@ const [showImport, setShowImport] =
           <h2 className="text-xl font-bold text-slate-900">Students</h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            {students.length} {students.length === 1 ? "student" : "students"}{" "}
-            registered
+            {students.length} {students.length === 1 ? "student" : "students"} registered
+          </p>
+          <p className="mt-2 inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            Active academic year: {academicYearName}
           </p>
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <button
             type="button"
-            onClick={() => {
-              resetForm();
-              setShowForm(true);
-            }}
+            onClick={() => openCreateForm()}
             className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
           >
             + Add Student
@@ -530,10 +542,32 @@ const [showImport, setShowImport] =
 
           <button
             type="button"
-            onClick={()=> setShowImport(true)}
+            onClick={() => openCreateForm(gradeOneClass?.id ?? "", true)}
+            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto"
+          >
+            New Grade 1 Admission
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setImportDefaultClassName(undefined);
+              setShowImport(true);
+            }}
             className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
           >
             Import CSV
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setImportDefaultClassName(gradeOneClass?.name ?? "ola");
+              setShowImport(true);
+            }}
+            className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 sm:w-auto"
+          >
+            Grade 1 CSV
           </button>
         </div>
       </div>
@@ -776,7 +810,7 @@ const [showImport, setShowImport] =
             <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  {editingId ? "Edit Student" : "Add Student"}
+                  {editingId ? "Edit Student" : gradeOneAdmission ? "New Grade 1 Admission" : "Add Student"}
                 </h2>
 
                 <p className="mt-0.5 text-sm text-slate-500">
@@ -1126,16 +1160,15 @@ const [showImport, setShowImport] =
 
 
       {showImport && (
-    <StudentImport
-        onClose={() =>
-            setShowImport(false)
-        }
-        onImported={() => {
-            setShowImport(false)
-            window.location.reload()
-        }}
-    />
-)}
+        <StudentImport
+          defaultClassName={importDefaultClassName}
+          onClose={() => setShowImport(false)}
+          onImported={() => {
+            setShowImport(false);
+            window.location.reload();
+          }}
+        />
+      )}
     </section>
   );
 }

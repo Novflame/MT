@@ -286,18 +286,16 @@ export async function getCertificate(
 
     return {
 
-        school: {
+       school: {
+    id:
+        school.id,
 
-            id:
-                school.id,
+    name:
+        school.name,
 
-            name:
-                school.name,
-
-            logo:
-                null,
-
-        },
+    logo:
+        school.logo ?? null,
+},
 
 
         certificate: {

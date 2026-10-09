@@ -278,6 +278,10 @@ export async function POST(
                 formData.get("mode"),
             ) || "validate"
 
+        // Optional default used by the dedicated Grade 1 CSV workflow.
+        // A non-empty className in the CSV still takes precedence.
+        const defaultClassName = clean(formData.get("defaultClassName"))
+
 
         if (
             mode !== "validate" &&
@@ -621,9 +625,7 @@ export async function POST(
                     ),
 
                 className:
-                    clean(
-                        csvRow.className,
-                    ),
+                    clean(csvRow.className) || defaultClassName,
 
                 notes:
                     clean(
@@ -877,7 +879,7 @@ export async function POST(
                 invalidRows:
                     invalidRows.length,
 
-                valid: validRows.map(
+                validStudents: validRows.map(
                     (row) => ({
                         row:
                             row.rowNumber,
@@ -907,19 +909,12 @@ export async function POST(
                     }),
                 ),
 
-                errors:
-                    invalidRows.map(
-                        (row) => ({
-                            row:
-                                row.rowNumber,
-
-                            errors:
-                                row.errors,
-
-                            data:
-                                row.data,
-                        }),
-                    ),
+                errors: invalidRows.flatMap(
+                    (row) => row.errors.map((message) => ({
+                        row: row.rowNumber,
+                        message,
+                    })),
+                ),
             })
         }
 

@@ -482,6 +482,51 @@ export const resultCertificates = sqliteTable(
         ),
     ],
 )    
+export const schoolCertificates = sqliteTable(
+    "school_certificates",
+    {
+        id: text("id").primaryKey(),
+
+        enrollmentId: text("enrollment_id")
+            .notNull()
+            .references(() => studentEnrollments.id),
+
+        academicYearId: text("academic_year_id")
+            .notNull()
+            .references(() => academicYears.id),
+
+        certificateType: text("certificate_type", {
+    enum: [
+        "MID_TERM",
+        "SCHOOL_COMPLETION",
+        "APPRECIATION_ACHIEVEMENT",
+    ],
+}).notNull(),
+
+        issuedAt: text("issued_at")
+            .notNull()
+            .$defaultFn(() => new Date().toISOString()),
+
+        issuedByUserId: text("issued_by_user_id").notNull(),
+
+        notes: text("notes"),
+
+        createdAt: text("created_at")
+            .notNull()
+            .$defaultFn(() => new Date().toISOString()),
+
+        updatedAt: text("updated_at")
+            .notNull()
+            .$defaultFn(() => new Date().toISOString()),
+    },
+    (table) => [
+        unique("school_certificate_enrollment_year_type_unique").on(
+            table.enrollmentId,
+            table.academicYearId,
+            table.certificateType,
+        ),
+    ],
+)
 export const studentUsers = sqliteTable("student_users", {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().unique(),

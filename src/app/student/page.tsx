@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { requireSession } from "@/auth/session";
 import { getSchoolDB, getActiveAcademicYear } from "@/db";
-import { getStudentFullName } from "@/lib/student-name";export default async function StudentPortal() {
+import { getStudentFullName } from "@/lib/student-name";
+export default async function StudentPortal() {
   const session = await requireSession();
   if (session.user.schoolRole !== "student") redirect("/");
   const db = await getSchoolDB();

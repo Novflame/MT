@@ -132,7 +132,7 @@ export async function calculateResult(
 
                 eq(
                     exams.type,
-                    "final",
+                    "FINAL",
                 ),
             ),
         })
@@ -317,3 +317,4 @@ export async function calculateResult(
         issues,
     }
 }
+

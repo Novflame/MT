@@ -8,6 +8,8 @@ import {
   subjects,
 } from "@/db/schema";
 
+import { getStudentFullName } from "@/lib/student-name";
+
 /*
 |--------------------------------------------------------------------------
 | Database Types
@@ -31,7 +33,23 @@ type Subject =
 
 type Student = {
   id: string;
-  name: string;
+  admissionNumber: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: string;
+  nationality: string;
+  nationalId: string | null;
+  photo: string | null;
+  phone: string;
+  email: string | null;
+  address: string;
+  city: string;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type PromotionSystemResult =
@@ -50,12 +68,6 @@ type FinalDecision =
   | "retain"
   | "graduate";
 
-/*
-|--------------------------------------------------------------------------
-| Incomplete Issues
-|--------------------------------------------------------------------------
-*/
-
 type PromotionIncompleteReason =
   | "missing_exam"
   | "missing_grade";
@@ -65,13 +77,6 @@ type PromotionIncompleteIssue = {
   examId: string | null;
   reason: PromotionIncompleteReason;
 };
-
-/*
-|--------------------------------------------------------------------------
-| Blocking Final Result Issue
-|--------------------------------------------------------------------------
-*/
-
 type FinalResultIssue = {
   studentId: string;
   studentName: string;
@@ -84,33 +89,18 @@ type FinalResultIssue = {
   subjectName: string;
 
   examId: string | null;
-
   reason:
     | "missing_exam"
     | "missing_grade";
 
   message: string;
 };
-
-/*
-|--------------------------------------------------------------------------
-| Core Failure
-|--------------------------------------------------------------------------
-*/
-
 type CoreSubjectFailure = {
   subjectId: string;
   score: number;
   maxScore: number;
   percentage: number;
 };
-
-/*
-|--------------------------------------------------------------------------
-| Promotion Calculation
-|--------------------------------------------------------------------------
-*/
-
 type PromotionCalculation = {
   studentId: string;
   academicYearId: string;
@@ -133,13 +123,6 @@ type PromotionCalculation = {
 
   incompleteIssues: PromotionIncompleteIssue[];
 };
-
-/*
-|--------------------------------------------------------------------------
-| Administrative Decision
-|--------------------------------------------------------------------------
-*/
-
 type PromotionDecision = {
   id: string;
 
@@ -159,13 +142,6 @@ type PromotionDecision = {
 
   createdAt: string;
 };
-
-/*
-|--------------------------------------------------------------------------
-| Promotion Row
-|--------------------------------------------------------------------------
-*/
-
 type PromotionRow = {
   student: Student;
 
@@ -177,13 +153,6 @@ type PromotionRow = {
 
   decision: PromotionDecision | null;
 };
-
-/*
-|--------------------------------------------------------------------------
-| API Response
-|--------------------------------------------------------------------------
-*/
-
 type FinalResultsCheckResponse = {
   success: false;
   status: "final_results_incomplete";
@@ -243,6 +212,17 @@ export default function PromotionManager({
   classes,
   subjects,
 }: Props) {
+
+
+  const highestGradeLevel =
+    classes.length > 0
+        ? Math.max(
+              ...classes.map(
+                  (schoolClass) =>
+                      schoolClass.gradeLevel,
+              ),
+          )
+        : null
   /*
   |--------------------------------------------------------------------------
   | Active Academic Year
@@ -259,6 +239,7 @@ export default function PromotionManager({
   | State
   |--------------------------------------------------------------------------
   */
+ const [noFinalExams, setNoFinalExams] = useState(false);
 
   const [rows, setRows] =
     useState<PromotionRow[]>([]);
@@ -275,7 +256,7 @@ export default function PromotionManager({
   const [closing, setClosing] =
     useState(false);
 
- 
+
   const [error, setError] =
     useState("");
 
@@ -290,6 +271,9 @@ export default function PromotionManager({
   const [reviewRow, setReviewRow] =
     useState<PromotionRow | null>(null);
 
+   const [finalizingDecisions, setFinalizingDecisions] =
+  useState(false);
+
      const [promotionReviewed, setPromotionReviewed] =
     useState(false);
 
@@ -298,6 +282,7 @@ export default function PromotionManager({
   const [finalDecision, setFinalDecision] =
     useState<FinalDecision>("promote");
 
+  
   const [toClassId, setToClassId] =
     useState("");
 
@@ -415,6 +400,40 @@ export default function PromotionManager({
 
       const data =
         await response.json();
+
+        if (
+  response.status === 409 &&
+  data?.status === "no_final_exams"
+) {
+  setRows([]);
+  setPromotionReviewed(false);
+  setSelectedClassId(null);
+  setFinalResultIssues([]);
+  setFinalResultsOverlayOpen(false);
+  setNoFinalExams(true);
+  setError("");
+  setSuccess("");
+  return;
+}
+
+
+        if (
+  response.status === 409 &&
+  data?.status === "no_final_exams"
+) {
+  setRows([]);
+  setPromotionReviewed(false);
+  setSelectedClassId(null);
+
+  setFinalResultIssues([]);
+  setFinalResultsOverlayOpen(false);
+
+  setError("");
+  setSuccess("");
+
+  return;
+}
+
 
       if (
         response.status === 409 &&
@@ -684,19 +703,26 @@ export default function PromotionManager({
   |--------------------------------------------------------------------------
   */
 
-  const decisionsReady =
-    resultsReady &&
-    promotionReviewed &&
-    rows.every((row) => {
-      const decision =
-        row.decision?.finalDecision;
+const decisionsReady =
+  resultsReady &&
+  promotionReviewed &&
+  rows.length > 0 &&
+  rows.every((row) => {
+    const decision = row.decision;
 
-      return (
-        decision === "promote" ||
-        decision === "retain" ||
-        decision === "graduate"
-      );
-    });
+    return (
+      (decision?.finalDecision === "promote" ||
+        decision?.finalDecision === "retain" ||
+        decision?.finalDecision === "graduate") &&
+      Boolean(decision.decidedByUserId)
+    );
+  });
+
+const administrativeDecisionsCompleted = rows.filter(
+  (row) => Boolean(row.decision?.decidedByUserId),
+).length;
+
+
 
   /*
   |--------------------------------------------------------------------------
@@ -879,7 +905,9 @@ function openReview(row: PromotionRow) {
       if (issue.reason === "missing_exam") {
         message =
           "Student = " +
-          row.student.name +
+            getStudentFullName(row.student) +
+
+
           ", Class = " +
           row.currentClass.name +
           ", Subject = " +
@@ -888,7 +916,7 @@ function openReview(row: PromotionRow) {
       } else {
         message =
           "Student = " +
-          row.student.name +
+            getStudentFullName(row.student) +
           ", Class = " +
           row.currentClass.name +
           ", Subject = " +
@@ -898,7 +926,8 @@ function openReview(row: PromotionRow) {
 
       issues.push({
         studentId: row.student.id,
-        studentName: row.student.name,
+        studentName:
+  getStudentFullName(row.student),
         enrollmentId: row.calculation.enrollmentId,
         classId: row.currentClass.id,
         className: row.currentClass.name,
@@ -1119,9 +1148,11 @@ function openReview(row: PromotionRow) {
         ),
       );
 
-      setSuccess(
-        `Final administrative decision saved for ${reviewRow.student.name}.`,
-      );
+    setSuccess(
+  `Final administrative decision saved for ${getStudentFullName(
+    reviewRow.student,
+  )}.`,
+);
 
       closeReview();
     } catch (error) {
@@ -1135,6 +1166,141 @@ function openReview(row: PromotionRow) {
     }
   }
 
+
+  /*
+|--------------------------------------------------------------------------
+| Complete Administrative Decisions
+|--------------------------------------------------------------------------
+|
+| The administrator may change individual students first.
+| This action then confirms all current promotion decisions in one request.
+| It does NOT change the decisions themselves.
+|--------------------------------------------------------------------------
+*/
+
+async function finalizeAdministrativeDecisions() {
+  if (!activeYear) {
+    setError("No active academic year exists.");
+    return;
+  }
+
+  if (!resultsReady) {
+    setError(
+      "Administrative decisions cannot be completed until all final results are complete.",
+    );
+    return;
+  }
+
+  if (!promotionReviewed) {
+    setError(
+      "Promotion review must be completed before administrative decisions can be completed.",
+    );
+    return;
+  }
+
+  if (rows.length === 0) {
+    setError("No promotion decisions are available.");
+    return;
+  }
+
+  setFinalizingDecisions(true);
+  setError("");
+  setSuccess("");
+
+  try {
+    const response = await fetch("/api/promotion", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        academicYearId: activeYear.id,
+        action: "finalize_decisions",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (
+      response.status === 409 &&
+      data?.status === "final_results_incomplete" &&
+      Array.isArray(data?.issues)
+    ) {
+      handleFinalResultIncomplete(
+        data as FinalResultsCheckResponse,
+      );
+
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ??
+          data?.error ??
+          "Failed to complete administrative decisions.",
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Refresh promotion rows so the UI receives the confirmed decisions.
+    |--------------------------------------------------------------------------
+    */
+
+    const refreshResponse = await fetch(
+      `/api/promotion?academicYearId=${encodeURIComponent(
+        activeYear.id,
+      )}`,
+      {
+        method: "GET",
+        cache: "no-store",
+      },
+    );
+
+    const refreshData = await refreshResponse.json();
+
+    if (
+      refreshResponse.status === 409 &&
+      refreshData?.status === "final_results_incomplete" &&
+      Array.isArray(refreshData?.issues)
+    ) {
+      handleFinalResultIncomplete(
+        refreshData as FinalResultsCheckResponse,
+      );
+
+      return;
+    }
+
+    if (!refreshResponse.ok) {
+      throw new Error(
+        refreshData?.message ??
+          refreshData?.error ??
+          "Failed to refresh administrative decisions.",
+      );
+    }
+
+    if (!Array.isArray(refreshData.results)) {
+      throw new Error(
+        "Invalid promotion response.",
+      );
+    }
+
+    setRows(refreshData.results);
+
+    setSuccess(
+      data?.message ??
+        "All administrative decisions have been confirmed. The review is complete.",
+    );
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to complete administrative decisions.",
+    );
+  } finally {
+    setFinalizingDecisions(false);
+  }
+}
   /*
   |--------------------------------------------------------------------------
   | Request Close
@@ -1385,14 +1551,15 @@ function openReview(row: PromotionRow) {
               }
             />
 
-            <StatusStep
-              number="3"
-              title="Finalize & Close"
-              complete={false}
-              active={
-                promotionReviewed
-              }
-            />
+          <StatusStep
+  number="3"
+  title="Administrative Decisions"
+  complete={decisionsReady}
+  active={
+    promotionReviewed &&
+    !decisionsReady
+  }
+/>
           </div>
         </div>
 
@@ -1413,43 +1580,85 @@ function openReview(row: PromotionRow) {
             {success}
           </div>
         )}
+{rows.length === 0 ? (
+  noFinalExams ? (
+    <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-20 text-center shadow-sm dark:border-amber-900/60 dark:bg-amber-950/20">
+      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+        <span className="text-3xl font-bold">!</span>
+      </div>
 
-        {rows.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-              ✓
-            </div>
+      <h2 className="mt-6 text-2xl font-bold text-amber-950 dark:text-amber-100">
+        No Final Exams Yet
+      </h2>
 
-            <h2 className="mt-4 font-semibold text-slate-900 dark:text-white">
-              Final Results Check Required
-            </h2>
+      <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-amber-800 dark:text-amber-200">
+        No final exam has been created for the active academic year yet.
+        Promotion review and academic year closing are blocked until a
+        Final Exam is created.
+      </p>
 
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Start by checking the final exams
-              and final results for the active
-              academic year. Promotion review
-              remains blocked until all required
-              results are complete.
-            </p>
+      <p className="mt-4 text-sm font-semibold text-amber-900 dark:text-amber-100">
+        Create the Final Exam first, then return here to check final results.
+      </p>
 
-            <button
-              type="button"
-              onClick={
-                checkFinalResults
-              }
-              disabled={
-                loading ||
-                !activeYear
-              }
-              className="mt-6 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-            >
-              {loading
-                ? "Checking..."
-                : "Check Final Results"}
-            </button>
-          </div>
-        ) : (
+      <button
+        type="button"
+        onClick={checkFinalResults}
+        disabled={loading || !activeYear}
+        className="mt-6 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+      >
+        {loading ? "Checking..." : "Check Final Results"}
+      </button>
+    </div>
+  ) : (
+    <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+        ✓
+      </div>
+
+      <h2 className="mt-4 font-semibold text-slate-900 dark:text-white">
+        Final Results Check Required
+      </h2>
+
+      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+        Start by checking the final exams
+        and final results for the active
+        academic year. Promotion review
+        remains blocked until all required
+        results are complete.
+      </p>
+
+      <button
+        type="button"
+        onClick={checkFinalResults}
+        disabled={loading || !activeYear}
+        className="mt-6 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+      >
+        {loading ? "Checking..." : "Check Final Results"}
+      </button>
+    </div>
+  )
+) : (
+
+
+
+
+
+
+
+
           <>
+
+
+
+
+
+
+
+
+
+
+
             <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <SummaryCard
                 label="Students"
@@ -1528,21 +1737,46 @@ function openReview(row: PromotionRow) {
                 </div>
               )}
 
-            {promotionReviewed &&
-              !decisionsReady && (
-                <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/60 dark:bg-blue-950/30">
-                  <h2 className="font-semibold text-blue-900 dark:text-blue-200">
-                    Promotion Review Complete
-                  </h2>
 
-                  <p className="mt-1 text-sm leading-6 text-blue-800 dark:text-blue-300">
-                    System recommendations are
-                    ready. Review each student and
-                    provide the final administrative
-                    decision before closing the year.
-                  </p>
-                </div>
-              )}
+{promotionReviewed && !decisionsReady && (
+  <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/60 dark:bg-blue-950/30">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h2 className="font-semibold text-blue-900 dark:text-blue-200">
+          Administrative Decisions
+        </h2>
+
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-blue-800 dark:text-blue-300">
+          System recommendations are ready. You may review and
+          change any individual student if necessary. Students
+          you do not change will keep the system recommendation.
+        </p>
+
+        <p className="mt-3 text-sm font-semibold text-blue-900 dark:text-blue-200">
+          {administrativeDecisionsCompleted} /{" "}
+          {rows.length} decisions confirmed
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={finalizeAdministrativeDecisions}
+        disabled={
+          finalizingDecisions ||
+          loading ||
+          reviewingPromotion ||
+          closing
+        }
+        className="shrink-0 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {finalizingDecisions
+          ? "Saving All Decisions..."
+          : "Save All Decisions & Complete Review"}
+      </button>
+    </div>
+  </div>
+)}
+              
 
             {decisionsReady && (
               <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-5 dark:border-green-900/60 dark:bg-green-950/30">
@@ -1684,6 +1918,7 @@ function openReview(row: PromotionRow) {
         {reviewRow && (
           <ReviewModal
             reviewRow={reviewRow}
+            highestGradeLevel={highestGradeLevel}
             finalDecision={
               finalDecision
             }
@@ -1874,6 +2109,7 @@ function openReview(row: PromotionRow) {
       {reviewRow && (
         <ReviewModal
           reviewRow={reviewRow}
+          highestGradeLevel={highestGradeLevel}
           finalDecision={
             finalDecision
           }
@@ -2113,7 +2349,7 @@ function IncompleteStudentCard({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="font-semibold text-slate-900 dark:text-white">
-            {row.student.name}
+            {getStudentFullName(row.student)}
           </h3>
 
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -2200,7 +2436,7 @@ function IncompleteStudentCard({
                         : "Status:"}
                     </span>{" "}
                     {isMissingGrade
-                      ? `${row.student.name} does not have a final result for ${subjectName}.`
+                      ? `${getStudentFullName(row.student)} does not have a final result for ${subjectName}.`
                       : `The final exam for ${subjectName} has not been created.`}
                   </p>
                 </div>
@@ -2219,7 +2455,17 @@ function IncompleteStudentCard({
 |--------------------------------------------------------------------------
 */
 
-function StudentCard({ row, getSubjectName, onReview, promotionReviewed, }: { row: PromotionRow; getSubjectName: ( subjectId: string, ) => string; onReview: () => void; promotionReviewed: boolean; }) {
+
+function StudentCard({ 
+  row,
+  getSubjectName,
+   onReview,
+  promotionReviewed,
+ }: { row: PromotionRow;
+     getSubjectName: ( subjectId: string, ) => string; 
+     onReview: () => void;
+     promotionReviewed: boolean; 
+    }) {
   const calculation =
     row.calculation;
 
@@ -2273,7 +2519,7 @@ function StudentCard({ row, getSubjectName, onReview, promotionReviewed, }: { ro
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold text-slate-900 dark:text-white">
-            {row.student.name}
+            {getStudentFullName(row.student)}
           </h3>
 
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -2500,7 +2746,6 @@ function StudentCard({ row, getSubjectName, onReview, promotionReviewed, }: { ro
     </article>
   );
 }
-
 /*
 |--------------------------------------------------------------------------
 | Result Helpers
@@ -2690,8 +2935,10 @@ function ReviewModal({
   closeReview,
   saveDecision,
   getSubjectName,
+  highestGradeLevel,
 }: {
   reviewRow: PromotionRow;
+  highestGradeLevel: number | null;
 
   finalDecision: FinalDecision;
 
@@ -2739,19 +2986,23 @@ function ReviewModal({
       <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
         <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                Administrative Review
-              </p>
+           
+<div className="min-w-0">
+  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+    Administrative Review
+  </p>
 
-              <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-white">
-                {reviewRow.student.name}
-              </h2>
+  <h2 className="mt-1 wrap-break-words text-xl font-bold text-slate-900 dark:text-white">
+    {getStudentFullName( reviewRow.student)}
+  </h2>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {reviewRow.currentClass.name}
-              </p>
-            </div>
+  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+    <span>Class: {reviewRow.currentClass.name}</span>
+    <span aria-hidden="true">•</span>
+    <span>Final Decision</span>
+  </div>
+</div>
+
 
             <button
               type="button"
@@ -2882,9 +3133,13 @@ function ReviewModal({
                 Retain
               </option>
 
-              <option value="graduate">
-                Graduate
-              </option>
+             {highestGradeLevel !== null &&
+    reviewRow.currentClass.gradeLevel ===
+        highestGradeLevel && (
+        <option value="graduate">
+            Graduate
+        </option>
+    )}
             </select>
 
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">

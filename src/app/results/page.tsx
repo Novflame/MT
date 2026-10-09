@@ -7,12 +7,10 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 
 import {
-  coreSubjects,
   exams,
-  grades,
+  
   parentStudents,
   parents,
-  studentEnrollments,
   studentUsers,
   teacherAssignments,
 } from "@/db/schema";
@@ -60,7 +58,6 @@ const resultTranslations = {
     class: "Class",
     student: "Student",
     subjects: "Subjects",
-    completed: "Completed",
 
     result: "Result",
     status: "Status",
@@ -97,7 +94,6 @@ const resultTranslations = {
     class: "الفصل",
     student: "الطالب",
     subjects: "المواد",
-    completed: "مكتملة",
 
     result: "النتيجة",
     status: "الحالة",
@@ -134,7 +130,6 @@ const resultTranslations = {
     class: "Classe",
     student: "Élève",
     subjects: "Matières",
-    completed: "Terminées",
 
     result: "Résultat",
     status: "Statut",
@@ -218,57 +213,42 @@ export default async function ResultsPage() {
 
   // ============================================================
   // Load data
+  //
+  // IMPORTANT:
+  // Final result completeness is based on actual FINAL exams
+  // for the student's class and academic year.
+  //
+  // We intentionally do NOT use coreSubjects here because an
+  // empty coreSubjects configuration must not turn every real
+  // final result into "incomplete".
   // ============================================================
 
-  const [
-    enrollments,
-    coreSubjectRows,
-    finalExams,
-    finalGrades,
-  ] = await Promise.all([
-    db.query.studentEnrollments.findMany({
-      with: {
-        student: true,
-        class: true,
-      },
-    }),
+  const [enrollments, finalExams, finalGrades] =
+    await Promise.all([
+      db.query.studentEnrollments.findMany({
+        with: {
+          student: true,
+          class: true,
+        },
+      }),
 
-    db.query.coreSubjects.findMany(),
+      db.query.exams.findMany({
+        where: eq(exams.type, "FINAL"),
+        with: {
+          subject: true,
+        },
+      }),
 
-    db.query.exams.findMany({
-      where: eq(exams.type, "FINAL"),
-      with: {
-        subject: true,
-      },
-    }),
-
-    db.query.grades.findMany({
-      with: {
-        exam: true,
-      },
-    }),
-  ]);
+      db.query.grades.findMany({
+        with: {
+          exam: true,
+        },
+      }),
+    ]);
 
   // ============================================================
-  // Lookup maps
+  // Final exams by class / academic year / subject
   // ============================================================
-
-  const coreSubjectsByClassYear = new Map<
-    string,
-    typeof coreSubjectRows
-  >();
-
-  for (const row of coreSubjectRows) {
-    const key = `${row.academicYearId}:${row.classId}`;
-
-    const existing = coreSubjectsByClassYear.get(key);
-
-    if (existing) {
-      existing.push(row);
-    } else {
-      coreSubjectsByClassYear.set(key, [row]);
-    }
-  }
 
   const finalExamsByClassYearSubject = new Map<
     string,
@@ -276,7 +256,8 @@ export default async function ResultsPage() {
   >();
 
   for (const exam of finalExams) {
-    const key = `${exam.academicYearId}:${exam.classId}:${exam.subjectId}`;
+    const key =
+      `${exam.academicYearId}:${exam.classId}:${exam.subjectId}`;
 
     const existing =
       finalExamsByClassYearSubject.get(key);
@@ -288,11 +269,17 @@ export default async function ResultsPage() {
     }
   }
 
+  // Use the latest final exam when more than one exists for
+  // the same academic year / class / subject.
   for (const examsForSubject of finalExamsByClassYearSubject.values()) {
     examsForSubject.sort((a, b) =>
       b.examDate.localeCompare(a.examDate),
     );
   }
+
+  // ============================================================
+  // Final grades by enrollment
+  // ============================================================
 
   const gradesByEnrollment = new Map<
     string,
@@ -354,41 +341,67 @@ export default async function ResultsPage() {
   // ============================================================
 
   const results = visibleEnrollments.map((enrollment) => {
-    const classYearKey =
-      `${enrollment.academicYearId}:${enrollment.classId}`;
-
-    let requiredSubjects =
-      coreSubjectsByClassYear.get(classYearKey) ?? [];
-
-    if (teacherAssignmentKeys !== null) {
-      requiredSubjects = requiredSubjects.filter(
-        (requiredSubject) =>
-          teacherAssignmentKeys!.has(
-            `${enrollment.academicYearId}:${enrollment.classId}:${requiredSubject.subjectId}`,
-          ),
-      );
-    }
-
     const studentGrades =
       gradesByEnrollment.get(enrollment.id) ?? [];
+
+    /*
+     * Find every actual FINAL exam for this student's
+     * academic year and class.
+     *
+     * This replaces the previous coreSubjects-based logic.
+     */
+    const requiredExamEntries = Array.from(
+      finalExamsByClassYearSubject.entries(),
+    )
+      .filter(([key, examsForSubject]) => {
+        if (examsForSubject.length === 0) {
+          return false;
+        }
+
+        const [
+          academicYearId,
+          classId,
+        ] = key.split(":");
+
+        if (
+          academicYearId !== enrollment.academicYearId ||
+          classId !== enrollment.classId
+        ) {
+          return false;
+        }
+
+        /*
+         * Teachers only see subjects actually assigned to them.
+         */
+        if (teacherAssignmentKeys !== null) {
+          const subjectId =
+            key.split(":")[2];
+
+          return teacherAssignmentKeys.has(
+            `${enrollment.academicYearId}:${enrollment.classId}:${subjectId}`,
+          );
+        }
+
+        return true;
+      })
+      .map(([key, examsForSubject]) => ({
+        key,
+        exam: examsForSubject[0],
+      }))
+      .filter(
+        (
+          entry,
+        ): entry is {
+          key: string;
+          exam: (typeof finalExams)[number];
+        } => Boolean(entry.exam),
+      );
 
     let earned = 0;
     let possible = 0;
     let completedSubjects = 0;
 
-    for (const requiredSubject of requiredSubjects) {
-      const examKey =
-        `${enrollment.academicYearId}:${enrollment.classId}:${requiredSubject.subjectId}`;
-
-      const subjectExams =
-        finalExamsByClassYearSubject.get(examKey) ?? [];
-
-      const exam = subjectExams[0];
-
-      if (!exam) {
-        continue;
-      }
-
+    for (const { exam } of requiredExamEntries) {
       const grade = studentGrades.find(
         (item) => item.examId === exam.id,
       );
@@ -402,13 +415,19 @@ export default async function ResultsPage() {
       possible += exam.maxScore;
     }
 
-    const totalSubjects = requiredSubjects.length;
+    const totalSubjects =
+      requiredExamEntries.length;
 
     const percentage =
       possible > 0
         ? Number(((earned / possible) * 100).toFixed(1))
         : 0;
 
+    /*
+     * A student is complete only when every actual FINAL
+     * exam required for this visible class/subject scope
+     * has a corresponding grade.
+     */
     const complete =
       totalSubjects > 0 &&
       completedSubjects === totalSubjects;
@@ -549,9 +568,11 @@ export default async function ResultsPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <span>{t.school}</span>
+
                   <span className="text-slate-300 dark:text-slate-600">
                     /
                   </span>
+
                   <span>{t.results}</span>
                 </div>
 
@@ -677,6 +698,7 @@ export default async function ResultsPage() {
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             {t.students}
                           </p>
+
                           <p className="mt-0.5 font-bold text-slate-900 dark:text-white">
                             {classGroup.results.length}
                           </p>
@@ -686,6 +708,7 @@ export default async function ResultsPage() {
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
                             {t.complete}
                           </p>
+
                           <p className="mt-0.5 font-bold text-emerald-700 dark:text-emerald-400">
                             {classCompleted}
                           </p>
@@ -695,6 +718,7 @@ export default async function ResultsPage() {
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">
                             {t.incomplete}
                           </p>
+
                           <p className="mt-0.5 font-bold text-red-700 dark:text-red-400">
                             {classIncomplete}
                           </p>

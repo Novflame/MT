@@ -56,13 +56,13 @@ export default async function StudentProfilePage() {
         )
     }
 
-    const currentEnrollment =
-        student.enrollments.find(
-            (enrollment) =>
-                enrollment.academicYearId === academicYear.id,
-        ) ?? student.enrollments[0] ?? null
+    // const currentEnrollment =
+    //     student.enrollments.find(
+    //         (enrollment) =>
+    //             enrollment.academicYearId === academicYear.id,
+    //     ) ?? student.enrollments[0] ?? null  never used
 
-    const parents = student.parentStudents.map((relation) => relation.parent)
+    // const parents = student.parentStudents.map((relation) => relation.parent) never used
 
     return (
         <main className="min-h-dvh bg-slate-100 px-4 py-6 dark:bg-slate-950 sm:px-6 lg:px-8">

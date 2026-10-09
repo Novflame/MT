@@ -29,11 +29,13 @@ type ValidationResult = {
 type Props = {
     onClose: () => void
     onImported: () => void
+    defaultClassName?: string
 }
 
 export default function StudentImport({
     onClose,
     onImported,
+    defaultClassName,
 }: Props) {
     const fileInputRef =
         useRef<HTMLInputElement>(null)
@@ -111,6 +113,9 @@ export default function StudentImport({
                 "mode",
                 "validate",
             )
+            if (defaultClassName) {
+                formData.append("defaultClassName", defaultClassName)
+            }
 
             const response =
                 await fetch(
@@ -178,6 +183,9 @@ export default function StudentImport({
                 "mode",
                 "import",
             )
+            if (defaultClassName) {
+                formData.append("defaultClassName", defaultClassName)
+            }
 
             const response =
                 await fetch(
@@ -252,11 +260,13 @@ export default function StudentImport({
 
                     <div className="min-w-0">
                         <h2 className="text-lg font-bold text-slate-900">
-                            Import Students
+                            {defaultClassName ? "Grade 1 Student Admission — CSV" : "Import Students"}
                         </h2>
 
                         <p className="mt-0.5 text-sm text-slate-500">
-                            Import multiple students from a CSV file.
+                            {defaultClassName
+                                ? `Imports into ${defaultClassName} by default when className is blank. A className supplied in the CSV remains editable and is respected.`
+                                : "Import multiple students from a CSV file."}
                         </p>
                     </div>
 

@@ -687,7 +687,7 @@ export async function calculatePromotion(
                 ),
                 eq(
                     exams.type,
-                    "final",
+                    "FINAL",
                 ),
             ),
         })

@@ -24,6 +24,8 @@ import {
   X,
   UserCircle,
   FileBarChart,
+  History,
+  Award,
 } from "lucide-react";
 
 import { authClient } from "@/auth/auth-client";
@@ -214,6 +216,13 @@ export default function Sidebar({
           href: "/academic-year",
           icon: CalendarDays,
         },
+        ...(["principal", "deputy"].includes(schoolRole)
+          ? [{
+              label: "School History",
+              href: "/school-history",
+              icon: History,
+            }]
+          : []),
       ],
     },
 
@@ -237,6 +246,20 @@ export default function Sidebar({
           href: "/parent-students",
           icon: UserRound,
         },
+        ...(!["student", "parent"].includes(schoolRole)
+          ? [{
+              label: "Student History",
+              href: "/student-history",
+              icon: History,
+            }]
+          : []),
+        ...(["principal", "deputy"].includes(schoolRole)
+          ? [{
+              label: "Graduates",
+              href: "/graduates",
+              icon: Award,
+            }]
+          : []),
       ],
     },
 

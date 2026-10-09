@@ -6,9 +6,11 @@ import { useState } from "react";
 
 import { useLanguage } from "@/components/providers/LanguageProvider";
 
+import systemLogo from "@/logo/logo.png";
+
 import "./CertificateClient.css";
 
-type CertificateData = {
+export type CertificateData = {
   school: {
     id: number;
     name: string;
@@ -96,6 +98,10 @@ export default function CertificateClient({
 
   const t = getTranslations(locale);
 
+  function toggleFlip() {
+    setFlipped((value) => !value);
+  }
+
   function handlePrint() {
     window.print();
   }
@@ -106,7 +112,7 @@ export default function CertificateClient({
       dir={direction}
     >
       {/* =====================================================
-          TOP BAR
+          TOOLBAR
       ===================================================== */}
 
       <header className="certificate-toolbar">
@@ -128,9 +134,7 @@ export default function CertificateClient({
           <div className="certificate-actions">
             <button
               type="button"
-              onClick={() =>
-                setFlipped((value) => !value)
-              }
+              onClick={toggleFlip}
               className="flip-button"
             >
               {flipped
@@ -154,11 +158,34 @@ export default function CertificateClient({
       ===================================================== */}
 
       <section className="certificate-stage desktop-certificate">
-        <CertificateFront
-          certificate={certificate}
-          t={t}
-          locale={locale}
-        />
+        <div className="certificate-flip-container">
+          <div
+            className={[
+              "certificate-flip",
+              flipped ? "is-back" : "",
+            ].join(" ")}
+          >
+            {/* FRONT */}
+
+            <div className="certificate-flip-face">
+              <CertificateFront
+                certificate={certificate}
+                t={t}
+                locale={locale}
+              />
+            </div>
+
+            {/* BACK */}
+
+            <div className="certificate-flip-face back">
+              <CertificateBack
+                certificate={certificate}
+                t={t}
+                locale={locale}
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* =====================================================
@@ -171,30 +198,34 @@ export default function CertificateClient({
         </div>
 
         <div
-          className={[
-            "certificate-flip-container",
-            flipped ? "is-flipped" : "",
-          ].join(" ")}
-          onClick={() =>
-            setFlipped((value) => !value)
-          }
+          className="certificate-flip-container"
+          onClick={toggleFlip}
           role="button"
           tabIndex={0}
+          aria-label={
+            flipped
+              ? t.showFront
+              : t.flipCertificate
+          }
           onKeyDown={(event) => {
             if (
               event.key === "Enter" ||
               event.key === " "
             ) {
               event.preventDefault();
-
-              setFlipped((value) => !value);
+              toggleFlip();
             }
           }}
         >
-          <div className="certificate-flip-inner">
+          <div
+            className={[
+              "certificate-flip",
+              flipped ? "is-back" : "",
+            ].join(" ")}
+          >
             {/* FRONT */}
 
-            <div className="certificate-face certificate-front">
+            <div className="certificate-flip-face">
               <CertificateFront
                 certificate={certificate}
                 t={t}
@@ -204,7 +235,7 @@ export default function CertificateClient({
 
             {/* BACK */}
 
-            <div className="certificate-face certificate-back">
+            <div className="certificate-flip-face back">
               <CertificateBack
                 certificate={certificate}
                 t={t}
@@ -271,27 +302,34 @@ function CertificateFront({
   locale: "en" | "ar" | "fr";
 }) {
   return (
-    <article id="certificate" className="certificate-paper">
+    <article
+      id="certificate"
+      className="certificate-paper"
+    >
       <div className="certificate-border-outer" />
       <div className="certificate-border-inner" />
 
-      {/* Watermark */}
+      {/* =====================================================
+          SYSTEM WATERMARK
+          Independent from school logo
+      ===================================================== */}
 
       <div className="certificate-watermark">
-        {certificate.school.logo ? (
+        <div className="certificate-watermark-inner">
           <Image
-            src={certificate.school.logo}
+            src={systemLogo}
             alt=""
             width={260}
             height={260}
+            priority
           />
-        ) : (
-          <span>{certificate.school.name}</span>
-        )}
+        </div>
       </div>
 
       <div className="certificate-content">
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <header className="certificate-header">
           <div className="certificate-logo">
@@ -312,124 +350,208 @@ function CertificateFront({
           </div>
 
           <div className="certificate-heading">
-            <div className="school-name">
+            <div className="certificate-school-name">
               {certificate.school.name}
             </div>
 
-            <h2>{t.academicCertificate}</h2>
+            <h2 className="certificate-title">
+              {t.academicCertificate}
+            </h2>
 
-            <p>
-              {t.academicYear}{" "}
-              {certificate.certificate.academicYear.name}
+            <p className="certificate-school-tagline">
+              {t.schoolTagline}
             </p>
           </div>
         </header>
 
-        {/* STUDENT INFORMATION */}
+        {/* =================================================
+            STUDENT
+        ================================================= */}
 
-        <div className="student-grid">
-          <CertificateInfo
-            label={t.student}
-            value={certificate.student.name}
-          />
+        <section className="certificate-student-section">
+          <div className="certificate-label">
+            {t.certifyThat}
+          </div>
 
-          <CertificateInfo
-            label={t.class}
-            value={certificate.class.name}
-          />
+          <div className="certificate-student-name">
+            {certificate.student.name}
+          </div>
 
-          <CertificateInfo
-            label={t.grade}
-            value={String(
+          <p className="certificate-award-statement">
+            {t.awardStatement(
               certificate.class.gradeLevel,
+              certificate.school.name,
+              certificate.certificate.academicYear.name,
             )}
-          />
+          </p>
 
-          <CertificateInfo
-            label={t.issueDate}
-            value={formatDate(
-              certificate.certificate.issueDate,
-              locale,
-            )}
-          />
+          <div className="certificate-class-row">
+            <div className="certificate-class-item">
+              <span className="certificate-label">
+                {t.class}
+              </span>
+
+              <strong className="certificate-class-value">
+                {certificate.class.name}
+              </strong>
+            </div>
+
+            <div className="certificate-class-item">
+              <span className="certificate-label">
+                {t.grade}
+              </span>
+
+              <strong className="certificate-class-value">
+                {certificate.class.gradeLevel}
+              </strong>
+            </div>
+          </div>
+        </section>
+
+        {/* =================================================
+            META
+        ================================================= */}
+
+        <div className="certificate-meta">
+          <div className="certificate-meta-item">
+            <span className="certificate-label">
+              {t.issueDate}
+            </span>
+
+            <strong className="certificate-meta-value">
+              {formatDate(
+                certificate.certificate.issueDate,
+                locale,
+              )}
+            </strong>
+          </div>
+
+          <div className="certificate-meta-item">
+            <span className="certificate-label">
+              {t.academicYear}
+            </span>
+
+            <strong className="certificate-meta-value">
+              {
+                certificate.certificate.academicYear
+                  .name
+              }
+            </strong>
+          </div>
         </div>
 
-        {/* RESULTS */}
+        {/* =================================================
+            SUBJECT RESULTS
+        ================================================= */}
 
-        <div className="results-table">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>{t.subject}</th>
-                <th>{t.score}</th>
-                <th>{t.maximum}</th>
-                <th>%</th>
-              </tr>
-            </thead>
+        <section className="certificate-subjects">
+          <h3 className="certificate-section-title">
+            {t.academicPerformance}
+          </h3>
 
-            <tbody>
-              {certificate.result.subjects.map(
-                (subject, index) => (
-                  <tr key={subject.examId}>
-                    <td>{index + 1}</td>
+          <div className="certificate-table-wrapper">
+            <table className="certificate-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{t.subject}</th>
+                  <th>{t.score}</th>
+                  <th>{t.maximum}</th>
+                  <th>{t.percentage}</th>
+                </tr>
+              </thead>
 
-                    <td className="subject-name">
-                      {subject.subjectName}
-                    </td>
+              <tbody>
+                {certificate.result.subjects.map(
+                  (subject, index) => (
+                    <tr key={subject.examId}>
+                      <td>{index + 1}</td>
 
-                    <td>{subject.score}</td>
+                      <td>
+                        {subject.subjectName}
+                      </td>
 
-                    <td>{subject.maxScore}</td>
+                      <td>{subject.score}</td>
 
-                    <td>
-                      {subject.percentage}%
+                      <td>{subject.maxScore}</td>
+
+                      <td>
+                        {subject.percentage}%
+                      </td>
+                    </tr>
+                  ),
+                )}
+
+                {certificate.result.subjects.length ===
+                  0 && (
+                  <tr>
+                    <td colSpan={5}>
+                      {t.noSubjectResults}
                     </td>
                   </tr>
-                ),
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* =================================================
+            RESULT SUMMARY
+        ================================================= */}
+
+        <section className="certificate-result-summary">
+          <div className="certificate-result-card">
+            <span>{t.total}</span>
+
+            <strong>
+              {certificate.result.totalScore}
+              {" / "}
+              {certificate.result.totalMaxScore}
+            </strong>
+          </div>
+
+          <div className="certificate-result-card">
+            <span>{t.percentage}</span>
+
+            <strong>
+              {certificate.result.percentage}%
+            </strong>
+          </div>
+
+          <div className="certificate-result-card">
+            <span>{t.result}</span>
+
+            <strong
+              className={
+                certificate.result.status ===
+                "complete"
+                  ? "result-complete"
+                  : "result-incomplete"
+              }
+            >
+              {getResultStatus(
+                certificate.result.status,
+                locale,
               )}
+            </strong>
+          </div>
+        </section>
 
-              {certificate.result.subjects.length ===
-                0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="empty-results"
-                  >
-                    {t.noSubjectResults}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* =================================================
+            NOTES
+        ================================================= */}
 
-        {/* SUMMARY */}
+        {certificate.notes && (
+          <div className="certificate-notes">
+            <span>{certificate.notes}</span>
+          </div>
+        )}
 
-        <div className="result-summary">
-          <ResultBox
-            label={t.total}
-            value={`${certificate.result.totalScore} / ${certificate.result.totalMaxScore}`}
-          />
+        {/* =================================================
+            SIGNATURES
+        ================================================= */}
 
-          <ResultBox
-            label={t.percentage}
-            value={`${certificate.result.percentage}%`}
-          />
-
-          <ResultBox
-            label={t.result}
-            value={getResultStatus(
-              certificate.result.status,
-              locale,
-            )}
-            status={certificate.result.status}
-          />
-        </div>
-
-        {/* FOOTER */}
-
-        <div className="certificate-footer">
+        <section className="certificate-signatures">
           <Signature
             title={t.headOfClass}
             name={
@@ -438,23 +560,19 @@ function CertificateFront({
             }
           />
 
-          <div className="certificate-note">
-            <span>{t.officialAcademicRecord}</span>
-
-            {certificate.notes && (
-              <small>
-                {certificate.notes}
-              </small>
-            )}
-          </div>
-
           <Signature
             title={t.principal}
             name={
               certificate.signatures.principal.name
             }
           />
-        </div>
+        </section>
+
+        <footer className="certificate-footer">
+          <span>
+            {t.officialAcademicRecord}
+          </span>
+        </footer>
       </div>
     </article>
   );
@@ -474,170 +592,216 @@ function CertificateBack({
   locale: "en" | "ar" | "fr";
 }) {
   return (
-    <article className="certificate-paper certificate-back-paper">
+    <article className="certificate-paper">
       <div className="certificate-border-outer" />
       <div className="certificate-border-inner" />
 
-      <div className="back-content">
-        {/* HEADER */}
+      <div className="certificate-back">
+        <div className="certificate-back-content">
+          {/* =================================================
+              BACK HEADER
+          ================================================= */}
 
-        <div className="back-header">
-          <div className="back-logo">
-            {certificate.school.logo ? (
-              <Image
-                src={certificate.school.logo}
-                alt=""
-                width={70}
-                height={70}
-              />
-            ) : (
-              <span>
-                {getInitials(
-                  certificate.school.name,
-                )}
-              </span>
-            )}
-          </div>
-
-          <div>
-            <div className="school-name">
-              {certificate.school.name}
+          <header className="certificate-back-header">
+            <div className="certificate-logo">
+              {certificate.school.logo ? (
+                <Image
+                  src={certificate.school.logo}
+                  alt={certificate.school.name}
+                  width={70}
+                  height={70}
+                />
+              ) : (
+                <span>
+                  {getInitials(
+                    certificate.school.name,
+                  )}
+                </span>
+              )}
             </div>
 
-            <h2>{t.academicRecord}</h2>
-
-            <p>
-              {certificate.certificate.academicYear.name}
-            </p>
-          </div>
-        </div>
-
-        {/* STUDENT */}
-
-        <div className="back-student">
-          <span>{t.student}</span>
-
-          <strong>
-            {certificate.student.name}
-          </strong>
-        </div>
-
-        {/* SUBJECT RESULTS */}
-
-        <div className="back-results">
-          <h3>{t.academicPerformance}</h3>
-
-          {certificate.result.subjects.map(
-            (subject) => (
-              <div
-                key={subject.examId}
-                className="back-subject"
-              >
-                <span>
-                  {subject.subjectName}
-                </span>
-
-                <div className="score-bar">
-                  <div
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          subject.percentage,
-                        ),
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-                <strong>
-                  {subject.percentage}%
-                </strong>
+            <div>
+              <div className="certificate-back-school-name">
+                {certificate.school.name}
               </div>
-            ),
-          )}
 
-          {certificate.result.subjects.length ===
-            0 && (
-            <p className="back-empty">
-              {t.noSubjectResults}
+              <h2 className="certificate-back-title">
+                {t.academicRecord}
+              </h2>
+
+              <p className="certificate-school-tagline">
+                {t.schoolTagline}
+              </p>
+            </div>
+          </header>
+
+          <p className="certificate-back-motto">
+            {t.backMotto}
+          </p>
+
+          {/* =================================================
+              STUDENT
+          ================================================= */}
+
+          <section className="certificate-back-section">
+            <div className="certificate-label">
+              {t.student}
+            </div>
+
+            <div className="certificate-back-student">
+              <strong className="certificate-back-student-name">
+                {certificate.student.name}
+              </strong>
+            </div>
+          </section>
+
+          {/* =================================================
+              PERFORMANCE
+          ================================================= */}
+
+          <section className="certificate-back-section">
+            <h3 className="certificate-section-title">
+              {t.studentPerformance}
+            </h3>
+
+            <div className="certificate-performance">
+              {certificate.result.subjects.map(
+                (subject) => (
+                  <div
+                    key={subject.examId}
+                    className="certificate-performance-item"
+                  >
+                    <span className="certificate-performance-label">
+                      {subject.subjectName}
+                    </span>
+
+                    <div className="certificate-performance-track">
+                      <div
+                        className="certificate-performance-bar"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(
+                              0,
+                              subject.percentage,
+                            ),
+                          )}%`,
+                        }}
+                      />
+                    </div>
+
+                    <strong className="certificate-performance-value">
+                      {subject.percentage}%
+                    </strong>
+                  </div>
+                ),
+              )}
+
+              {certificate.result.subjects.length ===
+                0 && (
+                <p>
+                  {t.noSubjectResults}
+                </p>
+              )}
+            </div>
+          </section>
+
+          {/* =================================================
+              OVERALL RESULT
+          ================================================= */}
+
+          <section className="certificate-back-result">
+            <h3 className="certificate-back-result-heading">
+              {t.overallScore}
+            </h3>
+
+            <div className="certificate-back-result-card">
+              <span className="certificate-back-result-label">
+                {t.overallScore}
+              </span>
+
+              <strong className="certificate-back-result-value">
+                {certificate.result.totalScore}
+                {" / "}
+                {certificate.result.totalMaxScore}
+              </strong>
+            </div>
+
+            <div className="certificate-back-result-card">
+              <span className="certificate-back-result-label">
+                {t.percentage}
+              </span>
+
+              <strong className="certificate-back-result-value">
+                {certificate.result.percentage}%
+              </strong>
+            </div>
+
+            <div className="certificate-back-result-card">
+              <span className="certificate-back-result-label">
+                {t.status}
+              </span>
+
+              <strong
+                className={[
+                  "certificate-back-result-value",
+                  certificate.result.status ===
+                  "complete"
+                    ? "result-complete"
+                    : "result-incomplete",
+                ].join(" ")}
+              >
+                {getResultStatus(
+                  certificate.result.status,
+                  locale,
+                )}
+              </strong>
+            </div>
+          </section>
+
+          <p className="certificate-back-quote">
+            {t.backQuote}
+          </p>
+
+          {/* =================================================
+              BACK FOOTER
+          ================================================= */}
+
+          <footer className="certificate-back-footer">
+            <p className="certificate-back-wish">
+              {t.backWish}
             </p>
-          )}
-        </div>
 
-        {/* OVERALL */}
+            <div>
+              {t.issued}
 
-        <div className="back-overall">
-          <div>
-            <span>{t.overallScore}</span>
+              <strong>
+                {formatDate(
+                  certificate.certificate.issueDate,
+                  locale,
+                )}
+              </strong>
+            </div>
 
-            <strong>
-              {certificate.result.totalScore}
-              {" / "}
-              {certificate.result.totalMaxScore}
-            </strong>
-          </div>
+            <div>
+              {t.academicYear}
 
-          <div>
-            <span>{t.percentage}</span>
+              <strong>
+                {
+                  certificate.certificate
+                    .academicYear.name
+                }
+              </strong>
+            </div>
 
-            <strong>
-              {certificate.result.percentage}%
-            </strong>
-          </div>
+            <div>
+              {t.class}
 
-          <div>
-            <span>{t.status}</span>
-
-            <strong
-              className={
-                certificate.result.status ===
-                "complete"
-                  ? "result-complete"
-                  : "result-incomplete"
-              }
-            >
-              {getResultStatus(
-                certificate.result.status,
-                locale,
-              )}
-            </strong>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-
-        <div className="back-footer">
-          <div>
-            {t.issued}
-
-            <strong>
-              {formatDate(
-                certificate.certificate.issueDate,
-                locale,
-              )}
-            </strong>
-          </div>
-
-          <div>
-            {t.academicYear}
-
-            <strong>
-              {
-                certificate.certificate
-                  .academicYear.name
-              }
-            </strong>
-          </div>
-
-          <div>
-            {t.class}
-
-            <strong>
-              {certificate.class.name}
-            </strong>
-          </div>
+              <strong>
+                {certificate.class.name}
+              </strong>
+            </div>
+          </footer>
         </div>
       </div>
     </article>
@@ -648,50 +812,6 @@ function CertificateBack({
    SMALL COMPONENTS
 ================================================================ */
 
-function CertificateInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="certificate-info">
-      <span>{label}</span>
-
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function ResultBox({
-  label,
-  value,
-  status,
-}: {
-  label: string;
-  value: string;
-  status?: "complete" | "incomplete";
-}) {
-  return (
-    <div className="result-box">
-      <span>{label}</span>
-
-      <strong
-        className={
-          status === "complete"
-            ? "result-complete"
-            : status === "incomplete"
-              ? "result-incomplete"
-              : ""
-        }
-      >
-        {value}
-      </strong>
-    </div>
-  );
-}
-
 function Signature({
   title,
   name,
@@ -700,8 +820,8 @@ function Signature({
   name: string | null;
 }) {
   return (
-    <div className="signature">
-      <div className="signature-line" />
+    <div className="certificate-signature">
+      <div className="certificate-signature-line" />
 
       <strong>{title}</strong>
 
@@ -743,24 +863,39 @@ function getTranslations(
       academicYear: "Academic Year",
       result: "Result",
       percentage: "Percentage",
-      academicCertificate: "Academic Certificate",
+      academicCertificate:
+        "Academic Certificate",
+      certifyThat: "This is to certify that",
+      awardStatement: (
+        grade: number,
+        school: string,
+        year: string,
+      ) =>
+        `has successfully completed the academic requirements for Grade ${grade} at ${school} for the academic year ${year}.`,
       student: "Student",
       class: "Class",
       grade: "Grade",
       issueDate: "Issue Date",
       subject: "Subject",
       score: "Score",
-      maximum: "Maximum",
+      maximum: "Maximum Score",
       noSubjectResults:
         "No subject results available",
       total: "Total",
-      headOfClass: "Head of Class",
+      headOfClass: "Class Teacher",
+      schoolTagline: "Learn · Grow · Build Tomorrow",
       officialAcademicRecord:
         "Official Academic Record",
       principal: "Principal",
       academicRecord: "Academic Record",
+      backMotto: "Knowledge Today... A Brighter Tomorrow",
+      backQuote:
+        "Your hard work today builds your success tomorrow.",
+      backWish:
+        "We are proud of your achievements and wish you continued success.",
       academicPerformance:
         "Academic Performance",
+      studentPerformance: "Student Performance",
       overallScore: "Overall Score",
       status: "Status",
       issued: "Issued",
@@ -779,7 +914,16 @@ function getTranslations(
       academicYear: "العام الدراسي",
       result: "النتيجة",
       percentage: "النسبة المئوية",
-      academicCertificate: "الشهادة الأكاديمية",
+      academicCertificate:
+        "الشهادة الأكاديمية",
+      schoolTagline: "تعلّم · انمُ · ابنِ غدًا",
+      certifyThat: "تشهد هذه الشهادة بأن",
+      awardStatement: (
+        grade: number,
+        school: string,
+        year: string,
+      ) =>
+        `أكمل بنجاح المتطلبات الأكاديمية للصف ${grade} في ${school} للعام الدراسي ${year}.`,
       student: "الطالب",
       class: "الفصل",
       grade: "الصف",
@@ -795,8 +939,14 @@ function getTranslations(
         "سجل أكاديمي رسمي",
       principal: "مدير المدرسة",
       academicRecord: "السجل الأكاديمي",
+      backMotto: "المعرفة اليوم... غدٌ أكثر إشراقًا",
+      backQuote:
+        "عملك الجاد اليوم يبني نجاحك غدًا.",
+      backWish:
+        "نحن فخورون بإنجازاتك ونتمنى لك دوام النجاح.",
       academicPerformance:
         "الأداء الأكاديمي",
+      studentPerformance: "أداء الطالب",
       overallScore: "النتيجة الإجمالية",
       status: "الحالة",
       issued: "صدر في",
@@ -807,7 +957,8 @@ function getTranslations(
     fr: {
       academicDocument: "Document académique",
       certificatePreview: "Aperçu du certificat",
-      flipCertificate: "Retourner le certificat",
+      flipCertificate:
+        "Retourner le certificat",
       showFront: "Afficher le recto",
       printPdf: "Imprimer / PDF",
       mobileFlipHint:
@@ -817,6 +968,14 @@ function getTranslations(
       percentage: "Pourcentage",
       academicCertificate:
         "Certificat académique",
+      schoolTagline: "Apprendre · Grandir · Construire demain",
+      certifyThat: "Nous certifions que",
+      awardStatement: (
+        grade: number,
+        school: string,
+        year: string,
+      ) =>
+        `a terminé avec succès les exigences académiques du niveau ${grade} à ${school} pour l'année scolaire ${year}.`,
       student: "Élève",
       class: "Classe",
       grade: "Niveau",
@@ -827,13 +986,20 @@ function getTranslations(
       noSubjectResults:
         "Aucun résultat de matière disponible",
       total: "Total",
-      headOfClass: "Responsable de classe",
+      headOfClass:
+        "Responsable de classe",
       officialAcademicRecord:
         "Dossier académique officiel",
       principal: "Directeur",
       academicRecord: "Dossier académique",
+      backMotto: "Le savoir aujourd'hui... un avenir plus lumineux",
+      backQuote:
+        "Votre travail d'aujourd'hui construit votre réussite de demain.",
+      backWish:
+        "Nous sommes fiers de vos réussites et vous souhaitons beaucoup de succès.",
       academicPerformance:
         "Performance académique",
+      studentPerformance: "Résultats de l'élève",
       overallScore: "Score global",
       status: "Statut",
       issued: "Émis le",
@@ -865,4 +1031,43 @@ function getResultStatus(
     ? "Complete"
     : "Incomplete";
 }
+export function CertificatePrintablePage({
+  certificate,
+  locale,
+}: {
+  certificate: CertificateData;
+  locale: "ar" | "en" | "fr";
+}) {
+  const t = getTranslations(locale);
 
+  return (
+    <main
+      className="certificate-page certificate-batch-page"
+      dir={locale === "ar" ? "rtl" : "ltr"}
+    >
+      <section className="certificate-stage desktop-certificate">
+        <div className="certificate-flip-container">
+          <div className="certificate-flip">
+            <div className="certificate-flip-face">
+              <CertificateFront
+                certificate={certificate}
+                t={t}
+                locale={locale}
+              />
+            </div>
+
+            <div className="certificate-flip-face back">
+              <CertificateBack
+                certificate={certificate}
+                t={t}
+                locale={locale}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+   

@@ -53,71 +53,7 @@ function isPromotionAdmin(
     )
 }
 
-/*
-|--------------------------------------------------------------------------
-| Academic year helpers
-|--------------------------------------------------------------------------
-*/
 
-function getNextAcademicYear(
-    name: string,
-) {
-    const match =
-        name
-            .trim()
-            .match(
-                /^(\d{4})\s*\/\s*(\d{4})$/,
-            )
-
-    if (!match) {
-        throw new Error(
-            `Academic year "${name}" must use the YYYY/YYYY format.`,
-        )
-    }
-
-    const startYear =
-        Number(match[1])
-
-    const endYear =
-        Number(match[2])
-
-    if (
-        endYear !==
-        startYear + 1
-    ) {
-        throw new Error(
-            `Academic year "${name}" is invalid. The second year must be exactly one year after the first.`,
-        )
-    }
-
-    return {
-        name:
-            `${startYear + 1}/${endYear + 1}`,
-
-        startDate:
-            `${startYear + 1}-01-01`,
-
-        endDate:
-            `${endYear + 1}-12-31`,
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| Final results validation
-|--------------------------------------------------------------------------
-|
-| This function ONLY checks whether the final results are complete.
-|
-| It does NOT:
-|
-| - calculate promotion
-| - create promotion decisions
-| - modify the database
-| - create a new academic year
-|
-|--------------------------------------------------------------------------
-*/
 
 async function checkFinalResults(
     db: Awaited<ReturnType<typeof getSchoolDB>>,
@@ -186,7 +122,7 @@ async function checkFinalResults(
                     ),
                     eq(
                         exams.type,
-                        "final",
+                        "FINAL",
                     ),
                 ),
 
@@ -523,29 +459,48 @@ async function checkFinalResults(
         issues,
     }
 }
+function getNextAcademicYear(
+    name: string,
+) {
+    const match =
+        name
+            .trim()
+            .match(
+                /^(\d{4})\s*\/\s*(\d{4})$/,
+            )
 
+    if (!match) {
+        throw new Error(
+            `Academic year "${name}" must use the YYYY/YYYY format.`,
+        )
+    }
 
-/*
-|--------------------------------------------------------------------------
-| GET
-|--------------------------------------------------------------------------
-|
-| GET /api/promotion?academicYearId=...
-|
-| GET first checks final results.
-|
-| If final results are incomplete:
-|
-|   - no promotion calculation
-|   - no promotion decision calculation
-|
-| If final results are complete:
-|
-|   - promotion calculations are returned
-|   - existing administrative decisions are returned
-|
-|--------------------------------------------------------------------------
-*/
+    const startYear =
+        Number(match[1])
+
+    const endYear =
+        Number(match[2])
+
+    if (
+        endYear !==
+        startYear + 1
+    ) {
+        throw new Error(
+            `Academic year "${name}" is invalid. The second year must be exactly one year after the first.`,
+        )
+    }
+
+    return {
+        name:
+            `${startYear + 1}/${endYear + 1}`,
+
+        startDate:
+            `${startYear + 1}-01-01`,
+
+        endDate:
+            `${endYear + 1}-12-31`,
+    }
+}
 
 export async function GET(
     request: Request,
@@ -620,6 +575,41 @@ export async function GET(
         | FINAL RESULTS CHECK
         |--------------------------------------------------------------------------
         */
+
+                /*
+        |--------------------------------------------------------------------------
+        | NO FINAL EXAMS YET
+        |--------------------------------------------------------------------------
+        */
+
+        const finalExam =
+            await db.query.exams.findFirst({
+                where: and(
+                    eq(
+                        exams.academicYearId,
+                        academicYearId,
+                    ),
+                    eq(
+                        exams.type,
+                        "FINAL",
+                    ),
+                ),
+            })
+
+        if (!finalExam) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    status: "no_final_exams",
+                    academicYearId,
+                    message:
+                        "No final exams have been created for this academic year yet.",
+                },
+                {
+                    status: 409,
+                },
+            )
+        }
 
         const finalResults =
             await checkFinalResults(
@@ -761,23 +751,6 @@ export async function GET(
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| POST
-|--------------------------------------------------------------------------
-|
-| action:
-|
-| review
-|   Check final results first, then persist system
-|   promotion calculations.
-|
-| close
-|   Check final results, validate final decisions,
-|   then perform the complete rollover.
-|
-|--------------------------------------------------------------------------
-*/
 
 export async function POST(
     request: Request,
@@ -831,12 +804,13 @@ export async function POST(
 
         if (
             action !== "review" &&
+            action !== "finalize_decisions" &&
             action !== "close"
         ) {
             return NextResponse.json(
                 {
                     error:
-                        "action must be review or close",
+                        "action must be review, finalize_decisions, or close",
                 },
                 {
                     status: 400,
@@ -896,9 +870,6 @@ export async function POST(
         /*
         |--------------------------------------------------------------------------
         | FINAL RESULTS CHECK
-        |--------------------------------------------------------------------------
-        |
-        | This happens before BOTH review and close.
         |--------------------------------------------------------------------------
         */
 
@@ -1089,6 +1060,149 @@ export async function POST(
 
         /*
         |--------------------------------------------------------------------------
+        | FINALIZE ADMINISTRATIVE DECISIONS
+        |--------------------------------------------------------------------------
+        |
+        | Individual administrator changes are preserved.
+        |
+        | Students that were not individually changed keep their
+        | system recommendation and become administratively confirmed.
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            action ===
+            "finalize_decisions"
+        ) {
+            const enrollments =
+                await db.query.studentEnrollments.findMany(
+                    {
+                        where: eq(
+                            studentEnrollments.academicYearId,
+                            academicYearId,
+                        ),
+                    },
+                )
+
+            let processed = 0
+
+            for (
+                const enrollment
+                of enrollments
+            ) {
+                const calculation =
+                    await calculatePromotion(
+                        db,
+                        enrollment.id,
+                    )
+
+                const existing =
+                    await db.query.promotionDecisions.findFirst(
+                        {
+                            where: (
+                                decision,
+                                { and, eq },
+                            ) =>
+                                and(
+                                    eq(
+                                        decision.studentId,
+                                        enrollment.studentId,
+                                    ),
+
+                                    eq(
+                                        decision.academicYearId,
+                                        academicYearId,
+                                    ),
+                                ),
+                        },
+                    )
+
+                if (!existing) {
+                    return NextResponse.json(
+                        {
+                            error:
+                                `Cannot complete administrative review. Student ${enrollment.studentId} does not have a promotion decision.`,
+                        },
+                        {
+                            status: 409,
+                        },
+                    )
+                }
+
+                if (
+                    calculation.systemResult ===
+                    "incomplete"
+                ) {
+                    return NextResponse.json(
+                        {
+                            error:
+                                "Cannot complete administrative review because final results are incomplete.",
+                        },
+                        {
+                            status: 409,
+                        },
+                    )
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Preserve an already confirmed administrative decision.
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    existing.decidedByUserId
+                ) {
+                    processed++
+                    continue
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Confirm the existing recommendation.
+                |--------------------------------------------------------------------------
+                */
+
+                await db
+                    .update(
+                        promotionDecisions,
+                    )
+                    .set({
+                        decidedByUserId:
+                            session.user.id,
+
+                        reason:
+                            existing.reason ??
+                            "System recommendation confirmed by administrator.",
+                    })
+                    .where(
+                        eq(
+                            promotionDecisions.id,
+                            existing.id,
+                        ),
+                    )
+
+                processed++
+            }
+
+            return NextResponse.json({
+                success: true,
+
+                action:
+                    "finalize_decisions",
+
+                status:
+                    "administrative_decisions_complete",
+
+                processed,
+
+                message:
+                    "All administrative decisions have been confirmed. The promotion review is complete.",
+            })
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | CLOSE / ROLLOVER
         |--------------------------------------------------------------------------
         */
@@ -1116,10 +1230,49 @@ export async function POST(
             toClassId: string | null
         }> = []
 
+        /*
+        |--------------------------------------------------------------------------
+        | Determine the highest grade in the school once.
+        |--------------------------------------------------------------------------
+        |
+        | Graduation is allowed only from the highest grade level.
+        |--------------------------------------------------------------------------
+        */
+
+        const allClasses =
+            await db.query.schoolClases.findMany(
+                {
+                    columns: {
+                        gradeLevel: true,
+                    },
+                },
+            )
+
+        if (allClasses.length === 0) {
+            return NextResponse.json(
+                {
+                    error:
+                        "Cannot close the academic year because no school classes were found.",
+                },
+                {
+                    status: 409,
+                },
+            )
+        }
+
+        const highestGradeLevel =
+            Math.max(
+                ...allClasses.map(
+                    (schoolClass) =>
+                        schoolClass.gradeLevel,
+                ),
+            )
+
         for (
             const enrollment
             of enrollments
         ) {
+
             const decision =
                 await db.query.promotionDecisions.findFirst(
                     {
@@ -1140,6 +1293,10 @@ export async function POST(
                             ),
                     },
                 )
+                
+    
+
+                
 
             /*
             |--------------------------------------------------------------------------
@@ -1230,6 +1387,57 @@ export async function POST(
 
             /*
             |--------------------------------------------------------------------------
+            | Current class.
+            |--------------------------------------------------------------------------
+            */
+
+            const currentClass =
+                await db.query.schoolClases.findFirst(
+                    {
+                        where: eq(
+                            schoolClases.id,
+                            enrollment.classId,
+                        ),
+                    },
+                )
+
+            if (!currentClass) {
+                return NextResponse.json(
+                    {
+                        error:
+                            `Cannot close the academic year. The current class for student ${getStudentFullName(enrollment.student)} could not be found.`,
+                    },
+                    {
+                        status: 409,
+                    },
+                )
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Graduation is only allowed from the final grade.
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                finalDecision ===
+                    "graduate" &&
+                currentClass.gradeLevel !==
+                    highestGradeLevel
+            ) {
+                return NextResponse.json(
+                    {
+                        error:
+                            `Cannot close the academic year. Student ${getStudentFullName(enrollment.student)} can only graduate from the final grade.`,
+                    },
+                    {
+                        status: 409,
+                    },
+                )
+            }
+
+            /*
+            |--------------------------------------------------------------------------
             | Promote requires a destination class.
             |--------------------------------------------------------------------------
             */
@@ -1271,35 +1479,11 @@ export async function POST(
                         },
                     )
 
-                if (
-                    !destinationClass
-                ) {
+                if (!destinationClass) {
                     return NextResponse.json(
                         {
                             error:
                                 `Cannot close the academic year. Student ${getStudentFullName(enrollment.student)} has an invalid destination class.`,
-                        },
-                        {
-                            status: 409,
-                        },
-                    )
-                }
-
-                const currentClass =
-                    await db.query.schoolClases.findFirst(
-                        {
-                            where: eq(
-                                schoolClases.id,
-                                enrollment.classId,
-                            ),
-                        },
-                    )
-
-                if (!currentClass) {
-                    return NextResponse.json(
-                        {
-                            error:
-                                `Cannot close the academic year. The current class for student ${getStudentFullName(enrollment.student)} could not be found.`,
                         },
                         {
                             status: 409,
@@ -1323,6 +1507,12 @@ export async function POST(
                     )
                 }
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Determine rollover destination.
+            |--------------------------------------------------------------------------
+            */
 
             const rolloverToClassId =
                 finalDecision ===
@@ -1350,12 +1540,7 @@ export async function POST(
             })
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Determine next academic year.
-        |--------------------------------------------------------------------------
-        */
-
+     
         let nextAcademicYear
 
         try {
@@ -1674,19 +1859,8 @@ export async function POST(
             },
         )
     }
-}
 
-/*
-|--------------------------------------------------------------------------
-| PATCH
-|--------------------------------------------------------------------------
-|
-| Administrative final decision.
-|
-| The Principal/Deputy can override the system decision.
-|
-|--------------------------------------------------------------------------
-*/
+}
 
 export async function PATCH(
     request: Request,
@@ -1745,6 +1919,12 @@ export async function PATCH(
                 ).trim()
                 : null
 
+        /*
+        |--------------------------------------------------------------------------
+        | Validate required fields
+        |--------------------------------------------------------------------------
+        */
+
         if (
             !studentId ||
             !academicYearId ||
@@ -1760,6 +1940,12 @@ export async function PATCH(
                 },
             )
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate final decision
+        |--------------------------------------------------------------------------
+        */
 
         if (
             finalDecision !==
@@ -1780,6 +1966,12 @@ export async function PATCH(
             )
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Reason is mandatory for every administrative decision.
+        |--------------------------------------------------------------------------
+        */
+
         if (!reason) {
             return NextResponse.json(
                 {
@@ -1792,8 +1984,61 @@ export async function PATCH(
             )
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Database
+        |--------------------------------------------------------------------------
+        */
+
         const db =
             await getSchoolDB()
+
+        /*
+        |--------------------------------------------------------------------------
+        | Academic year
+        |--------------------------------------------------------------------------
+        */
+
+        const academicYear =
+            await db.query.academicYears.findFirst(
+                {
+                    where: eq(
+                        academicYears.id,
+                        academicYearId,
+                    ),
+                },
+            )
+
+        if (!academicYear) {
+            return NextResponse.json(
+                {
+                    error:
+                        "Academic year not found",
+                },
+                {
+                    status: 404,
+                },
+            )
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Administrative decisions can only be changed while
+        | the academic year is active.
+        |--------------------------------------------------------------------------
+        */
+
+        if (!academicYear.isActive) {
+            return NextResponse.json(
+                {
+                    error:
+                        "This academic year is already closed.",
+                },
+                {
+                    status: 409,
+                },
+            )
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -1835,6 +2080,12 @@ export async function PATCH(
             )
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Student
+        |--------------------------------------------------------------------------
+        */
+
         const student =
             await db.query.students.findFirst(
                 {
@@ -1856,6 +2107,12 @@ export async function PATCH(
                 },
             )
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Current-year enrollment
+        |--------------------------------------------------------------------------
+        */
 
         const enrollment =
             await db.query.studentEnrollments.findFirst(
@@ -1890,6 +2147,12 @@ export async function PATCH(
             )
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Existing promotion review
+        |--------------------------------------------------------------------------
+        */
+
         const existing =
             await db.query.promotionDecisions.findFirst(
                 {
@@ -1922,100 +2185,178 @@ export async function PATCH(
                 },
             )
         }
+/*
+|--------------------------------------------------------------------------
+| Current class and final grade
+|--------------------------------------------------------------------------
+|
+| Graduation is allowed only for students in the highest
+| grade level currently defined in the school.
+|--------------------------------------------------------------------------
+*/
 
-        let finalToClassId =
-            existing.toClassId
+const currentClass =
+    await db.query.schoolClases.findFirst(
+        {
+            where: eq(
+                schoolClases.id,
+                enrollment.classId,
+            ),
+        },
+    )
+
+if (!currentClass) {
+    return NextResponse.json(
+        {
+            error:
+                "Current class not found",
+        },
+        {
+            status: 404,
+        },
+    )
+}
+
+const allClasses =
+    await db.query.schoolClases.findMany(
+        {
+            columns: {
+                gradeLevel: true,
+            },
+        },
+    )
+
+if (allClasses.length === 0) {
+    return NextResponse.json(
+        {
+            error:
+                "No school classes were found.",
+        },
+        {
+            status: 409,
+        },
+    )
+}
+
+const highestGradeLevel =
+    Math.max(
+        ...allClasses.map(
+            (schoolClass) =>
+                schoolClass.gradeLevel,
+        ),
+    )
+
+/*
+|--------------------------------------------------------------------------
+| Graduation is only allowed in the final grade.
+|--------------------------------------------------------------------------
+*/
+
+if (
+    finalDecision === "graduate" &&
+    currentClass.gradeLevel !==
+        highestGradeLevel
+) {
+    return NextResponse.json(
+        {
+            error:
+                "A student can only graduate from the final grade.",
+        },
+        {
+            status: 400,
+        },
+    )
+}
+       let finalToClassId =
+    existing.toClassId
+
+/*
+|--------------------------------------------------------------------------
+| Promote
+|--------------------------------------------------------------------------
+|
+| The Principal/Deputy is allowed to override the system
+| decision, but a promoted student must always have a
+| valid destination class in the next grade level.
+|--------------------------------------------------------------------------
+*/
+
+if (finalDecision === "promote") {
+    if (!toClassId) {
+        return NextResponse.json(
+            {
+                error:
+                    "toClassId is required when promoting",
+            },
+            {
+                status: 400,
+            },
+        )
+    }
+
+    const destinationClassId =
+        toClassId
+
+    const destinationClass =
+        await db.query.schoolClases.findFirst(
+            {
+                where: eq(
+                    schoolClases.id,
+                    destinationClassId,
+                ),
+            },
+        )
+
+    if (!destinationClass) {
+        return NextResponse.json(
+            {
+                error:
+                    "Destination class not found",
+            },
+            {
+                status: 404,
+            },
+        )
+    }
+
+    if (
+        destinationClass.gradeLevel !==
+        currentClass.gradeLevel + 1
+    ) {
+        return NextResponse.json(
+            {
+                error:
+                    "Destination class must belong to the next grade level",
+            },
+            {
+                status: 400,
+            },
+        )
+    }
+
+    finalToClassId =
+        destinationClass.id
+} else {
+    /*
+    |--------------------------------------------------------------------------
+    | Retain / Graduate
+    |--------------------------------------------------------------------------
+    |
+    | Neither decision may carry a destination class.
+    |--------------------------------------------------------------------------
+    */
+
+    finalToClassId =
+        null
+}
+
+
 
         /*
         |--------------------------------------------------------------------------
-        | Promote
+        | Save FINAL administrative decision
         |--------------------------------------------------------------------------
         */
-
-        if (
-            finalDecision ===
-            "promote"
-        ) {
-            if (!toClassId) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "toClassId is required when promoting",
-                    },
-                    {
-                        status: 400,
-                    },
-                )
-            }
-
-            const destinationClass =
-                await db.query.schoolClases.findFirst(
-                    {
-                        where: eq(
-                            schoolClases.id,
-                            toClassId,
-                        ),
-                    },
-                )
-
-            if (
-                !destinationClass
-            ) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "Destination class not found",
-                    },
-                    {
-                        status: 404,
-                    },
-                )
-            }
-
-            const currentClass =
-                await db.query.schoolClases.findFirst(
-                    {
-                        where: eq(
-                            schoolClases.id,
-                            enrollment.classId,
-                        ),
-                    },
-                )
-
-            if (!currentClass) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "Current class not found",
-                    },
-                    {
-                        status: 404,
-                    },
-                )
-            }
-
-            if (
-                destinationClass.gradeLevel !==
-                currentClass.gradeLevel +
-                    1
-            ) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "Destination class must belong to the next grade level",
-                    },
-                    {
-                        status: 400,
-                    },
-                )
-            }
-
-            finalToClassId =
-                destinationClass.id
-        } else {
-            finalToClassId =
-                null
-        }
 
         const [
             updated,

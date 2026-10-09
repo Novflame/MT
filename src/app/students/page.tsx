@@ -46,6 +46,7 @@ export default async function StudentsPage() {
               name: schoolClass.name,
               gradeLevel: schoolClass.gradeLevel,
             }))}
+            academicYearName={academicYear.name}
             students={students.map((student) => {
               const enrollment = student.enrollments.find(
                 (enrollment) => enrollment.academicYearId === academicYear.id,
