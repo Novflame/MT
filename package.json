@@ -5,14 +5,20 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "package:windows": "node scripts/package-windows.cjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config drizzle.school.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.school.config.ts",
-    "db:generate:central": "drizzle-kit generate --config drizzle.central.config.ts",
-    "db:migrate:central": "drizzle-kit migrate --config drizzle.central.config.ts",
+    "db:generate:central": "drizzle-kit generate --config src/drizzle.central.config.ts",
+    "db:migrate:central": "drizzle-kit migrate --config src/drizzle.central.config.ts",
     "db:studio": "drizzle-kit studio --config drizzle.school.config.ts",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prestart": "node scripts/migrate-central.cjs",
+    "test:migrations": "python tests/test_migration_compatibility.py",
+    "predev": "node scripts/migrate-central.cjs",
+    "test": "node --test tests/*.test.cjs && python tests/test_migration_compatibility.py && python tests/test_account_lifecycle_migrations.py",
+    "test:integration": "node --test tests/account-api-integration.test.cjs && python tests/test_migration_compatibility.py && python tests/test_account_lifecycle_migrations.py"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -22,6 +28,7 @@
     "drizzle-orm": "^0.45.2",
     "echarts": "^6.1.0",
     "echarts-for-react": "^3.0.6",
+    "fontkit": "^2.0.4",
     "framer-motion": "^13.5.0",
     "lucide-react": "^1.47.0",
     "next": "^15.5.7",
@@ -33,8 +40,10 @@
     "yazl": "^3.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/adm-zip": "^0.5.8",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/fontkit": "^2.0.9",
     "@types/node": "^22.20.4",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.0.8",
@@ -49,4 +58,5 @@
   "engines": {
     "node": ">=20.9.0"
   }
+
 }

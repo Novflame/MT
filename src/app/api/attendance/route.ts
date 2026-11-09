@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server"
-
-import { auth } from "@/auth/auth"
 import { getSchoolDB } from "@/db"
-
 import {
     attendance,
     teacherAssignments,
@@ -11,20 +8,16 @@ import {
     schoolClases,
     classHeads,
 } from "@/db/schema"
-
 import {
     hasPermission,
     type Role,
 } from "@/auth/permissions"
-
 import {
     canManageAttendance,
 } from "@/auth/authorization"
-
 import { getStudentFullName } from "@/lib/student-name"
-
 import { and, eq } from "drizzle-orm"
-
+import { getRequestSession } from "@/auth/session"
 
 const validStatuses = [
     "present",
@@ -44,9 +37,7 @@ export async function POST(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -258,9 +249,7 @@ export async function GET(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -808,9 +797,7 @@ export async function PATCH(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(

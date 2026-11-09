@@ -1,30 +1,21 @@
+import { requireSession } from "@/auth/session"
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
-
 import { getSchoolDB } from "@/db";
 import { staffProfiles } from "@/db/schema";
-
-import { auth } from "@/auth/auth";
 import { centralDb } from "@/db/central";
 import { user } from "@/db/centeral-schema";
 import ManageUserForm from "@/components/settings/ManageUserForm";
 
-type Props = {
-  params: Promise<{
-    id: string;
-  }>;
-};
+type Props = { params: Promise<{ id: string }> }
 
 export default async function ManageUserPage({ params }: Props) {
   // =========================================
   // Authentication
   // =========================================
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await requireSession();
 
   if (!session) {
     redirect("/login");
@@ -71,6 +62,9 @@ const targetUser =
             email: user.email,
             schoolRole: user.schoolRole,
             banned: user.banned,
+            emailVerified: user.emailVerified,
+            mustChangePassword: user.mustChangePassword,
+            provisioningStatus: user.provisioningStatus,
         })
         .from(user)
         .where(

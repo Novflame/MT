@@ -1,4 +1,3 @@
-
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import {
@@ -6,7 +5,6 @@ import {
     eq,
     inArray,
 } from "drizzle-orm"
-
 import { requireSession } from "@/auth/session"
 import { getSchoolDB } from "@/db"
 import {
@@ -19,6 +17,7 @@ import {
 } from "@/db/schema"
 import { centralDb } from "@/db/central"
 import { user } from "@/db/centeral-schema"
+
 
 export default async function HeadOfDepartmentPage() {
     const session = await requireSession()

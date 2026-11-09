@@ -1,9 +1,8 @@
+import { requireSession } from "@/auth/session"
 
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
 import { eq } from "drizzle-orm"
 
-import { auth } from "@/auth/auth"
 import { centralDb } from "@/db/central"
 import { user } from "@/db/centeral-schema"
 import { getSchoolDB } from "@/db"
@@ -11,16 +10,13 @@ import { staffProfiles } from "@/db/schema"
 
 import { getLocale } from "@/lib/i18n/server"
 import {
-    translations,
     type Locale,
 } from "@/lib/i18n/translations"
 
 import ManageStaffProfile from "@/components/profile/ManageStaffProfile"
 
 export default async function ManageProfilePage() {
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    })
+    const session = await requireSession()
 
     if (!session) {
         redirect("/login")
@@ -78,7 +74,6 @@ export default async function ManageProfilePage() {
         .limit(1)
 
     const locale = await getLocale()
-    const t = translations[locale]
 
     return (
         <main

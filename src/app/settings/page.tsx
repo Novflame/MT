@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
 Building2,
 CalendarDays,
+CalendarClock,
 DatabaseBackup,
 UserCog,
 UserCircle,
@@ -22,6 +23,12 @@ title: "Academic",
 description:
 "Manage academic-year and school academic settings.",
 icon: CalendarDays,
+},
+{
+href: "/settings/timetable",
+title: "Timetable & Sessions",
+description: "Enable class timetables and configure attendance reminder deadlines.",
+icon: CalendarClock,
 },
 {
 href: "/settings/users",

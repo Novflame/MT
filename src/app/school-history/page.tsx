@@ -4,13 +4,7 @@ import { requireSession } from "@/auth/session";
 import { getSchoolDB } from "@/db";
 import {
   academicYears,
-  attendance,
-  exams,
-  grades,
-  promotionDecisions,
   resultCertificates,
-  studentEnrollments,
-  tests,
 } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { getStudentFullName } from "@/lib/student-name";

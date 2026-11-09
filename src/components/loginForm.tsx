@@ -1,9 +1,9 @@
 "use client"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-
+import Image from "next/image"
+import logo from "../logo/logo.png"
 import { authClient } from "@/auth/auth-client"
 
 export default function LoginForm() {
@@ -45,8 +45,11 @@ export default function LoginForm() {
             className="w-full max-w-md space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60 dark:border-slate-700 dark:bg-slate-900 dark:shadow-slate-950/40"
         >
             <div>
-                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-200/80 dark:bg-blue-500 dark:shadow-blue-950/40">
-                    SM
+                <div className="mb-6 flex items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-200/80 dark:bg-blue-500 dark:shadow-blue-950/40">
+                    <Image src={logo}
+                    alt ="system-logo"
+                    width={50}
+                    height={50}/>
                 </div>
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
                     School Management
@@ -94,6 +97,9 @@ export default function LoginForm() {
                         aria-invalid={Boolean(error)}
                         className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-50 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
                     />
+                </div>
+                <div className="text-right">
+                    <Link href="/forgot-password" className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">Forgot password?</Link>
                 </div>
             </div>
 

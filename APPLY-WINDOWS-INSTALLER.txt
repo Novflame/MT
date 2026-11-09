@@ -1,0 +1,24 @@
+TASEETY Windows installer hardening patch
+
+Copy the included folders/files into the ROOT of the existing TASEETY project, preserving paths and allowing these installer files to replace their previous versions:
+
+- installer/TASEETY.iss
+- scripts/package-windows.cjs
+- scripts/migrate-central.cjs
+- scripts/installer/*
+- tests/windows-installer-contract.test.cjs
+
+This patch intentionally does not include or replace databases, WAL/SHM files, .env files, uploads, backups, node_modules, .next, or dist.
+
+Build on Windows x64 with Node.js 22.x, Python 3, Inno Setup 6.7+ or 7, and the .NET Framework 4.8 C# compiler:
+
+  npm ci
+  Set-ExecutionPolicy -Scope Process Bypass
+  .\scripts\installer\Build-Windows.ps1
+
+Expected output:
+  dist\windows\installer\TASEETY-Setup-1.0.0-x64.exe
+
+The exact version is read from package.json. A SHA-256 sidecar is also generated.
+
+Important: this patch has passed the static checks and Python migration compatibility tests run in the preparation environment, but the Windows-only build and service/installer acceptance tests have NOT been run here. Test using disposable copies before production. Never point acceptance tests at the live school data.

@@ -1,18 +1,20 @@
 "use client";
-
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   Award,
   CheckCircle2,
-  FileCheck2,
+  ChevronLeft,
+  ChevronRight,
   History,
   Loader2,
   Search,
   ShieldCheck,
-  Users,
   XCircle,
-  Sparkles,
 } from "lucide-react";
+
+import CertificateTemplatePreview from "./CertificateTemplatePreview";
+import certificateStyles from "./certificate-templates.module.css";
 
 type CertificateType =
   | "FINAL_YEAR"
@@ -85,6 +87,7 @@ type ApiResult = {
   history?: CertificateRecord[];
   issuedCount?: number;
   skippedCount?: number;
+  issued?: { enrollmentId: string }[];
 };
 
 type Filters = {
@@ -215,8 +218,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     reasonPlaceholder: "اكتب سبب الاستحقاق أو الإنجاز...",
     reasonRequired: "سبب المنح مطلوب لشهادة التقدير والإنجاز.",
     reasonHint: "سيُحفظ السبب مع سجل الشهادة.",
-    issueButton: "إصدار الشهادات",
-    issuing: "جارٍ إصدار الشهادات...",
+    issueButton: "استخراج الشهادات",
+    issuing: "جارٍ إعداد الشهادات...",
     historyTitle: "سجل الشهادات الصادرة",
     historyDescription: "السجلات المحفوظة للسنة ونوع الشهادة والصف المحددين.",
     date: "تاريخ الإصدار",
@@ -248,6 +251,18 @@ const TEXT: Record<Language, Record<string, string>> = {
     classColumn: "الصف",
     noNotes: "—",
     close: "إغلاق",
+    progress: "تقدم الإعداد",
+    processed: "تمت معالجة",
+    failed: "فشل",
+    allPrepared: "تم إعداد جميع الشهادات بنجاح. ✅",
+    partialPrepared: "تم إعداد {success} شهادة بنجاح، وفشل إعداد {failed} شهادة.",
+    historySummary: "ملخص السجل للسنة المحددة",
+    noHistorySummary: "لا توجد شهادات مستخرجة لهذه السنة.",
+    exportReady: "تصدير الشهادات الناجحة إلى PDF",
+    openPreview: "فتح المعاينة الكاملة",
+    previewReady: "معاينة الشهادة الكاملة وتصديرها إلى PDF عند الحاجة.",
+    finalYearPreviewHint:
+      "تظل معاينة شهادة نهاية العام ضمن مسار الطباعة الحالي.",
     languageNote:
       "تُرسل اللغة المختارة إلى الخادم ليستخدمها قالب الشهادة عند العرض والطباعة.",
     excludedCount: "غير المحددين",
@@ -327,6 +342,18 @@ const TEXT: Record<Language, Record<string, string>> = {
     classColumn: "Class",
     noNotes: "—",
     close: "Close",
+    progress: "Preparation progress",
+    processed: "Processed",
+    failed: "Failed",
+    allPrepared: "All certificates were prepared successfully. ✅",
+    partialPrepared: "Successfully prepared {success} certificates; {failed} failed.",
+    historySummary: "History summary for selected year",
+    noHistorySummary: "No certificates have been issued for this year.",
+    exportReady: "Export successful certificates to PDF",
+    openPreview: "Open full preview",
+    previewReady: "Open the full certificate preview or export it to PDF.",
+    finalYearPreviewHint:
+      "Final-year certificates remain in their existing print flow.",
     languageNote:
       "The selected language is sent to the server for certificate rendering and printing.",
     excludedCount: "Not selected",
@@ -408,6 +435,18 @@ const TEXT: Record<Language, Record<string, string>> = {
     classColumn: "Classe",
     noNotes: "—",
     close: "Fermer",
+    progress: "Progression de la préparation",
+    processed: "Traités",
+    failed: "Échecs",
+    allPrepared: "Tous les certificats ont été préparés avec succès. ✅",
+    partialPrepared: "{success} certificats préparés avec succès ; {failed} échecs.",
+    historySummary: "Résumé de l’historique pour l’année sélectionnée",
+    noHistorySummary: "Aucun certificat n’a été délivré pour cette année.",
+    exportReady: "Exporter les certificats réussis en PDF",
+    openPreview: "Ouvrir l’aperçu complet",
+    previewReady: "Ouvrez l’aperçu complet ou exportez le certificat en PDF.",
+    finalYearPreviewHint:
+      "Les certificats de fin d’année restent dans leur parcours d’impression actuel.",
     languageNote:
       "La langue choisie est envoyée au serveur pour l'affichage et l'impression.",
     excludedCount: "Non sélectionnés",
@@ -444,252 +483,256 @@ function getCertificateOption(type: CertificateType) {
 function CertificateShowcase({
   language,
   selectedType,
+  sampleStudent,
   onSelect,
 }: {
   language: Language;
   selectedType: CertificateType;
+  sampleStudent: {
+    fullName: string;
+    className: string;
+    academicYear: string;
+    schoolName: string;
+    schoolSubtitle?: string;
+    issueDate?: string;
+    sectionName?: string;
+    principalName?: string;
+    departmentHeadName?: string;
+  };
   onSelect: (type: CertificateType) => void;
 }) {
-  const designs: Record<
-    CertificateType,
-    {
-      frame: string;
-      accent: string;
-      ribbon: string;
-      heading: Record<Language, string>;
-      subtitle: Record<Language, string>;
-      seal: string;
+  const [direction, setDirection] = useState(1);
+  const selectedOption = getCertificateOption(selectedType);
+  const [displayedType, setDisplayedType] = useState(selectedType);
+  const displayedOption = getCertificateOption(displayedType);
+  const selectedIndex = CERTIFICATE_OPTIONS.findIndex(
+    (option) => option.value === selectedType,
+  );
+  const [exitingType, setExitingType] = useState<CertificateType | null>(null);
+  const displayedIndex = CERTIFICATE_OPTIONS.findIndex(
+    (option) => option.value === displayedType,
+  );
+  const labels = {
+    ar: { approved: "معتمدة", previous: "السابق", next: "التالي" },
+    en: { approved: "Approved", previous: "Previous", next: "Next" },
+    fr: { approved: "Approuvé", previous: "Précédent", next: "Suivant" },
+  }[language];
+  const PreviousIcon = language === "ar" ? ChevronRight : ChevronLeft;
+  const NextIcon = language === "ar" ? ChevronLeft : ChevronRight;
+
+  function selectType(type: CertificateType, travelDirection?: number) {
+    const nextIndex = CERTIFICATE_OPTIONS.findIndex(
+      (option) => option.value === type,
+    );
+
+    if (type !== displayedType) {
+      setExitingType(displayedType);
     }
-  > = {
-    FINAL_YEAR: {
-      frame: "border-indigo-300",
-      accent: "text-indigo-700",
-      ribbon: "bg-indigo-600",
-      heading: {
-        ar: "شهادة نهاية العام",
-        en: "FINAL YEAR",
-        fr: "FIN D'ANNÉE",
-      },
-      subtitle: {
-        ar: "شهادة النتائج الدراسية",
-        en: "ACADEMIC RESULTS",
-        fr: "RÉSULTATS SCOLAIRES",
-      },
-      seal: "text-indigo-600",
-    },
-    MID_TERM: {
-      frame: "border-sky-300",
-      accent: "text-sky-700",
-      ribbon: "bg-sky-600",
-      heading: {
-        ar: "شهادة منتصف العام",
-        en: "MID-TERM",
-        fr: "MI-ANNÉE",
-      },
-      subtitle: {
-        ar: "إنجازات الفصل الدراسي",
-        en: "TERM ACHIEVEMENTS",
-        fr: "RÉUSSITES DU TRIMESTRE",
-      },
-      seal: "text-sky-600",
-    },
-    SCHOOL_COMPLETION: {
-      frame: "border-emerald-400",
-      accent: "text-emerald-800",
-      ribbon: "bg-emerald-800",
-      heading: {
-        ar: "شهادة إتمام الدراسة",
-        en: "SCHOOL COMPLETION",
-        fr: "FIN D'ÉTUDES",
-      },
-      subtitle: {
-        ar: "إتمام المرحلة الدراسية",
-        en: "COMPLETION OF STUDIES",
-        fr: "FIN DU PARCOURS SCOLAIRE",
-      },
-      seal: "text-emerald-700",
-    },
-    APPRECIATION_ACHIEVEMENT: {
-      frame: "border-purple-300",
-      accent: "text-purple-800",
-      ribbon: "bg-purple-700",
-      heading: {
-        ar: "شهادة التقدير والإنجاز",
-        en: "CERTIFICATE OF ACHIEVEMENT",
-        fr: "CERTIFICAT DE MÉRITE",
-      },
-      subtitle: {
-        ar: "تقدير التميز والإنجاز",
-        en: "RECOGNITION OF EXCELLENCE",
-        fr: "RECONNAISSANCE DE L'EXCELLENCE",
-      },
-      seal: "text-purple-700",
-    },
-  };
+
+    setDirection(travelDirection ?? (nextIndex > displayedIndex ? 1 : -1));
+    setDisplayedType(type);
+
+    if (type !== selectedType) {
+      onSelect(type);
+    }
+  }
+
+  function moveBy(step: number) {
+    const nextIndex =
+      (selectedIndex + step + CERTIFICATE_OPTIONS.length) %
+      CERTIFICATE_OPTIONS.length;
+    selectType(CERTIFICATE_OPTIONS[nextIndex].value, step);
+  }
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setDisplayedType((current) => {
+        const currentIndex = CERTIFICATE_OPTIONS.findIndex((option) => option.value === current);
+        const next = CERTIFICATE_OPTIONS[(currentIndex + 1) % CERTIFICATE_OPTIONS.length].value;
+        setDirection(1);
+        setExitingType(current);
+        return next;
+      });
+    }, 4200);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!exitingType) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setExitingType(null), 650);
+    return () => window.clearTimeout(timer);
+  }, [exitingType]);
+
+  function renderOption(option: typeof selectedOption) {
+    const sampleClass = {
+      FINAL_YEAR: certificateStyles["certificate-sample-final-year"],
+      MID_TERM: certificateStyles["certificate-sample-mid-term"],
+      SCHOOL_COMPLETION: certificateStyles["certificate-sample-completion"],
+      APPRECIATION_ACHIEVEMENT:
+        certificateStyles["certificate-sample-achievement"],
+    }[option.value];
+
+    return (
+      <>
+        <div
+          className={`${certificateStyles["certificate-sample-viewport"]} ${certificateStyles["certificate-card-flip"]} ${sampleClass}`}
+          aria-hidden="true"
+        >
+          {option.value === "FINAL_YEAR" ? (
+            <span
+              className={`${certificateStyles["certificate-sample"]} ${sampleClass}`}
+            >
+              <span
+                className={certificateStyles["certificate-sample-header"]}
+              />
+              <span className={certificateStyles["certificate-sample-title"]} />
+              <span className={certificateStyles["certificate-sample-name"]} />
+              <span
+                className={certificateStyles["certificate-sample-details"]}
+              />
+              <span className={certificateStyles["certificate-sample-footer"]}>
+                <span />
+                <span />
+                <span />
+              </span>
+            </span>
+          ) : (
+            <CertificateTemplatePreview
+              compact
+              student={sampleStudent}
+              certificateType={option.value}
+              language={language}
+              message={
+                language === "ar"
+                  ? "نموذج معاينة"
+                  : language === "fr"
+                    ? "Exemple d’aperçu"
+                    : "Sample preview"
+              }
+              onMessageChange={() => {}}
+            />
+          )}
+        </div>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+          {option.label[language]}
+        </span>
+        <span
+          className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold leading-none ${option.colors.badge}`}
+        >
+          {labels.approved}
+        </span>
+      </>
+    );
+  }
 
   return (
-    <section aria-label="Certificate designs" className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Sparkles size={19} className="text-amber-500" />
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          {language === "ar"
-            ? "معرض تصاميم الشهادات"
-            : language === "fr"
-              ? "Galerie des certificats"
-              : "Certificate Gallery"}
-        </h2>
+    <div
+      role="group"
+      aria-roledescription="carousel"
+      aria-label={
+        language === "ar"
+          ? `الشهادة المحددة: ${selectedOption.label[language]}، معاينة: ${displayedOption.label[language]}`
+          : language === "fr"
+            ? `Certificat sélectionné : ${selectedOption.label[language]} ; aperçu : ${displayedOption.label[language]}`
+            : `Selected certificate: ${selectedOption.label[language]}; previewing: ${displayedOption.label[language]}`
+      }
+      className={`flex h-[104px] w-full max-w-xs flex-col justify-between rounded-xl border p-2 shadow-sm transition-colors sm:w-80 sm:shrink-0 ${selectedOption.colors.active}`}
+    >
+      <div className="relative h-[58px] overflow-hidden">
+        {exitingType && exitingType !== displayedType && (
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-0 flex items-center gap-2.5 rounded-lg ${
+              direction > 0
+                ? certificateStyles["certificate-selector-slide-out-forward"]
+                : certificateStyles["certificate-selector-slide-out-backward"]
+            }`}
+          >
+            {renderOption(getCertificateOption(exitingType))}
+          </div>
+        )}
+
+        {/* <button
+          type="button"
+          aria-label={`${displayedOption.label[language]} — ${labels.approved}`}
+          aria-pressed={displayedType === selectedType}
+          onClick={() => selectType(displayedType)}
+          key={displayedType}
+          className={`absolute inset-0 flex w-full items-center gap-2.5 rounded-lg text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 ${
+            direction > 0
+              ? certificateStyles["certificate-selector-slide-in-forward"]
+              : certificateStyles["certificate-selector-slide-in-backward"]
+          }`}
+        >
+          {renderOption(displayedOption)}
+        </button> */}
+
+        <div
+          key={displayedType}
+          className="absolute inset-0 flex w-full items-center gap-2.5 rounded-lg text-start focus-within:ring-2 focus-within:ring-indigo-500"
+        >
+          {renderOption(displayedOption)}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {CERTIFICATE_OPTIONS.map((option, index) => {
-          const design = designs[option.value];
-          const active = selectedType === option.value;
+      <div className="flex h-6 items-center justify-between">
+        <button
+          type="button"
+          aria-label={labels.previous}
+          onClick={() => moveBy(-1)}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/70 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+        >
+          <PreviousIcon size={15} />
+        </button>
 
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onSelect(option.value)}
-              className={`group min-w-0 rounded-2xl border-2 p-3 text-start transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 ${
-                active
-                  ? `${option.colors.active} border-current`
-                  : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
-              }`}
-              style={{
-                animation: `certificate-enter 500ms ${index * 100}ms both`,
-              }}
-            >
-              <div
-                className={`relative aspect-[1.36/1] overflow-hidden rounded-lg border-4 bg-[#fffdf7] p-2 transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[-1deg] ${
-                  design.frame
+        <div
+          className="flex items-center gap-1.5"
+          aria-label={
+            language === "ar"
+              ? "التنقل بين الشهادات"
+              : language === "fr"
+                ? "Pagination des certificats"
+                : "Certificate pagination"
+          }
+        >
+          {CERTIFICATE_OPTIONS.map((option, index) => {
+            const active = option.value === selectedType;
+            const previewing = option.value === displayedType;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-label={option.label[language]}
+                aria-pressed={active}
+                onClick={() =>
+                  selectType(option.value, index > displayedIndex ? 1 : -1)
+                }
+                className={`h-1.5 rounded-full transition-[width,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                  active
+                    ? "w-4 bg-indigo-600 dark:bg-indigo-400"
+                    : previewing
+                      ? "w-3 bg-slate-500 dark:bg-slate-300"
+                      : "w-1.5 bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-400"
                 }`}
-              >
-                <div
-                  className={`pointer-events-none absolute inset-1 border ${
-                    design.frame
-                  } opacity-70`}
-                />
+              />
+            );
+          })}
+        </div>
 
-                <div className="relative flex h-full flex-col items-center justify-between px-1 py-2 text-center">
-                  <div
-                    className={`text-[9px] font-bold tracking-[0.2em] ${design.accent}`}
-                  >
-                    {language === "ar"
-                      ? "المدرسة"
-                      : language === "fr"
-                        ? "ÉCOLE"
-                        : "SCHOOL"}
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1">
-                    <Award
-                      size={27}
-                      strokeWidth={1.5}
-                      className={`${design.seal} certificate-seal`}
-                    />
-
-                    <span
-                      className={`max-w-full text-[10px] font-extrabold leading-4 sm:text-xs ${design.accent}`}
-                    >
-                      {design.heading[language]}
-                    </span>
-
-                    <span className="text-[8px] tracking-wide text-slate-500">
-                      {design.subtitle[language]}
-                    </span>
-                  </div>
-
-                  <div className="w-full space-y-1 px-3">
-                    <div className="h-px bg-slate-300" />
-                    <div className="mx-auto h-1 w-2/3 rounded-full bg-slate-200" />
-                  </div>
-
-                  <div
-                    className={`absolute bottom-2 end-1 rounded-sm px-2 py-1 text-[7px] font-bold text-white ${design.ribbon}`}
-                  >
-                    {language === "ar"
-                      ? "معتمدة"
-                      : language === "fr"
-                        ? "CERTIFIÉ"
-                        : "CERTIFIED"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold leading-5 text-slate-900 dark:text-white">
-                    {option.label[language]}
-                  </h3>
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    {option.description[language]}
-                  </p>
-                </div>
-
-                <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition ${
-                    active
-                      ? option.colors.icon
-                      : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                  }`}
-                >
-                  {active ? <CheckCircle2 size={16} /> : <Award size={14} />}
-                </span>
-              </div>
-
-              {active && (
-                <div
-                  className={`mt-3 rounded-lg px-3 py-2 text-center text-xs font-bold ${option.colors.badge}`}
-                >
-                  {language === "ar"
-                    ? "الشهادة المختارة"
-                    : language === "fr"
-                      ? "Certificat sélectionné"
-                      : "Selected certificate"}
-                </div>
-              )}
-            </button>
-          );
-        })}
+        <button
+          type="button"
+          aria-label={labels.next}
+          onClick={() => moveBy(1)}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/70 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+        >
+          <NextIcon size={15} />
+        </button>
       </div>
-
-      <style jsx>{`
-        @keyframes certificate-enter {
-          from {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .certificate-seal {
-          animation: certificate-seal-float 3s ease-in-out infinite;
-        }
-
-        @keyframes certificate-seal-float {
-          0%,
-          100% {
-            transform: translateY(0) rotate(0);
-          }
-          50% {
-            transform: translateY(-3px) rotate(4deg);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          :global(*) {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-            scroll-behavior: auto !important;
-          }
-        }
-      `}</style>
-    </section>
+    </div>
   );
 }
 export default function SchoolCertificatesManager({
@@ -714,11 +757,32 @@ export default function SchoolCertificatesManager({
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [issuing, setIssuing] = useState(false);
+  const [issueProgress, setIssueProgress] = useState({ processed: 0, successful: 0, failed: 0, total: 0, complete: false });
+  const [exportEnrollmentIds, setExportEnrollmentIds] = useState<string[]>([]);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [activeTab, setActiveTab] = useState<"issue" | "history">("issue");
   const [confirming, setConfirming] = useState(false);
+  const [isFullPreviewOpen, setIsFullPreviewOpen] = useState(false);
+
+
+
+  const router = useRouter();
+  useEffect(() => {
+    if (!isFullPreviewOpen) {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsFullPreviewOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isFullPreviewOpen]);
 
   const t = TEXT[language];
   const isRTL = language === "ar";
@@ -754,14 +818,66 @@ export default function SchoolCertificatesManager({
       selectedIds.includes(student.enrollmentId) && !student.alreadyIssued,
   );
 
-  const issuedCount = students.filter(
-    (student) => student.alreadyIssued,
-  ).length;
+  const previewStudent = useMemo(() => {
+    const firstStudent = selectedStudents[0] ?? students[0];
 
-  const excludedCount = students.filter(
-    (student) =>
-      !student.alreadyIssued && !selectedIds.includes(student.enrollmentId),
-  ).length;
+    if (!firstStudent) {
+      return null;
+    }
+
+    return {
+      fullName: firstStudent.fullName,
+      className: firstStudent.class.name,
+      academicYear: selectedYear?.name ?? "",
+      schoolName: "School",
+      schoolSubtitle: "",
+      issueDate: new Date().toISOString(),
+      sectionName: "",
+      principalName: "Principal",
+      departmentHeadName: "Head of Department",
+    };
+  }, [selectedStudents, students, selectedYear]);
+
+  const sampleStudent = useMemo(
+    () =>
+      previewStudent ?? {
+        fullName: "Student Name",
+        className: "Class",
+        academicYear: selectedYear?.name ?? "",
+        schoolName: "School",
+        schoolSubtitle: "",
+        issueDate: "",
+        sectionName: "",
+        principalName: "Principal",
+        departmentHeadName: "Head of Department",
+      },
+    [previewStudent, selectedYear],
+  );
+
+  const previewMessage =
+    certificateType === "APPRECIATION_ACHIEVEMENT"
+      ? notes.trim() ||
+        (language === "ar"
+          ? "ندرك جهود الطالب ونكافئه على التفاني والتميز."
+          : language === "fr"
+            ? "Nous reconnaissons les efforts et le mérite de l’élève."
+            : "We recognize the student’s efforts, commitment, and achievements.")
+      : language === "ar"
+        ? "نتقدم بالشكر والتقدير إلى هذا الطالب على جهوده الدراسية المستمرة."
+        : language === "fr"
+          ? "Nous remercions cet élève pour ses efforts et son engagement scolaire continu."
+          : "We appreciate this student’s continued effort, dedication, and academic progress.";
+
+  const historySummary = useMemo(() => {
+    const groups = new Map<string, { type: CertificateType; className: string; count: number }>();
+    for (const record of history) {
+      const key = `${record.certificateType}::${record.class.name}`;
+      const existing = groups.get(key);
+      if (existing) existing.count += 1;
+      else groups.set(key, { type: record.certificateType, className: record.class.name, count: 1 });
+    }
+    return [...groups.values()];
+  }, [history]);
 
   const inputClass =
     "mt-2 block w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-indigo-950";
@@ -839,13 +955,8 @@ export default function SchoolCertificatesManager({
       const params = new URLSearchParams({
         mode: "history",
         academicYearId: nextFilters.academicYearId,
-        certificateType: nextFilters.certificateType,
         language: nextFilters.language,
       });
-
-      if (nextFilters.classId) {
-        params.set("classId", nextFilters.classId);
-      }
 
       const response = await fetch(
         `/api/school-certificates?${params.toString()}`,
@@ -898,7 +1009,10 @@ export default function SchoolCertificatesManager({
     setSearch("");
     setError("");
     setSuccess("");
+    setIssueProgress({ processed: 0, successful: 0, failed: 0, total: 0, complete: false });
+    setExportEnrollmentIds([]);
     setConfirming(false);
+    setIsFullPreviewOpen(false);
 
     if (activeTab === "history") {
       void loadHistory(nextFilters);
@@ -936,41 +1050,88 @@ export default function SchoolCertificatesManager({
     setSuccess("");
   }
 
-  async function issueCertificates() {
-    //     if (!response.ok) {
-    //   throw new Error(result.error ?? t.issueError);
-    // }
+  async function exportSelectedCertificates() {
+    if (!academicYearId) {
+      setError(t.yearRequired);
+      return;
+    }
 
+    if (!issueProgress.complete || exportEnrollmentIds.length === 0) {
+      setError(language === "ar" ? "أكمل إعداد الشهادات أولًا." : language === "fr" ? "Terminez d’abord la préparation des certificats." : "Complete certificate preparation first.");
+      return;
+    }
+
+    if (certificateType === "APPRECIATION_ACHIEVEMENT" && !notes.trim()) {
+      setError(t.reasonRequired);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/school-certificates/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          academicYearId,
+          certificateType,
+          enrollmentIds: exportEnrollmentIds,
+          notes: notes.trim() || undefined,
+          language,
+          classId: classId || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(
+          payload.error ??
+            (language === "ar"
+              ? "تعذر إنشاء ملف PDF للشهادة."
+              : language === "fr"
+                ? "Le fichier PDF du certificat n’a pas pu être généré."
+                : "The certificate PDF could not be generated."),
+        );
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${certificateType.toLowerCase()}-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t.issueError);
+    }
+  }
+
+  async function issueCertificates() {
     if (!academicYearId) {
       setError(t.yearRequired);
       setConfirming(false);
       return;
     }
-
-    if (selectedStudents.length === 0) {
+    const targets = selectedStudents;
+    if (targets.length === 0) {
       setError(t.studentRequired);
       setConfirming(false);
       return;
     }
-
     if (certificateType === "FINAL_YEAR") {
+      // Preserve the existing final-year certificate route and calculations.
       const params = new URLSearchParams({
         academicYearId,
-        enrollmentIds: selectedStudents
-          .map((student) => student.enrollmentId)
-          .join(","),
+        enrollmentIds: targets.map((student) => student.enrollmentId).join(","),
         language,
       });
+      if (classId) params.set("classId", classId);
 
-      if (classId) {
-        params.set("classId", classId);
-      }
-
-      window.location.assign(`/certificates/batch?${params.toString()}`);
-
-      return;
+router.push(`/certificates/batch?${params.toString()}`);
+return;
     }
-
     if (certificateType === "APPRECIATION_ACHIEVEMENT" && !notes.trim()) {
       setError(t.reasonRequired);
       setConfirming(false);
@@ -981,43 +1142,63 @@ export default function SchoolCertificatesManager({
     setError("");
     setSuccess("");
     setConfirming(false);
+    setExportEnrollmentIds([]);
+    setIssueProgress({ processed: 0, successful: 0, failed: 0, total: targets.length, complete: false });
 
-    try {
-      const response = await fetch("/api/school-certificates", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          academicYearId,
-          certificateType,
-          enrollmentIds: selectedStudents.map(
-            (student) => student.enrollmentId,
-          ),
-          notes: notes.trim() || undefined,
-          language,
-          classId: classId || undefined,
-        }),
-      });
+    let processed = 0;
+    let successful = 0;
+    let failed = 0;
+    const succeededIds: string[] = [];
 
-      const result: ApiResult = await response.json();
+    // Each progress step is based on one completed server request.
+    for (const student of targets) {
+      try {
+        const response = await fetch("/api/school-certificates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            academicYearId,
+            certificateType,
+            enrollmentIds: [student.enrollmentId],
+            notes: notes.trim() || undefined,
+            language,
+            classId: classId || undefined,
+          }),
+        });
+        const result: ApiResult = await response.json();
+        if (!response.ok) throw new Error(result.error ?? t.issueError);
 
-      if (!response.ok) {
-        throw new Error(result.error ?? t.issueError);
+        const issuedRecordReturned = result.issued?.some((record) => record.enrollmentId === student.enrollmentId);
+        if ((result.issuedCount ?? 0) > 0 && (issuedRecordReturned || !result.issued)) {
+          successful += 1;
+          succeededIds.push(student.enrollmentId);
+        } else {
+          failed += 1;
+        }
+      } catch {
+        failed += 1;
+      } finally {
+        processed += 1;
+        setIssueProgress({
+          processed,
+          successful,
+          failed,
+          total: targets.length,
+          complete: false,
+        });
       }
-
-      const issuanceMessage = `${result.message ?? t.success} ${t.issuedCount}: ${
-        result.issuedCount ?? 0
-      }، ${t.skippedCount}: ${result.skippedCount ?? 0}.`;
-
-      setSelectedIds([]);
-      await loadPreview(filters);
-      setSuccess(issuanceMessage);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t.issueError);
-    } finally {
-      setIssuing(false);
     }
+
+    setExportEnrollmentIds(succeededIds);
+    setSelectedIds([]);
+    await loadPreview(filters);
+    setIssueProgress({ processed: targets.length, successful, failed, total: targets.length, complete: true });
+    setSuccess(
+      failed === 0 && successful === targets.length
+        ? t.allPrepared
+        : t.partialPrepared.replace("{success}", String(successful)).replace("{failed}", String(failed)),
+    );
+    setIssuing(false);
   }
 
   if (academicYears.length === 0) {
@@ -1033,8 +1214,8 @@ export default function SchoolCertificatesManager({
 
   return (
     <div className="space-y-6" dir={isRTL ? "rtl" : "ltr"} lang={language}>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+      <header className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <div
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${selectedCertificate.colors.icon}`}
           >
@@ -1051,163 +1232,107 @@ export default function SchoolCertificatesManager({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-          <ShieldCheck size={18} />
-          {t.authorized}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center xl:justify-end">
+          <div className="flex items-center gap-2 self-start rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <ShieldCheck size={18} />
+            {t.authorized}
+          </div>
+
+          <CertificateShowcase
+            language={language}
+            selectedType={certificateType}
+            sampleStudent={sampleStudent}
+            onSelect={(type) => updateFilters({ certificateType: type })}
+          />
         </div>
       </header>
 
-      <CertificateShowcase
-        language={language}
-        selectedType={certificateType}
-        onSelect={(type) => updateFilters({ certificateType: type })}
-      />
-
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className={cardClass}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              {t.students}
-            </span>
-            <Users className="text-indigo-600" size={20} />
-          </div>
-          <p className="mt-3 text-3xl font-bold">{students.length}</p>
-        </div>
-
-        <div className={cardClass}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              {t.issued}
-            </span>
-            <FileCheck2 className="text-emerald-600" size={20} />
-          </div>
-          <p className="mt-3 text-3xl font-bold text-emerald-700 dark:text-emerald-400">
-            {issuedCount}
-          </p>
-        </div>
-
-        <div className={cardClass}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              {t.selected}
-            </span>
-            <Users className="text-blue-600" size={20} />
-          </div>
-          <p className="mt-3 text-3xl font-bold text-blue-700 dark:text-blue-400">
-            {selectedStudents.length}
-          </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {t.excludedCount}: {excludedCount}
-          </p>
-        </div>
-      </section>
-
       <section className={cardClass}>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="block text-sm font-semibold">
-            {t.year}
-            <select
-              value={academicYearId}
-              onChange={(event) =>
-                updateFilters({ academicYearId: event.target.value })
-              }
-              className={inputClass}
-            >
-              {academicYears.map((year) => (
-                <option key={year.id} value={year.id}>
-                  {year.name}
-                  {year.isActive ? " — ●" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block text-sm font-semibold">
-            {t.certificate}
-            <select
-              value={certificateType}
-              onChange={(event) =>
-                updateFilters({
-                  certificateType: event.target.value as CertificateType,
-                })
-              }
-              className={inputClass}
-            >
-              {CERTIFICATE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label[language]}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block text-sm font-semibold">
-            {t.class}
-            <select
-              value={classId}
-              onChange={(event) =>
-                updateFilters({ classId: event.target.value })
-              }
-              className={inputClass}
-            >
-              <option value="">{t.allClasses}</option>
-              {classes.map((schoolClass) => (
-                <option key={schoolClass.id} value={schoolClass.id}>
-                  {schoolClass.gradeLevel} — {schoolClass.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block text-sm font-semibold">
-            {t.language}
-            <select
-              value={language}
-              onChange={(event) =>
-                updateFilters({
-                  language: event.target.value as Language,
-                })
-              }
-              className={inputClass}
-            >
-              <option value="ar">{t.arabic}</option>
-              <option value="en">{t.english}</option>
-              <option value="fr">{t.french}</option>
-            </select>
-          </label>
-        </div>
-
-        <div
-          className={`mt-4 rounded-xl border p-4 ${selectedCertificate.colors.active}`}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-bold ${selectedCertificate.colors.badge}`}
-            >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold">
               {selectedCertificate.label[language]}
-            </span>
-            {selectedYear && (
-              <span className="text-sm text-slate-600 dark:text-slate-300">
-                {selectedYear.name}
-              </span>
-            )}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {certificateType === "FINAL_YEAR"
+                ? t.finalYearPreviewHint
+                : t.previewReady}
+            </p>
           </div>
 
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            {selectedCertificate.description[language]}
-          </p>
-
-          {certificateType === "FINAL_YEAR" && (
-            <p className="mt-2 text-sm font-medium text-indigo-800 dark:text-indigo-300">
+          {certificateType === "FINAL_YEAR" ? (
+            <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
               {t.finalYearNote}
-            </p>
+            </span>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setIsFullPreviewOpen(true)}
+                disabled={!previewStudent || loadingPreview}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                {t.openPreview}
+              </button>
+              {issueProgress.complete && exportEnrollmentIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => void exportSelectedCertificates()}
+                disabled={issuing || loadingPreview}
+                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {language === "ar"
+                  ? "تصدير PDF"
+                  : language === "fr"
+                    ? "Exporter en PDF"
+                    : "Export PDF"} ({exportEnrollmentIds.length})
+              </button>
+              )}
+            </div>
           )}
-
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            {t.languageNote}
-          </p>
         </div>
       </section>
+
+      {isFullPreviewOpen &&
+        certificateType !== "FINAL_YEAR" &&
+        previewStudent && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-2 sm:p-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setIsFullPreviewOpen(false);
+              }
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-label={selectedCertificate.label[language]}
+              dir={isRTL ? "rtl" : "ltr"}
+              lang={language}
+              className="max-h-[calc(100dvh-1rem)] w-full max-w-[1240px] overflow-y-auto rounded-2xl bg-white p-3 shadow-2xl dark:bg-slate-900 sm:max-h-[calc(100dvh-3rem)] sm:p-5"
+            >
+              <div className="mb-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsFullPreviewOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  <XCircle size={17} />
+                  {t.close}
+                </button>
+              </div>
+              <CertificateTemplatePreview
+                student={previewStudent}
+                certificateType={certificateType}
+                language={language}
+                message={previewMessage}
+                onMessageChange={setNotes}
+                onPrint={() => void exportSelectedCertificates()}
+              />
+            </section>
+          </div>
+        )}
 
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
         <button
@@ -1314,23 +1439,83 @@ export default function SchoolCertificatesManager({
       )}
 
       {activeTab === "issue" ? (
-        <section className={cardClass}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-bold">{t.issueTitle}</h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {t.issueDescription}
-              </p>
-            </div>
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(250px,0.78fr)_minmax(0,1.7fr)]">
+          <div className="space-y-4">
+<section className={cardClass}>
+        <div className="grid grid-cols-1 gap-3">
+          <label className="block text-sm font-semibold">
+            {t.certificate}
+            <select
+              value={certificateType}
+              onChange={(event) =>
+                updateFilters({
+                  certificateType: event.target.value as CertificateType,
+                })
+              }
+              className={inputClass}
+            >
+              {CERTIFICATE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label[language]}
+                </option>
+              ))}
+            </select>
+          </label>
 
-            {loadingPreview && (
-              <span className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300">
-                <Loader2 className="animate-spin" size={17} />
-                {t.loading}
-              </span>
-            )}
-          </div>
+          <label className="block text-sm font-semibold">
+            {t.year}
+            <select
+              value={academicYearId}
+              onChange={(event) =>
+                updateFilters({ academicYearId: event.target.value })
+              }
+              className={inputClass}
+            >
+              {academicYears.map((year) => (
+                <option key={year.id} value={year.id}>
+                  {year.name}
+                  {year.isActive ? " — ●" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
 
+          <label className="block text-sm font-semibold">
+            {t.class}
+            <select
+              value={classId}
+              onChange={(event) =>
+                updateFilters({ classId: event.target.value })
+              }
+              className={inputClass}
+            >
+              <option value="">{t.allClasses}</option>
+              {classes.map((schoolClass) => (
+                <option key={schoolClass.id} value={schoolClass.id}>
+                  {schoolClass.gradeLevel} — {schoolClass.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-sm font-semibold">
+            {t.language}
+            <select
+              value={language}
+              onChange={(event) =>
+                updateFilters({
+                  language: event.target.value as Language,
+                })
+              }
+              className={inputClass}
+            >
+              <option value="ar">{t.arabic}</option>
+              <option value="en">{t.english}</option>
+              <option value="fr">{t.french}</option>
+            </select>
+          </label>
+        </div>
+      </section>
           {certificateType === "APPRECIATION_ACHIEVEMENT" && (
             <div className="mt-5">
               <label className="block text-sm font-semibold">
@@ -1350,6 +1535,24 @@ export default function SchoolCertificatesManager({
               </p>
             </div>
           )}
+
+          </div>
+        <section className={cardClass}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold">{t.issueTitle}</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {t.issueDescription}
+              </p>
+            </div>
+
+            {loadingPreview && (
+              <span className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300">
+                <Loader2 className="animate-spin" size={17} />
+                {t.loading}
+              </span>
+            )}
+          </div>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <label className="relative block w-full sm:max-w-sm">
@@ -1403,8 +1606,8 @@ export default function SchoolCertificatesManager({
               </div>
             )}
 
-          <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-            <table className="w-full min-w-190 text-sm">
+          <div className="mt-5 max-h-[620px] overflow-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full min-w-[620px] text-sm">
               <thead className="bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 <tr>
                   <th className="px-4 py-3 text-start font-semibold">
@@ -1497,6 +1700,18 @@ export default function SchoolCertificatesManager({
             </table>
           </div>
 
+          {issueProgress.total > 0 && (
+            <section className="mt-5 rounded-xl border border-slate-200 p-3 dark:border-slate-700" aria-live="polite">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <strong>{t.progress}</strong>
+                <span>{issueProgress.successful}/{issueProgress.total} · {t.processed}: {issueProgress.processed}/{issueProgress.total} · {t.failed}: {issueProgress.failed}</span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700" role="progressbar" aria-valuemin={0} aria-valuemax={issueProgress.total} aria-valuenow={issueProgress.successful} aria-label={t.progress}>
+                <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-200" style={{ width: `${issueProgress.total ? (issueProgress.successful / issueProgress.total) * 100 : 0}%` }} />
+              </div>
+            </section>
+          )}
+
           <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-slate-600 dark:text-slate-300">
               {t.selected}:{" "}
@@ -1557,6 +1772,7 @@ export default function SchoolCertificatesManager({
             </button>
           </div>
         </section>
+        </div>
       ) : (
         <section className={cardClass}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1582,8 +1798,27 @@ export default function SchoolCertificatesManager({
             </button>
           </div>
 
-          <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-            <table className="w-full min-w-190 text-sm">
+          <section className="mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+            <h3 className="text-sm font-bold">{t.historySummary} · {selectedYear?.name}</h3>
+            {historySummary.length ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {historySummary.map((item) => (
+                  <div key={`${item.type}-${item.className}`} className="rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-slate-800">
+                    <span className="font-semibold">{getCertificateOption(item.type).label[language]}</span>
+                    <span className="mx-1 text-slate-400">·</span>
+                    <span>{item.className}</span>
+                    <span className="mx-1 text-slate-400">·</span>
+                    <strong>{item.count}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{t.noHistorySummary}</p>
+            )}
+          </section>
+
+          <div className="mt-5 max-h-[420px] overflow-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full min-w-[620px] text-sm">
               <thead className="bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 <tr>
                   <th className="px-4 py-3 text-start font-semibold">

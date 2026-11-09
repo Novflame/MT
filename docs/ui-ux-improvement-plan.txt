@@ -1,0 +1,281 @@
+UI/UX Improvement Plan
+
+1. Executive Summary
+
+The existing reports show a functional school administration application with a clear role-based structure, but several user-facing issues are visible in source structure and route organization rather than in a browser-verified final experience. The strongest opportunities are in navigation clarity, role-specific shell consistency, stronger onboarding and recovery prompts, improved discoverability of settings and academic workflows, and a more coherent visual system that relates the admin dashboard, role portals, and document/report screens.
+
+The app already has a solid baseline: a dark admin shell for principal/deputy flows, a department shell, and reused card/form patterns across management screens. The main improvement opportunity is to align these systems into clearer, more predictable user journeys without forcing all roles into one identical layout. A role-specific shell strategy should remain, but each shell should present a clearer, more consistent pattern, with persistent navigation, accessible theme/language controls, and obvious routes to major workflows.
+
+The top improvement priorities supported by the existing reports are:
+- Make the main dashboard shell consistently persistent within the roles that use it.
+- Improve navigation discoverability for deep-link or secondary pages, including settings, academic-year, notifications, reports, student history, and role-specific profile pages.
+- Strengthen onboarding and entry flows for school registration and login, including a clear recovery affordance where appropriate.
+- Clarify the academic-year interface and its relationship to dashboard context and settings pages.
+- Standardize shared UI patterns: page headers, cards, forms, validation states, buttons, list/table behavior, and semantic colors.
+- Review responsive behavior and theme consistency for mobile widths and role-specific pages without assuming any issue has been visually confirmed.
+
+This plan is limited to user experience, UI consistency, responsive design, light/dark mode, and visual identity. It does not include backend, permission, authentication, API, or data-model changes.
+
+2. Navigation and User Experience
+
+2.1 Dashboard shell persistence and accessibility
+
+Issue: Principal/deputy dashboard shell is strong but not universal across all routes.
+- Affected route/component: src/components/dashboard/DashboardShell.tsx, src/components/dashboard/Sidebar.tsx, src/components/dashboard/TopNavbar.tsx, src/app/dashboard/page.tsx, plus role-specific pages such as /teacher, /parent, /student, /head-of-department, /login.
+- Current source-code evidence: The main admin shell wraps the dashboard content with Sidebar and TopNavbar, while teacher, parent, student, and login pages are standalone. The user-facing theme/language controls are inside TopNavbar, and the sidebar supports mobile overlay/desktop collapse behavior.
+- User-facing problem or risk: Users may lose access to language, theme, and cross-section navigation once they leave the primary dashboard shell. Even when the shell is intended, not all routes use it.
+- Proposed UI/UX improvement: Preserve the current role-specific shell strategy, but establish a clear rule: each role should use a single visible shell for its core pages, and every shell should keep consistent access to language, theme, navigation, and profile/logout actions. Where a separate shell is required, its structure should still match the main admin shell in core behavior and affordance placement.
+- Expected benefit: Reduced disorientation, fewer repeated back-navigation steps, clearer cross-section movement, and better access to settings and theme controls.
+- Uncertainty requiring browser verification: The exact live behavior of shell persistence and discoverability when navigating between routes is not yet confirmed without browser inspection.
+
+2.2 Navigation discoverability of secondary pages
+
+Issue: Several pages appear under-discoverable from the primary navigation map.
+- Affected route/component: src/components/dashboard/Sidebar.tsx, src/app/settings/page.tsx, src/app/teacher/page.tsx, src/app/parent/page.tsx, src/app/student/page.tsx, /school-history, /graduates, /student-history, /notifications, /dashboard/profile, /dashboard/profile/manage.
+- Current source-code evidence: Sidebar menu includes major admin routes, but several additional routes exist in the app tree without obvious placement in the main shell. Some pages are reached only through direct links or route entry.
+- User-facing problem or risk: Users may not know a page exists unless they already know the URL or are on a related page. This weakens discoverability and increases the chance that features are overlooked.
+- Proposed UI/UX improvement: Retain the existing routes, but clearly classify them into: primary navigation, secondary navigation, and deep-link-only routes. Ensure that each user role has a visible, predictable entry point to high-value sections such as settings, academic-year, notifications, reports, and profile.
+- Expected benefit: Better feature discoverability and lower cognitive overhead for users navigating complex school administration workflows.
+- Uncertainty requiring browser verification: The exact user experience of those hidden or secondary links cannot be confirmed without a live rendered review.
+
+2.3 Settings and academic-year discoverability
+
+Issue: Settings and academic-year paths are inconsistent.
+- Affected route/component: src/app/settings/page.tsx, src/app/settings/academic/page.tsx, src/app/academic-year/page.tsx, src/components/dashboard/Sidebar.tsx.
+- Current source-code evidence: There is both a direct /academic-year page and a /settings/academic route, but /settings/academic currently returns null. The settings landing page has cards for school, academic, users, account, and backup.
+- User-facing problem or risk: Users may not know whether the active academic-year experience lives in the dashboard sidebar, the settings area, or a separate page. The lack of visible implementation in settings weakens the relationship between the two experiences.
+- Proposed UI/UX improvement: Keep both routes if they are intentional, but make the entry relationship explicit in the design. If /settings/academic is intended to act as a settings view of the same concept, the page should either be implemented or clearly linked to the primary academic-year page. If both are intentional, clearly differentiate their purpose and visible context.
+- Expected benefit: Less confusion about which page controls the active academic year and where users should manage institution settings.
+- Uncertainty requiring browser verification: Whether the user experiences these as duplicate or complementary paths is not yet confirmed in the rendered UI.
+
+2.4 Registration onboarding clarity
+
+Issue: The school registration flow is a direct form but not clearly designed as a guided onboarding journey.
+- Affected route/component: src/app/register/page.tsx, src/components/school-register/schoolRegisterForm.tsx.
+- Current source-code evidence: The page renders a centered card with a blue gradient header, school and principal fields, validation, and a redirect to /login on success. No step indicator, progress state, or success confirmation view is present in source.
+- User-facing problem or risk: Users may experience the form as a bare data-entry screen rather than a confident onboarding flow. A single form is not inherently wrong, but the current implementation offers limited visual guidance after submission.
+- Proposed UI/UX improvement: Maintain the current single-card form if it is still desired, but add stronger onboarding cues: clear section grouping, required-field emphasis, explicit success state after submission, and a clearer transition back to the login experience.
+- Expected benefit: Improved trust, reduced confusion, and better onboarding confidence for new school administrators.
+- Uncertainty requiring browser verification: This is based on source structure and should be confirmed visually once a live render is available.
+
+2.5 Login and password recovery guidance
+
+Issue: No visible recovery entry point is present in the current login screen.
+- Affected route/component: src/app/login/page.tsx, src/components/loginForm.tsx.
+- Current source-code evidence: Login form includes email, password, sign-in button, and a create-school link. There is no visible forgot-password element or UI text matching recovery flows in the inspected source.
+- User-facing problem or risk: Users who forget their password have no discoverable recovery path in the visible interface.
+- Proposed UI/UX improvement: Include an explicit recovery affordance in the login form, even if the underlying recovery logic is future work. The UI should present a clear, discoverable route such as a link/button to a recovery entry page with a clear flow: email entry, verification instructions, reset form, and confirmation state.
+- Expected benefit: Better support for real-world account recovery and fewer dead ends during sign-in.
+- Uncertainty requiring browser verification: The login UI itself should be browser-tested to confirm the absence or presence of a recovery affordance in the final rendered design.
+
+2.6 Role-specific shell strategy
+
+Issue: Navigation model differs across roles.
+- Affected route/component: src/components/dashboard/DashboardShell.tsx, src/components/head-of-department/HeadOfDepartmentSidebar.tsx, src/app/teacher/page.tsx, src/app/parent/page.tsx, src/app/student/page.tsx, src/app/head-of-class/page.tsx.
+- Current source-code evidence: Principal/deputy uses DashboardShell; head-of-department uses a distinct shell; teacher, parent, and student pages are simpler standalone screens.
+- User-facing problem or risk: The same user may experience different navigation structures depending on role. This can be acceptable if intentional, but it increases inconsistency and can reduce discoverability across workflows.
+- Proposed UI/UX improvement: Keep role-specific shells where they clearly serve a different purpose, but ensure each one follows a consistent rule set: visibility of main navigation, top controls, profile/logout access, theme switch, and direct access to major tasks. Do not assume a single universal shell is required for every role; instead, aim for consistent shell quality within each role.
+- Expected benefit: Better layout predictability while preserving role differences.
+- Uncertainty requiring browser verification: Whether the separate shells feel coherent to users can only be confirmed by live review.
+
+3. UI Consistency
+
+The existing reports support a reusable visual baseline across the app. The improvement plan should standardize this baseline rather than redesign it from scratch.
+
+3.1 Shared patterns already present
+- Page headers: Most admin pages use a title and supporting description. Example evidence: src/app/students/page.tsx, src/app/subjects/page.tsx, src/app/settings/page.tsx, src/app/dashboard/page.tsx.
+- Cards and summary stats: Dashboards and management pages use cards, metric tiles, and rounded surfaces. Teacher dashboard and parent/student summaries use a card-based pattern as well.
+- Forms: Login and registration forms use labeled inputs, blue primary buttons, inline error states, and card containers. Manager flows use similar form structures with validation and action fields.
+- Navigation patterns: Sidebar navigation for admin flows and a distinct shell for department flows; top nav includes search, language, theme, notifications, and profile actions in the main shell.
+- Theme controls: TopNavbar includes language and theme controls in the main shell; dark mode is handled via a root .dark class and localStorage.
+
+3.2 Proposed shared UI rules for consistency
+- Page headers and section titles
+  - Use one standard title block across all major screens: small eyebrow label, title, optional subtitle, and optional utility actions aligned right.
+  - Apply it to dashboard pages, settings pages, roster pages, and role-specific portals.
+  - Affected routes/components: /dashboard, /students, /subjects, /settings, /teacher, /parent, /student, /head-of-department.
+
+- Cards and summary statistics
+  - Standardize stats cards as a consistent component pattern: label, value, optional delta text, and icon slot.
+  - Use the same spacing, radii, borders, and text hierarchy across admin and role portals.
+  - Affected routes/components: /teacher, /parent, /student, /dashboard, /head-of-department.
+
+- Forms, labels, validation states, and action buttons
+  - Standardize label typography, field spacing, error styling, required-field treatment, disabled states, and action grouping.
+  - Keep blue for primary actions and neutral/white surfaces for general forms.
+  - Affected routes/components: login form, registration form, settings user forms, exams and grades workflows.
+
+- Tables and mobile layouts
+  - Where a table is used, keep consistent row spacing, sticky header treatment, and overflow handling. Where cards or rows are used, ensure they stack predictably on small screens.
+  - Affected routes/components: students, exams, results, grades, attendance, settings user lists.
+
+- Status badges and semantic colors
+  - Define consistent meanings for blue, red, green, amber, and neutral surfaces.
+  - Use semantic color rules consistently across badges and messages instead of locally invented variations.
+  - Affected routes/components: academic-year active badge, status messages, form validation, student or exam status displays.
+
+- Empty, loading, success, and error states
+  - Standardize message treatment for empty lists, loading, saved states, and failed requests.
+  - Existing reports show inconsistent but repeated patterns; this should be normalized without changing underlying logic.
+  - Affected routes/components: exam creation, login, registration, settings, teacher assignments, academic-year, attendance, parent/student data views.
+
+- Navigation, theme controls, and language controls
+  - Reuse the same placement and style for language selector, theme toggle, and user-related actions within each role shell.
+  - Ensure the controls are visible and predictable in both mobile and desktop layouts.
+  - Affected route/component: src/components/dashboard/TopNavbar.tsx, role-specific topbars, shell overlays.
+
+3.3 Areas needing explicit standardization
+- Multiple role shells have similar concepts but are not built from identical component patterns.
+- Some pages use cards, some use list rows, and some use forms without a single global layout pattern.
+- The app uses strong blue and slate conventions, but status color semantics are not fully standardized across all workflows.
+
+4. Responsive Design and Themes
+
+4.1 Small-phone review targets
+- Review all major form pages at widths around 375px, 390px, and 414px without assuming the current classes are sufficient.
+- Affected routes: /login, /register, /settings, /students, /attendance, /teacher, /parent, /student, /academic-year.
+- Focus areas: form width, stacked controls, card spacing, text wrapping, action button widths, and sidebar overlays.
+- Source evidence: components use many mobile-first classes, but source alone does not confirm that the final rendered layouts work well for each target width.
+
+4.2 Tablet and desktop layouts
+- Review layout density in the main dashboard shell, department shell, and role-specific portal pages.
+- Confirm that grids and summary cards scale cleanly from stacked mobile layouts to multi-column desktops.
+- Affected routes/components: DashboardShell, TopNavbar, Sidebar, teacher dashboard, parent portal, student portal, settings landing page, report screens.
+
+4.3 Sidebar and mobile navigation
+- Maintain the current mobile-overlay pattern, but review whether it is consistent in main admin and department shells.
+- Ensure the open/close behavior, keyboard escape handling, and menu button placement are clear and predictable.
+- Affected components: src/components/dashboard/Sidebar.tsx, src/components/dashboard/TopNavbar.tsx, src/components/head-of-department/HeadOfDepartmentSidebar.tsx, src/components/head-of-department/HeadOfDepartmentTopbar.tsx.
+
+4.4 Long pages, scrolling, and content overflow
+- Review pages with long list and form content for clipping, truncated text, and horizontally overflowing tables.
+- Affected routes: admin roster screens, attendance, exams, results, reports, settings users, academic-year list, student records.
+- Proposed UI-only pattern: standardize overflow handling with min-w-0 wrappers, card stacking, and consistent responsive grid behavior.
+
+4.5 Tables and forms
+- Evaluate whether list data should remain card-based or adopt a more consistent responsive table pattern, depending on screen width.
+- Review all field-heavy management pages for label clarity, stacked layout on small screens, and consistent button grouping.
+
+4.6 Light and dark mode
+- Preserve current localStorage-driven dark-mode behavior and dark-root class switching.
+- Review that each shell and role-based page maintains readable contrast in both modes.
+- Affected files: src/app/globals.css, src/app/layout.tsx, src/components/dashboard/TopNavbar.tsx, role-specific shells, forms, cards.
+- The plan should not assume the current dark mode is visually consistent everywhere; only that the implementation exists and should be reviewed.
+
+5. Visual Identity
+
+The app already contains a coherent design baseline that should be preserved and tightened rather than replaced.
+
+5.1 Core visual rules
+- Primary actions: blue accent, strong contrast, clean shadow treatment.
+- Secondary actions: neutral surfaces with borders and muted label treatment.
+- Destructive/error states: red for errors and negative actions.
+- Informational states: blue or neutral backgrounds with clear typography.
+- Success states: use green sparingly, but consistently when used.
+- Document/report pages: maintain distinct, formal styling without allowing it to leak into the core software shell.
+
+5.2 Typography and hierarchy
+- Continue the current clean sans-serif hierarchy with bold titles, clear section labels, and compact metadata text.
+- Keep headings and metadata consistent across admin and role-specific portals.
+- Affected files: src/app/globals.css, src/app/layout.tsx, role dashboard components.
+
+5.3 Spacing, borders, radii, and surfaces
+- Continue the current rounded-card and thin-border design language.
+- Maintain a restrained shadow system and surface hierarchy across pages; avoid over-styling content surfaces.
+- Standardize panel spacing and card padding across role-specific portals.
+
+5.4 Role-specific portal consistency
+- Teacher, parent, and student portals should follow a common design language even if they do not share the exact same navigation shell.
+- The distinction between shell and content should remain clear, without making the portal experience feel unrelated to the rest of the product.
+
+5.5 Final Year Certificate protection
+- The Final Year Certificate is out of scope and must remain completely untouched.
+- Do not propose any modification to the certificate page, styles, rendering, PDF/export behavior, colors, or related global styling if those changes could affect the certificate.
+
+6. Page-by-Page Action Matrix
+
+Priority | User role | Route or component | Identified issue | Proposed UI-only change | Dependencies | Verification method
+---------|-----------|-------------------|-----------------|------------------------|-------------|-------------------
+P1 | Principal/deputy | /dashboard, DashboardShell, Sidebar, TopNavbar | Dashboard shell consistency and persistence risk | Standardize shell behavior and ensure main actions, language, theme, and profile stay accessible inside the role shell | Existing dashboard shell code | Source review plus later browser validation
+P1 | All authenticated users | /login | Missing visible password recovery entry point | Add explicit recovery affordance and planned recovery flow pattern in login screen | Future UI design decision, not backend requirement | Browser validation required
+P1 | All admin users | /settings, /settings/academic, /academic-year | Academic-year UI inconsistency between settings and direct page | Clarify relationship between routes and align page purpose and discoverability | Existing route structure | Browser validation required
+P1 | All roles accessing major flows | Role-specific shells and main dashboard | Inconsistent navigation models across roles | Keep role-specific shell strategy but make each shell consistent internally and predictable | Role route structure | Browser validation required
+P1 | New school owners | /register | Weak onboarding and completion-state guidance | Add sectioning, stronger hierarchy, and a clear post-submit transition state | Design review | Browser validation required
+P2 | Principal/deputy | /students, /staff, /subjects, /classes, /exams, /results | Inconsistent management layout patterns | Standardize page headers, cards, data rows, and form layouts | Existing manager components | Browser validation required
+P2 | Teacher | /teacher, /teacher/class/[classId]/subject/[subjectId] | Standalone flows without persistent shell | Keep role-specific route structure but improve consistent actions and navigation within the teacher workflow | Teacher route components | Browser validation required
+P2 | Parent | /parent, /parent/profile | Simplified portal feels isolated from rest of app | Align portal card structure and profile pattern with other role portals | Parent portal components | Browser validation required
+P2 | Student | /student, /student/profile | Student portal lacks broader navigation consistency | Standardize portal cards, metrics, and profile/surface patterns | Student portal components | Browser validation required
+P2 | Head of department | /head-of-department and children routes | Separate shell but inconsistent with main admin shell in detail | Align internal pattern of controls, spacing, and active states without forcing same layout | Department shell components | Browser validation required
+P2 | Admin users | /settings, /settings/users, /settings/backup | Inconsistent settings card and subpage patterns | Standardize settings landing cards and user management layouts | Existing settings pages | Browser validation required
+P3 | All users | Responsive form pages and long list pages | Small-screen overflow and stacking issues | Review small-screen spacing, field stacking, button grouping, and overflow handling | Existing responsive classes | Browser validation required
+P3 | All users | Theme and shell surfaces | Light/dark mode inconsistencies across pages | Review contrast, card surfaces, and shell styling across dashboard and portals | global CSS and TopNavbar | Browser validation required
+P3 | All users | Documents and reports | Distinct visual identity may not align with app shell | Preserve document styling for formal pages while keeping core software shell coherent | globals.css and certificate/document pages | Browser validation required
+
+6. Phased Implementation Plan
+
+Phase 1: Navigation and shell consistency baseline
+- Scope: Review and improve shell structure, route discoverability, and core navigation patterns without changing business logic.
+- Affected routes and components: DashboardShell, Sidebar, TopNavbar, HeadOfDepartmentSidebar/Topbar, settings landing page, major admin route groups.
+- Prerequisites: Source-code review completed; browser validation scheduled for each shell after design acceptance.
+- Acceptance criteria: Core admin users can reliably find major sections from a single shell; role-specific shells maintain consistent navigation patterns; language/theme controls remain visible and predictable.
+- Regression checks: Confirm that no route or main action is removed; confirm settings and dashboard entries still work; confirm no certificate or global styling changes affect protected areas.
+
+Phase 2: Accessibility and discoverability of key user flows
+- Scope: Improve discoverability of academic-year, settings, notifications, profile, and reporting flows without adding or removing functionality.
+- Affected routes and components: /academic-year, /settings, /settings/academic, /notifications, /reports, /dashboard/profile, /teacher and parent/student profile pages.
+- Prerequisites: Phase 1 navigation decisions accepted.
+- Acceptance criteria: Users can find primary settings and academic workflows without memorizing URLs; major routes are surfaced in consistent ways within role shells.
+- Regression checks: Review route group navigation and ensure no deep link is accidentally hidden or removed.
+
+Phase 3: Form and onboarding consistency
+- Scope: Standardize login, registration, and form conventions across the product.
+- Affected routes and components: /login, /register, settings forms, exam, grade, and attendance forms.
+- Prerequisites: Navigation structure decisions and shell baseline accepted.
+- Acceptance criteria: Labels, button placement, error handling, loading states, and form groups are visually consistent with a defined pattern.
+- Regression checks: Confirm form interactions remain functional; compare primary entry flows to existing requirement of no logic change.
+
+Phase 4: Responsive and theme review
+- Scope: Review mobile widths, overflow, and theme behavior for all major page groups.
+- Affected routes and components: All major dashboard, portal, and settings pages; TopNavbar theme switch; global CSS and dark mode logic.
+- Prerequisites: UI standardization pattern accepted and shell navigation baseline settled.
+- Acceptance criteria: Core pages are readable and action controls remain reachable at small widths; dark and light mode maintain contrast and readability.
+- Regression checks: Confirm no certificate or document-specific styling is altered; confirm responsive patterns remain stable across main route groups.
+
+Phase 5: Visual identity refinement
+- Scope: Align blue/neutral/slate palette, badge semantics, spacing, and typography toward a single coherent product standard.
+- Affected routes and components: major dashboard screens, role portals, document/report pages, global CSS.
+- Prerequisites: Phase 1-4 patterns reviewed and confirmed.
+- Acceptance criteria: A consistent semantic color system and typography hierarchy appear across admin and role-specific flows, while document pages keep a distinct formal treatment.
+- Regression checks: Confirm the Final Year Certificate remains untouched and no global CSS changes affect protected certificate styles.
+
+7. Risk and Regression Protection
+
+Careful attention is required for shared components and global styling because several patterns are reused across the app.
+
+Protected items and high-risk shared surfaces:
+- src/app/globals.css: global styling is used across many pages and may affect document and app screens alike.
+- src/app/layout.tsx: controls global HTML attributes, font setup, and directional behavior.
+- src/components/dashboard/TopNavbar.tsx: contains theme toggle and language switching behavior used across dashboard flows.
+- src/components/dashboard/Sidebar.tsx: primary admin navigation; changes can affect discoverability across many pages.
+- src/components/head-of-department/HeadOfDepartmentSidebar.tsx and HeadOfDepartmentTopbar.tsx: similar role-specific navigation and theme controls.
+- Role-specific portal pages: teacher, parent, student, and head-of-department pages are visually distinct and should not be globally altered without explicit role review.
+- Certificate/document-specific styling: these screens must remain protected and visually distinct; they should not be merged into the main app design system that could affect the protected Final Year Certificate.
+
+Final Year Certificate protection:
+- The Final Year Certificate is completely out of scope.
+- Do not propose modifications to its page, components, styles, rendering, PDF/export behavior, colors, layout, or functionality.
+- Do not alter shared components or global styles in ways that could affect it.
+
+8. Unresolved Questions
+
+The following questions cannot be answered reliably from source code alone and require live browser review before final design decisions are made:
+- Whether the dashboard shell truly disappears in practice when navigating between pages.
+- Whether the language and theme selectors are actually easy to reach and use in the final rendered UI.
+- Whether major pages feel discoverable to end users in the real navigation flow.
+- Whether school registration and login feel clear and trustworthy as onboarding and sign-in experiences.
+- Whether the academic-year UI is perceived as a useful, persistent context or as a separate disconnected page.
+- Whether the role-specific portals feel coherent and intentionally different, or if they currently feel fragmented and under-designed.
+- Whether the responsive classes produce acceptable layouts at 375px, 390px, and 414px widths in actual browser rendering.
+- Whether any document-specific or certificate-specific styles are unintentionally affected by a global visual refresh.
+
+This plan is intentionally limited to UI/UX improvement strategy only. No code changes, implementation work, or route modifications are included here.

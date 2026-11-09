@@ -1,7 +1,6 @@
+import { requireSession } from "@/auth/session"
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
 
-import { auth } from "@/auth/auth"
 
 type PageProps = {
     params: Promise<{
@@ -18,10 +17,7 @@ export default async function TeacherSubjectPage({
     // Authentication
     // =========================
 
-    const session =
-        await auth.api.getSession({
-            headers: await headers(),
-        })
+    const session = await requireSession()
 
     if (!session) {
         redirect("/login")

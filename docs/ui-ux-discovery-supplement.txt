@@ -1,0 +1,87 @@
+UI/UX Discovery Supplement
+
+Scope note
+- This supplement intentionally adds only information beyond the existing discovery report.
+- It does not repeat the route inventory or earlier source-code summary from the main report.
+- Runtime inspection was not performed because no local application server was detected.
+
+1. Runtime inspection status
+- Browser-observed behavior: none.
+- Reason: the application was not running at any common local web port during this check (including 3000, 3001, 3002, 3003, 3004, 5000, 8000, and 8080).
+- Because no running UI was available, no page screenshots, live navigation checks, or live theme/language verification were possible.
+- This means the following user-reported concerns remain unverified in the browser: dashboard-shell persistence, theme and language accessibility, navigation discoverability, registration usability, login recovery visibility, and the visible academic-year user journey.
+
+2. Distinction between source-code evidence and browser-observed behavior
+- Source-code evidence available:
+  - The repository contains separate shells for principal/deputy, head-of-department, teacher, parent, and student experiences.
+  - The app includes a main admin navigation shell, a department shell, and multiple role-specific pages that do not use the same shell.
+  - The login screen and registration form are present in source as distinct entry flows.
+  - The academic-year management route and settings route both exist in source, but the settings academic page is currently empty in implementation.
+  - The login form appears to contain no visible password-recovery entry point in source inspection.
+- Browser-observed behavior: no live behavior was observed, because the app was not running.
+
+3. Major pages that remain insufficiently validated at runtime
+The following pages were not visually inspected in a browser and therefore remain unconfirmed in terms of actual visible layout, navigation behavior, and usability:
+- School registration page
+- Login page
+- Main dashboard
+- Settings landing page and settings subpages
+- Students management page
+- Staff management page
+- Attendance workflow pages
+- Exams workflow pages
+- Grades pages
+- Results pages
+- Reports pages
+- Teacher portal pages
+- Head-of-class portal pages
+- Head-of-department portal pages
+- Parent portal pages
+- Student portal pages
+
+This is a concrete limitation: the current report is source-driven for these flows, while the actual rendered experience remains unverified.
+
+4. User-reported concerns: what can and cannot be concluded without runtime inspection
+4.1 Dashboard layout disappears when navigating to some pages
+- Source-code evidence suggests that the application uses multiple layout shells depending on role and page group.
+- However, without live browser navigation, it is not possible to confirm whether the dashboard shell actually disappears in practice, or whether it is simply absent on certain routes by design.
+- Therefore, the report can say only that the code indicates multiple shell patterns, not that the user-facing transition is confirmed as a broken persistent-layout experience.
+
+4.2 Language and theme controls are difficult to reach from certain pages
+- Source-code evidence shows that the top navbar contains language and theme controls in the main dashboard shell, and that the root theme is toggled by class changes.
+- Without live page navigation, it is not possible to confirm whether users can reliably reach these controls from the final rendered screens or whether the issue occurs in specific route-level transitions.
+- Browser validation is still required to confirm whether the controls are visible, persistent, and discoverable across the real user flow.
+
+4.3 Some pages are not discoverable through navigation menus
+- Source-code evidence indicates that the app contains multiple routes that are not obviously surfaced in the main shell.
+- This supports a discoverability concern, but it does not prove the real user experience without a live run of the app.
+- The navigation concern remains a valid design-risk statement, but the exact impact remains browser-unverified.
+
+4.4 School registration needs a better user experience
+- Source inspection shows a single-card registration form with direct submission and redirect behavior, no explicit multi-step flow, and no visible post-registration confirmation state.
+- This provides a reasonable source-based indication of a possible onboarding weakness.
+- It is not a browser-confirmed usability judgment because the live page was not running.
+
+4.5 Password recovery is not visibly available from the login screen
+- Source inspection found no visible forgot-password link or recovery UI in the login form and no matching UI text in the source tree.
+- That supports a source-based conclusion that no visible password-recovery entry point currently appears in the inspected interface.
+- It does not confirm whether a recovery flow exists outside the visible UI, or how it would be presented if the application were running.
+
+4.6 Academic-year interface needs context in the overall user journey
+- Source evidence shows the academic-year route and manager UI, plus a separate settings/academic route that currently resolves to null.
+- The code therefore suggests an inconsistent or partially surfaced academic-year experience.
+- Without the running app, it remains unclear how the academic-year UI is actually perceived by users within the day-to-day dashboard flow.
+
+5. Remaining limitations
+- No browser-level validation was possible because the app was not running.
+- No observed layout, menu persistence, or live navigation behavior was captured in the browser.
+- No live confirmation of language selection, theme toggling, or access to settings from the final UI was possible.
+- No visual judgment of registration quality, login flow clarity, or role-specific portal usability was possible beyond the source-code evidence.
+- The concerns listed above remain design/UX risks inferred from code structure, not proven end-user behavior.
+
+6. Practical conclusion
+- The main report remains the stronger evidence base for route structure and design intent.
+- This supplement adds a precise limitation note: the live interface was not available, so actual visible-layout findings remain unconfirmed.
+- Future browser verification should focus on the exact routes and user flows listed in this supplement before drawing final conclusions about dashboard persistence, discoverability, and usability.
+
+No application source files, styles, configuration, or data were changed as part of this supplement.

@@ -1,15 +1,13 @@
 import crypto from "node:crypto"
 import fs from "node:fs/promises"
 import path from "node:path"
-
 import {
   verifySQLiteDatabase,
 } from "./adapters/sqlite"
-
 import type {
   BackupManifest,
 } from "./types"
-
+import { sha256Directory } from "./file-integrity"
 
 export type BackupVerificationResult = {
   valid: boolean
@@ -20,6 +18,7 @@ export type BackupVerificationResult = {
     database: boolean
     checksum: boolean
     integrity: boolean
+    files: boolean
   }
   error: string | null
 }
@@ -213,13 +212,11 @@ function isBackupManifest(
     integrity as Record<string, unknown>
 
   if (
-    integrityData.algorithm !==
-      "sha256" ||
-    typeof integrityData.databaseSha256 !==
-      "string"
-  ) {
-    return false
-  }
+    integrityData.algorithm !== "sha256" ||
+    typeof integrityData.databaseSha256 !== "string"
+  ) return false
+
+  if (contentsData.files === true && typeof integrityData.filesSha256 !== "string") return false
 
   return true
 }
@@ -227,6 +224,7 @@ function isBackupManifest(
 
 export async function verifySchoolBackup(
   backupDirectory: string,
+  expectedSchoolId?: string,
 ): Promise<BackupVerificationResult> {
 
   const id =
@@ -252,6 +250,7 @@ export async function verifySchoolBackup(
     database: false,
     checksum: false,
     integrity: false,
+    files: false,
   }
 
   try {
@@ -302,6 +301,10 @@ export async function verifySchoolBackup(
       parsedManifest
 
     checks.manifest = true
+
+    if (expectedSchoolId && manifest.school.id !== expectedSchoolId) {
+      throw new Error("Backup belongs to a different school")
+    }
 
     // ------------------------------------------
     // 2. Database file
@@ -355,6 +358,18 @@ export async function verifySchoolBackup(
     }
 
     checks.integrity = true
+
+    if (manifest.contents.files) {
+      const filesDirectory = path.join(backupDirectory, "files", "schools", manifest.school.id)
+      if (!(await fileExists(filesDirectory))) throw new Error("Backup uploads are missing")
+      const actualFilesSha256 = await sha256Directory(filesDirectory)
+      if (actualFilesSha256.toLowerCase() !== manifest.integrity.filesSha256?.toLowerCase()) {
+        throw new Error("Backup upload checksum does not match the manifest")
+      }
+      checks.files = true
+    } else {
+      checks.files = true
+    }
 
     return {
       valid: true,

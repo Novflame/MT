@@ -1,28 +1,18 @@
-
 import { NextResponse } from "next/server"
 import { and, eq } from "drizzle-orm"
-
 import { centralDb } from "@/db/central"
 import { user } from "@/db/centeral-schema"
-
 import { getSchoolDB } from "@/db"
-
 import {
     parentStudents,
     parents,
     students,
 } from "@/db/schema"
-
 import {
     requirePermission,
     requireSession,
 } from "@/auth/session"
 
-
-// =========================================
-// GET
-// Get children of the currently logged-in parent
-// =========================================
 
 export async function GET() {
 

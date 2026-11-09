@@ -78,7 +78,7 @@ export default async function GraduatesPage({ searchParams }: PageProps) {
         <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="border-b border-slate-200 p-5 dark:border-slate-800">
             <h2 className="text-lg font-bold">Graduation records</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Open a student's profile to review their full enrollment and academic history.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Open a student&apos;s profile to review their full enrollment and academic history.</p>
             <form method="get" className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input name="q" defaultValue={params.q ?? ""} type="search" placeholder="Search name, admission number, year, class, or reason…" aria-label="Search graduates" className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950" />
               <button type="submit" className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Search</button>

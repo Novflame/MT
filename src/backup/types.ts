@@ -1,4 +1,5 @@
-﻿
+
+
 export type BackupDatabaseProvider = "sqlite"
 
 
@@ -30,6 +31,7 @@ export type BackupManifest = {
   integrity: {
     algorithm: "sha256"
     databaseSha256: string
+    filesSha256?: string
   }
 }
 

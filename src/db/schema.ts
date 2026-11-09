@@ -3,11 +3,12 @@ import {
     text,
     integer,
     primaryKey,
-     unique,
-     
+    unique,
+    check,
+    index,
 } from "drizzle-orm/sqlite-core"
 
-import {  relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 
 export const academicYears = sqliteTable(
     "academic_years",
@@ -308,6 +309,11 @@ export const grades = sqliteTable("grades", {
 }, (table) => [
     unique("grade_enrollment_test_unique").on(table.studentEnrollmentId, table.testId),
     unique("grade_enrollment_exam_unique").on(table.studentEnrollmentId, table.examId),
+    check("grade_score_nonnegative", sql`${table.score} >= 0`),
+    check(
+        "grade_exactly_one_assessment",
+        sql`(${table.testId} IS NOT NULL AND ${table.examId} IS NULL) OR (${table.testId} IS NULL AND ${table.examId} IS NOT NULL)`,
+    ),
 ])
 
 export const coreSubjects = sqliteTable(
@@ -531,6 +537,102 @@ export const studentUsers = sqliteTable("student_users", {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().unique(),
     studentId: text("student_id").notNull().unique().references(() => students.id),
+})
+
+// Optional timetable module. These tables are independent from legacy `attendance`.
+export const classTimetables = sqliteTable("class_timetables", {
+    id: text("id").primaryKey(),
+    academicYearId: text("academic_year_id").notNull().references(() => academicYears.id),
+    classId: text("class_id").notNull().references(() => schoolClases.id),
+    name: text("name").notNull().default("Main timetable"),
+    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    createdBy: text("created_by").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+}, (table) => [unique("class_timetable_year_class_unique").on(table.academicYearId, table.classId)])
+
+export const classTimetableSlots = sqliteTable("class_timetable_slots", {
+    id: text("id").primaryKey(),
+    timetableId: text("timetable_id").notNull().references(() => classTimetables.id, { onDelete: "cascade" }),
+    academicYearId: text("academic_year_id").notNull().references(() => academicYears.id),
+    classId: text("class_id").notNull().references(() => schoolClases.id),
+    subjectId: text("subject_id").notNull().references(() => subjects.id),
+    teacherId: text("teacher_id").notNull(),
+    dayOfWeek: integer("day_of_week").notNull(),
+    periodNumber: integer("period_number").notNull(),
+    startTime: text("start_time").notNull(),
+    endTime: text("end_time").notNull(),
+    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+}, (table) => [unique("class_timetable_period_unique").on(table.timetableId, table.dayOfWeek, table.periodNumber)])
+
+export const classSessions = sqliteTable("class_sessions", {
+    id: text("id").primaryKey(),
+    timetableSlotId: text("timetable_slot_id").references(() => classTimetableSlots.id, { onDelete: "set null" }),
+    academicYearId: text("academic_year_id").notNull().references(() => academicYears.id),
+    classId: text("class_id").notNull().references(() => schoolClases.id),
+    subjectId: text("subject_id").notNull().references(() => subjects.id),
+    scheduledTeacherId: text("scheduled_teacher_id").notNull(),
+    actualTeacherId: text("actual_teacher_id").notNull(),
+    sessionDate: text("session_date").notNull(),
+    startTime: text("start_time").notNull(),
+    endTime: text("end_time").notNull(),
+    status: text("status").notNull().default("scheduled"),
+    cancellationReason: text("cancellation_reason"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+}, (table) => [
+    unique("class_session_slot_date_unique").on(table.timetableSlotId, table.sessionDate),
+    index("class_sessions_date_class_idx").on(table.sessionDate, table.classId),
+    index("class_sessions_teacher_date_idx").on(table.actualTeacherId, table.sessionDate),
+])
+
+export const sessionTeacherAttendance = sqliteTable("session_teacher_attendance", {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id").notNull().unique().references(() => classSessions.id, { onDelete: "cascade" }),
+    teacherId: text("teacher_id").notNull(),
+    checkedInAt: text("checked_in_at"),
+    checkedOutAt: text("checked_out_at"),
+    status: text("status").notNull().default("present"),
+    lateMinutes: integer("late_minutes").notNull().default(0),
+    note: text("note"),
+    updatedAt: text("updated_at").notNull(),
+})
+
+export const sessionStudentAttendance = sqliteTable("session_student_attendance", {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id").notNull().references(() => classSessions.id, { onDelete: "cascade" }),
+    studentEnrollmentId: text("student_enrollment_id").notNull().references(() => studentEnrollments.id),
+    status: text("status").notNull(),
+    note: text("note"),
+    recordedBy: text("recorded_by").notNull(),
+    recordedAt: text("recorded_at").notNull(),
+}, (table) => [unique("session_student_attendance_unique").on(table.sessionId, table.studentEnrollmentId)])
+
+export const classSessionNotificationEvents = sqliteTable("class_session_notification_events", {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id").notNull().references(() => classSessions.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(),
+    createdAt: text("created_at").notNull(),
+}, (table) => [unique("class_session_notification_event_unique").on(table.sessionId, table.eventType)])
+
+export const classTimetableAuditLogs = sqliteTable("class_timetable_audit_logs", {
+    id: text("id").primaryKey(),
+    timetableId: text("timetable_id").notNull().references(() => classTimetables.id, { onDelete: "cascade" }),
+    slotId: text("slot_id").references(() => classTimetableSlots.id, { onDelete: "set null" }),
+    actorUserId: text("actor_user_id").notNull(),
+    action: text("action").notNull(),
+    details: text("details"),
+    createdAt: text("created_at").notNull(),
+})
+
+export const classSessionAuditLogs = sqliteTable("class_session_audit_logs", {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id").notNull().references(() => classSessions.id, { onDelete: "cascade" }),
+    actorUserId: text("actor_user_id").notNull(),
+    action: text("action").notNull(),
+    details: text("details"),
+    createdAt: text("created_at").notNull(),
 })
 
 export const notifications = sqliteTable("notifications", {

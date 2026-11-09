@@ -1,4 +1,4 @@
-﻿import path from "node:path"
+import path from "node:path"
 import fs from "node:fs"
 
 export function getBackupRoot() {
@@ -45,4 +45,13 @@ export function ensureBackupDirectory(
   })
 
   return directory
+}
+
+
+export function getSchoolUploadsDirectory(schoolId: string) {
+  if (!/^\d+$/.test(schoolId) || Number(schoolId) < 1) throw new Error("Invalid school id for uploads")
+  const uploadsRoot = process.env.SCHOOL_UPLOADS_DIR?.trim()
+    ? path.resolve(process.env.SCHOOL_UPLOADS_DIR)
+    : path.join(process.cwd(), "public", "uploads")
+  return path.join(uploadsRoot, "schools", schoolId)
 }

@@ -411,12 +411,7 @@ export default function StudentImport({
 
                     {mode === "preview" &&
                         result && (
-                            <Preview
-                                result={result}
-                                onChooseAnother={
-                                    chooseAnotherFile
-                                }
-                            />
+                            <Preview result={result} />
                         )}
 
                     {mode === "success" &&
@@ -521,13 +516,7 @@ export default function StudentImport({
 // Preview
 // =================================
 
-function Preview({
-    result,
-    onChooseAnother,
-}: {
-    result: ValidationResult
-    onChooseAnother: () => void
-}) {
+function Preview({ result }: { result: ValidationResult }) {
     return (
         <div className="space-y-5">
 

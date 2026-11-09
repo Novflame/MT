@@ -1,14 +1,11 @@
 import { and, eq } from "drizzle-orm"
-
 import { getSchoolDB } from "@/db"
 import { centralDb } from "@/db/central"
 import { getStudentFullName } from "@/lib/student-name"
-
 import {
     schools,
     user,
 } from "@/db/centeral-schema"
-
 import {
     students,
     schoolClases,
@@ -16,7 +13,6 @@ import {
     studentEnrollments,
     classHeads,
 } from "@/db/schema"
-
 import { calculateResult } from "@/academic/results/calculate-result"
 
 

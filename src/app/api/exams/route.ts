@@ -9,11 +9,12 @@ import {
     isExamType,
     createExamName,
 } from "@/lib/exam-name"
-
 import {
     getNextSequence,
 } from "@/lib/sequence"
 import { canManageAcademicResource } from "@/auth/assessment-authorization"
+
+
 export async function GET() {
     try {
         await requirePermission("exams.read")
@@ -334,6 +335,19 @@ export async function PATCH(request: Request) {
                   if(!allowed)return NextResponse.json({error:"Forbidden"},
                     {status:403});
 
+                   const nextMaxScore = body.maxScore !== undefined ? Number(body.maxScore) : exam.maxScore
+                   if (!Number.isInteger(nextMaxScore) || nextMaxScore <= 0) {
+                       return NextResponse.json({ error: "Maximum score must be a positive whole number" }, { status: 400 })
+                   }
+                   const nextType = body.type !== undefined ? String(body.type).trim().toUpperCase() : exam.type
+                   if (!isExamType(nextType)) return NextResponse.json({ error: "Invalid exam type" }, { status: 400 })
+                   if (nextMaxScore !== exam.maxScore) {
+                       const existingGrades = await db.query.grades.findMany({ where: eq(grades.examId, id) })
+                       if (existingGrades.some((grade) => grade.score > nextMaxScore)) {
+                           return NextResponse.json({ error: "Maximum score cannot be lower than an existing grade" }, { status: 409 })
+                       }
+                   }
+
                    const [updated] = await db
     .update(exams)
     .set({
@@ -347,12 +361,9 @@ export async function PATCH(request: Request) {
                 : exam.examDate,
         maxScore:
             body.maxScore !== undefined
-                ? Number(body.maxScore)
+                ? nextMaxScore
                 : exam.maxScore,
-        type:
-            body.type !== undefined
-                ? String(body.type)
-                : exam.type,
+        type: nextType,
     })
     .where(eq(exams.id, id))
     .returning()

@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 type Department={id:string;name:string;subjects:{id:string;name:string}[]}; type Class={id:string;name:string;gradeLevel:number}
 export default function TestsManager({departments,classes}:{departments:Department[];classes:Class[]}){

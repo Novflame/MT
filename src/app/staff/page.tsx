@@ -1,13 +1,10 @@
+import { requireSession } from "@/auth/session"
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 
-import { auth } from "@/auth/auth";
 import StaffForm from "@/components/staffForm";
 
 export default async function StaffPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await requireSession();
 
   if (!session) {
     redirect("/login");

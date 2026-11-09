@@ -6,30 +6,28 @@ import * as schema from "./centeral-schema"
 import fs from "node:fs"
 import path from "node:path"
 
-const databasePath =
-    process.env.CENTRAL_DATABASE_PATH ??
-    path.join(process.cwd(), "central.db")
+const configuredPath = process.env.CENTRAL_DATABASE_PATH?.trim()
+
+const databasePath = configuredPath
+? path.resolve(configuredPath)
+: path.join(process.cwd(), "central.db")
 
 const databaseDir = path.dirname(databasePath)
 
-if (
-    databaseDir &&
-    databaseDir !== "."
-) {
-    fs.mkdirSync(
-        databaseDir,
-        { recursive: true },
-    )
-}
+fs.mkdirSync(databaseDir, { recursive: true })
 
-const sqlite =
-    new Database(databasePath)
+const sqlite = new Database(databasePath, {
+timeout: 5000,
+})
 
-sqlite.pragma(
-    "journal_mode = WAL",
-)
+// Wait briefly for another connection to finish its transaction.
+sqlite.pragma("busy_timeout = 5000")
 
-export const centralDb =
-    drizzle(sqlite, {
-        schema,
-    })
+// Do not change journal_mode during module initialization.
+// Multiple Next.js build workers may import this module concurrently.
+
+sqlite.pragma("foreign_keys = ON")
+
+export const centralDb = drizzle(sqlite, {
+schema,
+})

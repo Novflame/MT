@@ -1,8 +1,5 @@
-
 "use client"
-
 import Link from "next/link"
-
 import {
     Bell,
     ChevronDown,
@@ -15,9 +12,7 @@ import {
     User,
     X,
 } from "lucide-react"
-
-import { useEffect, useState } from "react"
-
+import { useEffect, useState, useSyncExternalStore } from "react"
 import { useLanguage } from "@/components/providers/LanguageProvider"
 import { authClient } from "@/auth/auth-client"
 
@@ -35,6 +30,31 @@ const languageLabels: Record<
     en: "English",
     ar: "العربية",
     fr: "Français",
+}
+
+function getThemeSnapshot(): "light" | "dark" {
+    if (typeof window === "undefined") return "light"
+    const saved = window.localStorage.getItem("school-theme")
+    if (saved === "dark" || saved === "light") return saved
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+}
+
+function subscribeTheme(callback: () => void) {
+    if (typeof window === "undefined") return () => {}
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    window.addEventListener("storage", callback)
+    window.addEventListener("school-theme-change", callback)
+    media.addEventListener("change", callback)
+    return () => {
+        window.removeEventListener("storage", callback)
+        window.removeEventListener("school-theme-change", callback)
+        media.removeEventListener("change", callback)
+    }
+}
+
+function storeTheme(nextTheme: "light" | "dark") {
+    window.localStorage.setItem("school-theme", nextTheme)
+    window.dispatchEvent(new Event("school-theme-change"))
 }
 
 function getInitials(
@@ -112,35 +132,11 @@ export default function TopNavbar({
     const [settingsOpen, setSettingsOpen] =
         useState(false)
 
-    const [theme, setTheme] =
-        useState<"light" | "dark">("light")
+    const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light")
 
     useEffect(() => {
-        const savedTheme =
-            window.localStorage.getItem(
-                "school-theme",
-            )
-
-        const preferredTheme =
-            window.matchMedia(
-                "(prefers-color-scheme: dark)",
-            ).matches
-                ? "dark"
-                : "light"
-
-        const nextTheme =
-            savedTheme === "dark" ||
-            savedTheme === "light"
-                ? savedTheme
-                : preferredTheme
-
-        setTheme(nextTheme)
-
-        document.documentElement.classList.toggle(
-            "dark",
-            nextTheme === "dark",
-        )
-    }, [])
+        document.documentElement.classList.toggle("dark", theme === "dark")
+    }, [theme])
 
     const name =
         session?.user?.name ?? "User"
@@ -150,24 +146,7 @@ export default function TopNavbar({
     )
 
     function handleThemeToggle() {
-        setTheme((current) => {
-            const nextTheme =
-                current === "light"
-                    ? "dark"
-                    : "light"
-
-            document.documentElement.classList.toggle(
-                "dark",
-                nextTheme === "dark",
-            )
-
-            window.localStorage.setItem(
-                "school-theme",
-                nextTheme,
-            )
-
-            return nextTheme
-        })
+        storeTheme(theme === "light" ? "dark" : "light")
     }
 
     return (

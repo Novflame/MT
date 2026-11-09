@@ -1,6 +1,4 @@
-
 "use client"
-
 import { useEffect, useState } from "react"
 import { useLanguage } from "@/components/providers/LanguageProvider"
 
@@ -56,7 +54,6 @@ type Labels = {
     addStaff: string
     fullName: string
     email: string
-    password: string
     selectRole: string
     teacher: string
     headOfClass: string
@@ -103,7 +100,6 @@ function getLabels(
             addStaff: "إضافة موظف",
             fullName: "الاسم الكامل",
             email: "البريد الإلكتروني",
-            password: "كلمة المرور",
             selectRole: "اختر الدور",
             teacher: "معلم",
             headOfClass: "رئيس الفصل",
@@ -160,7 +156,6 @@ function getLabels(
             addStaff: "Ajouter un membre",
             fullName: "Nom complet",
             email: "E-mail",
-            password: "Mot de passe",
             selectRole: "Sélectionner le rôle",
             teacher: "Enseignant",
             headOfClass: "Responsable de classe",
@@ -216,7 +211,6 @@ function getLabels(
         addStaff: "Add Staff Member",
         fullName: "Full name",
         email: "Email",
-        password: "Password",
         selectRole: "Select role",
         teacher: "Teacher",
         headOfClass: "Head of Class",
@@ -268,13 +262,26 @@ function getLabels(
     }
 }
 
+type BulkAccountResult = {
+    email: string
+    success: boolean
+    userId?: string
+    initialPassword?: string
+    emailVerification?: "sent" | "not_configured" | "failed"
+    error?: string
+}
+
 export default function StaffForm() {
     const { locale, direction } = useLanguage()
     const labels = getLabels(locale)
 
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
+    const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string; emailVerification: string } | null>(null)
+    const [bulkText, setBulkText] = useState("")
+    const [bulkResults, setBulkResults] = useState<BulkAccountResult[]>([])
+    const [bulkLoading, setBulkLoading] = useState(false)
+    const [bulkError, setBulkError] = useState("")
     const [role, setRole] =
         useState<StaffRole>("teacher")
 
@@ -576,7 +583,7 @@ export default function StaffForm() {
         setSuccess("")
         setName("")
         setEmail("")
-        setPassword("")
+        setCreatedCredentials(null)
 
         setLoading(true)
 
@@ -592,7 +599,6 @@ export default function StaffForm() {
                     body: JSON.stringify({
                         name,
                         email,
-                        password,
                         role,
                     }),
                 },
@@ -611,10 +617,10 @@ export default function StaffForm() {
             setSuccess(
                 `${locale === "ar" ? "تم إنشاء حساب الموظف" : locale === "fr" ? "Compte créé" : "Staff account created"}: ${data.staff.email}`,
             )
+            setCreatedCredentials({ email: data.staff.email, password: data.initialPassword, emailVerification: data.emailVerification ?? "not_configured" })
 
             setName("")
             setEmail("")
-            setPassword("")
             setRole("teacher")
 
             await loadStaff()
@@ -622,6 +628,40 @@ export default function StaffForm() {
             setError(labels.somethingWentWrong)
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function handleBulkCreate() {
+        setBulkError("")
+        setBulkResults([])
+        const rows = bulkText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+        const dataRows = rows.filter((line, index) => !(index === 0 && /^name\s*,\s*email/i.test(line)))
+        const accounts = dataRows.map((line) => {
+            const [accountName = "", accountEmail = "", accountPhone = "", accountRole = "teacher"] = line.split(",").map((value) => value.trim())
+            return { name: accountName, email: accountEmail, phone: accountPhone, schoolRole: accountRole || "teacher" }
+        })
+        if (!accounts.length) {
+            setBulkError(locale === "ar" ? "أدخل حسابًا واحدًا على الأقل." : locale === "fr" ? "Saisissez au moins un compte." : "Enter at least one account row.")
+            return
+        }
+        setBulkLoading(true)
+        try {
+            const response = await fetch("/api/settings/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accounts }),
+            })
+            const data = await response.json()
+            if (!response.ok || !Array.isArray(data.results)) throw new Error(data.error ?? "Bulk account creation failed")
+            setBulkResults(data.results)
+            const successCount = data.results.filter((row: BulkAccountResult) => row.success).length
+            const failureCount = data.results.length - successCount
+            setSuccess(locale === "ar" ? `تم إنشاء ${successCount} وفشل ${failureCount}.` : locale === "fr" ? `${successCount} créé(s), ${failureCount} échec(s).` : `${successCount} created, ${failureCount} failed.`)
+            await loadStaff()
+        } catch (caught) {
+            setBulkError(caught instanceof Error ? caught.message : labels.somethingWentWrong)
+        } finally {
+            setBulkLoading(false)
         }
     }
 
@@ -700,20 +740,6 @@ export default function StaffForm() {
                         required
                     />
 
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(event) =>
-                            setPassword(
-                                event.target.value,
-                            )
-                        }
-                        placeholder={labels.password}
-                        className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-blue-950"
-                        minLength={8}
-                        required
-                    />
-
                     <select
                         value={role}
                         onChange={(event) =>
@@ -760,7 +786,29 @@ export default function StaffForm() {
                         {success}
                     </div>
                 )}
+                {createdCredentials && (
+                    <div className="mt-4 space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                        <p className="font-semibold">{locale === "ar" ? "بيانات الدخول الأولية — تظهر مرة واحدة" : locale === "fr" ? "Identifiants initiaux — affichés une seule fois" : "Initial credentials — shown once"}</p>
+                        <p>{createdCredentials.email}</p>
+                        <p className="break-all"><strong>{locale === "ar" ? "كلمة المرور المؤقتة:" : locale === "fr" ? "Mot de passe temporaire :" : "Temporary password:"}</strong> {createdCredentials.password}</p>
+                        <p>{locale === "ar" ? "يجب تغيير كلمة المرور قبل الوصول إلى بيانات المدرسة." : locale === "fr" ? "Le mot de passe doit être changé avant l’accès aux données scolaires." : "The password must be changed before school data can be accessed."}</p>
+                        <p>{createdCredentials.emailVerification === "sent" ? "Verification email request accepted by provider." : createdCredentials.emailVerification === "failed" ? "Email verification failed; retry from user management after checking email settings." : "Email delivery is not configured; the address remains unverified. Phone numbers are not verified by this system."}</p>
+                        <button type="button" onClick={() => navigator.clipboard.writeText(`Email: ${createdCredentials.email}\nTemporary password: ${createdCredentials.password}`)} className="rounded-lg border border-amber-500 px-3 py-2 font-medium">{locale === "ar" ? "نسخ بيانات الدخول" : locale === "fr" ? "Copier les identifiants" : "Copy credentials"}</button>
+                    </div>
+                )}
             </form>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{locale === "ar" ? "إنشاء حسابات جماعية" : locale === "fr" ? "Création groupée de comptes" : "Bulk account creation"}</h2>
+                <p className="mt-1 text-sm text-slate-500">{locale === "ar" ? "أدخل سطرًا لكل حساب بالترتيب: الاسم، البريد، الهاتف، الدور. الأدوار: teacher أو head_of_class أو head_of_department أو deputy." : locale === "fr" ? "Une ligne par compte : nom, e-mail, téléphone, rôle. Rôles : teacher, head_of_class, head_of_department, deputy." : "One CSV row per account: name,email,phone,role. Roles: teacher, head_of_class, head_of_department, deputy. Do not include passwords."}</p>
+                <textarea value={bulkText} onChange={(event) => setBulkText(event.target.value)} rows={5} placeholder={'name,email,phone,role\nTeacher One,teacher1@example.com,555123,teacher\nTeacher Two,teacher2@example.com,555456,head_of_class'} className="mt-3 w-full rounded-xl border border-slate-300 bg-white p-3 font-mono text-sm dark:border-slate-700 dark:bg-slate-950" />
+                <button type="button" onClick={handleBulkCreate} disabled={bulkLoading} className="mt-3 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{bulkLoading ? (locale === "ar" ? "جارٍ الإنشاء…" : locale === "fr" ? "Création…" : "Creating…") : (locale === "ar" ? "إنشاء الحسابات" : locale === "fr" ? "Créer les comptes" : "Create accounts")}</button>
+                {bulkError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{bulkError}</p>}
+                {bulkResults.length > 0 && <div className="mt-4 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{locale === "ar" ? "نتائج الإنشاء" : locale === "fr" ? "Résultats" : "Creation results"}</h3><button type="button" onClick={() => navigator.clipboard.writeText(bulkResults.filter((row) => row.success && row.initialPassword).map((row) => `${row.email},${row.initialPassword}`).join("\n"))} className="rounded-lg border px-3 py-2 text-xs font-medium">{locale === "ar" ? "نسخ بيانات الدخول الناجحة" : locale === "fr" ? "Copier les identifiants réussis" : "Copy successful credentials"}</button></div>
+                    {bulkResults.map((row, index) => <div key={`${row.email}-${index}`} className={`rounded-lg border p-3 text-sm ${row.success ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/20" : "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20"}`}><p className="font-semibold">{row.email} — {row.success ? "Created" : "Failed"}</p>{row.success && row.initialPassword ? <><p className="break-all">Temporary password: <strong>{row.initialPassword}</strong></p><p className="text-xs">Email verification: {row.emailVerification ?? "not_configured"}. Password change is required at first sign-in.</p></> : <p>{row.error ?? "Creation failed"}{row.userId ? ` (account ${row.userId} disabled for repair)` : ""}</p>}</div>)}
+                </div>}
+            </section>
 
             {/* STAFF LIST */}
 

@@ -1,9 +1,9 @@
+import { getRequestSession } from "@/auth/session"
 // src/app/api/students/[id]/profile/route.ts
 
 import { NextResponse } from "next/server"
 // import { and, desc, eq } from "drizzle-orm"
 
-import { auth } from "@/auth/auth"
 import { getSchoolDB } from "@/db"
 
 // import {
@@ -20,6 +20,9 @@ import {
     hasPermission,
     type Role,
 } from "@/auth/permissions"
+import { canViewStudent } from "@/auth/authorization"
+import { classHeads, departmentHeads, teacherAssignments } from "@/db/schema"
+import { eq } from "drizzle-orm"
 
 
 type RouteContext = {
@@ -41,9 +44,7 @@ export async function GET(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
 
         if (!session) {
@@ -105,6 +106,19 @@ export async function GET(
             )
         }
 
+
+        // Record-level authorization must happen before loading the profile.
+        const canView = await canViewStudent(
+            { id: session.user.id, role },
+            id,
+        )
+
+        if (!canView) {
+            return NextResponse.json(
+                { error: "Forbidden" },
+                { status: 403 },
+            )
+        }
 
         // =========================
         // Database
@@ -195,12 +209,64 @@ export async function GET(
         }
 
 
+        // Limit academic details to the user's assignment scope. Access to one student
+        // does not grant access to every subject, parent contact, or official history.
+        let profileEnrollments = student.enrollments
+        let allowedSubjectIds: Set<string> | null = null
+        if (role === "teacher") {
+            const assignments = await db.query.teacherAssignments.findMany({
+                where: eq(teacherAssignments.teacherId, session.user.id),
+            })
+            allowedSubjectIds = new Set(assignments.map((assignment) => assignment.subjectId))
+            profileEnrollments = profileEnrollments.filter((enrollment) => assignments.some((assignment) =>
+                assignment.classId === enrollment.classId && assignment.academicYearId === enrollment.academicYearId
+            ))
+        } else if (role === "head_of_class") {
+            const assignments = await db.query.classHeads.findMany({
+                where: eq(classHeads.userId, session.user.id),
+            })
+            profileEnrollments = profileEnrollments.filter((enrollment) => assignments.some((assignment) =>
+                assignment.classId === enrollment.classId && assignment.academicYearId === enrollment.academicYearId
+            ))
+        } else if (role === "head_of_department") {
+            const assignments = await db.query.departmentHeads.findMany({
+                where: eq(departmentHeads.userId, session.user.id),
+            })
+            const departmentIds = new Set(assignments.map((assignment) => assignment.departmentId))
+            const departmentSubjects = await db.query.subjects.findMany()
+            allowedSubjectIds = new Set(departmentSubjects.filter((subject) =>
+                subject.departmentId && departmentIds.has(subject.departmentId)
+            ).map((subject) => subject.id))
+            const requiredSubjects = await db.query.coreSubjects.findMany()
+            profileEnrollments = profileEnrollments.filter((enrollment) =>
+                assignments.some((assignment) => assignment.academicYearId === enrollment.academicYearId) &&
+                requiredSubjects.some((required) =>
+                    required.academicYearId === enrollment.academicYearId &&
+                    required.classId === enrollment.classId &&
+                    allowedSubjectIds!.has(required.subjectId)
+                )
+            )
+        }
+
+        if (allowedSubjectIds) {
+            profileEnrollments = profileEnrollments.map((enrollment) => ({
+                ...enrollment,
+                attendance: enrollment.attendance.filter((record) => allowedSubjectIds!.has(record.subjectId)),
+                grades: enrollment.grades.filter((grade) => {
+                    const subjectId = grade.test?.subjectId ?? grade.exam?.subjectId
+                    return !!subjectId && allowedSubjectIds!.has(subjectId)
+                }),
+            }))
+        }
+
+        const exposeOfficialHistory = role === "principal" || role === "deputy" || role === "student" || role === "parent"
+
         // =========================
         // Current enrollment
         // =========================
 
         const currentEnrollment =
-            student.enrollments[0] ?? null
+            profileEnrollments[0] ?? null
 
 
         // =========================
@@ -208,7 +274,7 @@ export async function GET(
         // =========================
 
         const parentsData =
-            student.parentStudents.map(
+            (role === "principal" || role === "deputy" || role === "parent" || role === "student" ? student.parentStudents : []).map(
                 (relation) => ({
                     id: relation.parent.id,
 
@@ -232,7 +298,7 @@ export async function GET(
         // =========================
 
         const attendanceRecords =
-            student.enrollments.flatMap(
+            profileEnrollments.flatMap(
                 (enrollment) =>
                     enrollment.attendance.map(
                         (record) => ({
@@ -303,7 +369,7 @@ export async function GET(
         // =========================
 
         const gradeRecords =
-            student.enrollments.flatMap(
+            profileEnrollments.flatMap(
                 (enrollment) =>
                     enrollment.grades,
             )
@@ -572,7 +638,7 @@ export async function GET(
         // Promotion
         // =========================
 
-        const promotions =
+        const promotions = exposeOfficialHistory ?
             await db.query.promotionDecisions.findMany({
 
                 where: (
@@ -598,14 +664,14 @@ export async function GET(
                     desc(
                         promotion.createdAt,
                     ),
-            })
+            }) : []
 
 
         // =========================
         // Certificates
         // =========================
 
-        const certificates =
+        const certificates = exposeOfficialHistory ?
             await db.query.resultCertificates.findMany({
 
                 where: (
@@ -625,7 +691,7 @@ export async function GET(
                     desc(
                         certificate.issuedAt,
                     ),
-            })
+            }) : []
 
 
         // =========================
@@ -862,7 +928,7 @@ export async function GET(
                     : null,
 
             enrollments:
-                student.enrollments.map(
+                profileEnrollments.map(
                     (enrollment) => ({
                         id:
                             enrollment.id,
@@ -957,7 +1023,7 @@ export async function GET(
             certificates,
 
             timeline:
-                timeline.slice(0, 50),
+                exposeOfficialHistory ? timeline.slice(0, 50) : [],
         })
 
     } catch (error) {

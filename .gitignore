@@ -16,3 +16,7 @@ tsconfig.tsbuildinfo
 # Local backup files and uploaded assets
 backups/
 public/uploads/
+
+# Local backups and installer diagnostics
+drizzle/**/*.bak
+installer-debug-*.txt

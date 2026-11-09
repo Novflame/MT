@@ -8,6 +8,41 @@
       "when": 1790775441831,
       "tag": "0000_red_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790850000000,
+      "tag": "0001_account_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793630859333,
+      "tag": "0002_cultured_morlun",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793631745245,
+      "tag": "0003_loud_polaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793714674776,
+      "tag": "0004_silky_vertigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793714921909,
+      "tag": "0005_numerous_siren",
+      "breakpoints": true
     }
   ]
 }

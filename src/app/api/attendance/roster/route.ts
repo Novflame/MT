@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server"
-
 import { and, eq } from "drizzle-orm"
-
-import { auth } from "@/auth/auth"
 import { getSchoolDB } from "@/db"
 import { getStudentFullName } from "@/lib/student-name"
 import {
@@ -11,14 +8,12 @@ import {
     students,
     teacherAssignments,
 } from "@/db/schema"
-
 import {
     hasPermission,
     type Role,
 } from "@/auth/permissions"
-
 import { getActiveAcademicYear } from "@/db/academic-year"
-
+import { getRequestSession } from "@/auth/session"
 
 export async function GET(
     request: Request,
@@ -30,9 +25,7 @@ export async function GET(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -130,9 +123,6 @@ export async function GET(
 
         const isTeacher =
             user.role === "teacher"
-
-        const isHeadOfClass =
-            user.role === "head_of_class"
 
 
         /*

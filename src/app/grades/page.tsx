@@ -1,4 +1,3 @@
-
 import {
     requirePermission,
 } from "@/auth/session"
@@ -9,8 +8,8 @@ import {
     getSchoolDB,
     getActiveAcademicYear,
 } from "@/db"
-
 import GradesManager from "@/components/grades/GradesManager"
+
 
 export default async function GradesPage({
     searchParams,

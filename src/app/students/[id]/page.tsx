@@ -6,8 +6,13 @@ import StudentProfile from "@/components/students/StudentProfile"
 import {
     grades,
     students,
-    studentEnrollments,
+    teacherAssignments,
+    classHeads,
+    departmentHeads,
 } from "@/db/schema"
+import { canViewStudent } from "@/auth/authorization"
+import type { Role } from "@/auth/permissions"
+import { notFound } from "next/navigation"
 
 type Props = {
     params: Promise<{
@@ -18,7 +23,8 @@ type Props = {
 export default async function StudentProfilePage({
     params,
 }: Props) {
-    await requirePermission("students.read")
+    const session = await requirePermission("students.read")
+    const role = session.user.schoolRole as Role
 
     const { id } = await params
 
@@ -44,19 +50,34 @@ export default async function StudentProfilePage({
             },
         })
 
-    if (!student) {
-        return (
-            <main className="min-h-dvh bg-slate-950 px-4 py-8 text-white sm:px-8">
-                <div className="mx-auto max-w-5xl">
-                    <h1 className="text-2xl font-bold">
-                        Student not found
-                    </h1>
+    if (!student) notFound()
 
-                    <p className="mt-2 text-slate-400">
-                        The requested student does not exist.
-                    </p>
-                </div>
-            </main>
+    if (!(await canViewStudent({ id: session.user.id, role }, id))) notFound()
+
+    let visibleEnrollments = student.enrollments
+    let allowedSubjectIds: Set<string> | null = null
+    if (role === "teacher") {
+        const assignments = await db.query.teacherAssignments.findMany({
+            where: eq(teacherAssignments.teacherId, session.user.id),
+        })
+        allowedSubjectIds = new Set(assignments.map((assignment) => assignment.subjectId))
+        visibleEnrollments = visibleEnrollments.filter((enrollment) => assignments.some((assignment) =>
+            assignment.classId === enrollment.classId && assignment.academicYearId === enrollment.academicYearId
+        ))
+    } else if (role === "head_of_class") {
+        const assignments = await db.query.classHeads.findMany({ where: eq(classHeads.userId, session.user.id) })
+        visibleEnrollments = visibleEnrollments.filter((enrollment) => assignments.some((assignment) =>
+            assignment.classId === enrollment.classId && assignment.academicYearId === enrollment.academicYearId
+        ))
+    } else if (role === "head_of_department") {
+        const assignments = await db.query.departmentHeads.findMany({ where: eq(departmentHeads.userId, session.user.id) })
+        const departmentIds = new Set(assignments.map((assignment) => assignment.departmentId))
+        const subjectRows = await db.query.subjects.findMany()
+        allowedSubjectIds = new Set(subjectRows.filter((subject) => subject.departmentId && departmentIds.has(subject.departmentId)).map((subject) => subject.id))
+        const requiredSubjects = await db.query.coreSubjects.findMany()
+        visibleEnrollments = visibleEnrollments.filter((enrollment) =>
+            assignments.some((assignment) => assignment.academicYearId === enrollment.academicYearId) &&
+            requiredSubjects.some((required) => required.academicYearId === enrollment.academicYearId && required.classId === enrollment.classId && allowedSubjectIds!.has(required.subjectId))
         )
     }
 
@@ -65,12 +86,12 @@ export default async function StudentProfilePage({
      * We do not introduce a new promotion relation here.
      */
     const currentEnrollment =
-        student.enrollments[0] ?? null
+        visibleEnrollments[0] ?? null
 
     /*
      * Attendance
      */
-    const attendanceRecords =
+    const attendanceRecordsRaw =
         currentEnrollment
             ? await db.query.attendance.findMany({
                   where: (
@@ -87,6 +108,9 @@ export default async function StudentProfilePage({
                   ) => desc(attendance.date),
               })
             : []
+    const attendanceRecords = allowedSubjectIds
+        ? attendanceRecordsRaw.filter((record) => allowedSubjectIds!.has(record.subjectId))
+        : attendanceRecordsRaw
 
     const attendanceTotal =
         attendanceRecords.length
@@ -107,12 +131,6 @@ export default async function StudentProfilePage({
         attendanceRecords.filter(
             (record) =>
                 record.status === "late",
-        ).length
-
-    const attendanceExcused =
-        attendanceRecords.filter(
-            (record) =>
-                record.status === "excused",
         ).length
 
     const attendanceRate =
@@ -137,7 +155,7 @@ export default async function StudentProfilePage({
     /*
      * Grades
      */
-    const gradeRecords =
+    const gradeRecordsRaw =
         currentEnrollment
             ? await db.query.grades.findMany({
                   where: eq(
@@ -161,6 +179,12 @@ export default async function StudentProfilePage({
                   ),
               })
             : []
+    const gradeRecords = allowedSubjectIds
+        ? gradeRecordsRaw.filter((grade) => {
+            const subjectId = grade.test?.subjectId ?? grade.exam?.subjectId
+            return !!subjectId && allowedSubjectIds!.has(subjectId)
+        })
+        : gradeRecordsRaw
 
     /*
      * Academic average
@@ -326,7 +350,7 @@ export default async function StudentProfilePage({
      * Parents
      */
     const parents =
-        student.parentStudents.map(
+        (role === "principal" || role === "deputy" || role === "head_of_class" || role === "student" || role === "parent" ? student.parentStudents : []).map(
             (relation) => ({
                 id: relation.parent.id,
                 name:
@@ -339,7 +363,7 @@ export default async function StudentProfilePage({
     /*
      * Enrollment history
      */
-   const enrollments = student.enrollments
+   const enrollments = visibleEnrollments
     .filter(
         (
             enrollment,
@@ -373,7 +397,7 @@ export default async function StudentProfilePage({
      * real enrollment, attendance and grade data.
      */
     const timeline = [
-        ...student.enrollments.map(
+        ...visibleEnrollments.map(
             (enrollment) => ({
                 id: `enrollment-${enrollment.id}`,
 

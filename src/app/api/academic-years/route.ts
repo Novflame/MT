@@ -1,8 +1,8 @@
+import { getRequestSession } from "@/auth/session"
 
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 
-import { auth } from "@/auth/auth"
 import {
     hasPermission,
     type Role,
@@ -29,9 +29,7 @@ export async function GET(request: Request) {
     try {
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -111,9 +109,7 @@ export async function POST(request: Request) {
     try {
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(

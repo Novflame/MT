@@ -1,4 +1,3 @@
-
 import {
     and,
     eq,
@@ -6,7 +5,6 @@ import {
     inArray,
     lt,
 } from "drizzle-orm"
-
 import {
     Activity,
     Award,
@@ -21,7 +19,6 @@ import {
     UserPlus,
     Users,
 } from "lucide-react"
-
 import { requirePermission } from "@/auth/session"
 import { getSchoolDB } from "@/db"
 import { getActiveAcademicYear } from "@/db/academic-year"
@@ -46,6 +43,7 @@ import {
 import { getLocale } from "@/lib/i18n/server"
 import { translations } from "@/lib/i18n/translations"
 import { getStudentFullName } from "@/lib/student-name"
+
 
 type Locale = "en" | "ar" | "fr"
 

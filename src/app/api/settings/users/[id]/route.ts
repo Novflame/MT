@@ -1,14 +1,13 @@
-
 import { NextResponse } from "next/server"
 import { and, eq } from "drizzle-orm"
-
 import { getSchoolDB } from "@/db"
 import { staffProfiles } from "@/db/schema"
-
 import { requirePermission } from "@/auth/session"
 import { centralDb } from "@/db/central"
-import { user } from "@/db/centeral-schema"
-
+import { user, session as centralSession } from "@/db/centeral-schema"
+import { auditAccountAction, requestAccountEmailVerification } from "@/auth/account-provisioning"
+import { auth } from "@/auth/auth"
+import { isEmailDeliveryConfigured } from "@/lib/email"
 
 type Params = {
     params: Promise<{
@@ -70,6 +69,8 @@ export async function PATCH(
                 .select({
                     schoolId: user.schoolId,
                     schoolRole: user.schoolRole,
+                    provisioningStatus: user.provisioningStatus,
+                    email: user.email,
                 })
                 .from(user)
                 .where(
@@ -113,6 +114,7 @@ export async function PATCH(
                     id: user.id,
                     schoolId: user.schoolId,
                     schoolRole: user.schoolRole,
+                    provisioningStatus: user.provisioningStatus,
                 })
                 .from(user)
                 .where(
@@ -159,6 +161,7 @@ export async function PATCH(
         const centralUpdates: {
             schoolRole?: string
             banned?: boolean
+            phone?: string | null
         } = {}
 
 
@@ -197,21 +200,9 @@ export async function PATCH(
             }
 
 
-            // Deputy cannot create another principal
-            if (
-                currentRole === "deputy" &&
-                body.schoolRole === "principal"
-            ) {
-
-                return NextResponse.json(
-                    {
-                        error:
-                            "Deputy cannot assign the principal role.",
-                    },
-                    {
-                        status: 403,
-                    },
-                )
+            // The deputy may assign only non-administrative staff roles.
+            if (currentRole !== "principal" && (currentRole !== "deputy" || body.schoolRole === "deputy" || body.schoolRole === "principal")) {
+                return NextResponse.json({ error: "You are not allowed to assign this role." }, { status: 403 })
             }
 
 
@@ -282,6 +273,10 @@ export async function PATCH(
             }
 
 
+            if (body.banned === false && targetUser[0].provisioningStatus !== "active") {
+                return NextResponse.json({ error: "Cannot enable an account whose school profile provisioning is incomplete." }, { status: 409 })
+            }
+
             centralUpdates.banned =
                 body.banned
         }
@@ -346,6 +341,7 @@ export async function PATCH(
                         ? body[field].trim() ||
                           null
                         : null
+                if (field === "phone") centralUpdates.phone = profileUpdates[field] ?? null
             }
         }
 
@@ -415,8 +411,13 @@ export async function PATCH(
                     })
 
 
-            updatedUser =
-                result[0] ?? null
+            updatedUser = result[0] ?? null
+
+            if (centralUpdates.banned === true) {
+                await centralDb.delete(centralSession).where(eq(centralSession.userId, id))
+            }
+            const action = centralUpdates.banned === true ? "account_disabled" : centralUpdates.banned === false ? "account_enabled" : centralUpdates.schoolRole ? "account_role_changed" : "account_updated"
+            await auditAccountAction({ schoolId, actorUserId: session.user.id, targetUserId: id, action })
         }
 
 
@@ -655,61 +656,12 @@ export async function DELETE(
         }
 
 
-        // =========================================
-        // Delete staff profile
-        // =========================================
-
-        const schoolDb =
-            await getSchoolDB()
-
-
-        await schoolDb
-            .delete(staffProfiles)
-            .where(
-                eq(
-                    staffProfiles.userId,
-                    id,
-                ),
-            )
-
-
-        // =========================================
-        // Delete central user
-        // =========================================
-
-        const deletedUser =
-            await centralDb
-                .delete(user)
-                .where(
-                    and(
-                        eq(
-                            user.id,
-                            id,
-                        ),
-                        eq(
-                            user.schoolId,
-                            schoolId,
-                        ),
-                    ),
-                )
-                .returning({
-                    id: user.id,
-                })
-
-
-        if (!deletedUser[0]) {
-
-            return NextResponse.json(
-                {
-                    error:
-                        "User could not be deleted.",
-                },
-                {
-                    status: 404,
-                },
-            )
-        }
-
+        // Disable rather than hard-delete cross-database identities. Staff assignments,
+        // student links and academic audit history remain intact and can be repaired.
+        await centralDb.update(user).set({ banned: true })
+            .where(and(eq(user.id, id), eq(user.schoolId, schoolId)))
+        await centralDb.delete(centralSession).where(eq(centralSession.userId, id))
+        await auditAccountAction({ schoolId, actorUserId: session.user.id, targetUserId: id, action: "account_disabled_by_delete_action" })
 
         // =========================================
         // Response
@@ -717,6 +669,8 @@ export async function DELETE(
 
         return NextResponse.json({
             success: true,
+            disabled: true,
+            message: "Account disabled. School records and relationships were preserved.",
         })
 
     } catch (error) {
@@ -741,3 +695,39 @@ export async function DELETE(
 
 
 
+
+
+// Request a verified password-reset link. No temporary password is generated or returned here.
+export async function POST(request: Request, { params }: Params) {
+  try {
+    const session = await requirePermission("users.update")
+    const { id } = await params
+    const [actor] = await centralDb.select({ schoolId: user.schoolId, schoolRole: user.schoolRole })
+      .from(user).where(eq(user.id, session.user.id)).limit(1)
+    const [target] = await centralDb.select({ id: user.id, email: user.email, schoolId: user.schoolId, schoolRole: user.schoolRole, provisioningStatus: user.provisioningStatus, mustChangePassword: user.mustChangePassword, emailVerified: user.emailVerified })
+      .from(user).where(and(eq(user.id, id), eq(user.schoolId, actor?.schoolId ?? -1))).limit(1)
+    if (!actor || !target) return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (target.id === session.user.id) return NextResponse.json({ error: "Use the self-service password reset flow for your own account" }, { status: 400 })
+    if (actor.schoolRole === "deputy" && ["principal", "deputy"].includes(target.schoolRole)) return NextResponse.json({ error: "You are not allowed to reset this account" }, { status: 403 })
+    if (target.provisioningStatus !== "active") return NextResponse.json({ error: "This account's school profile is not fully provisioned" }, { status: 409 })
+    if (!isEmailDeliveryConfigured()) return NextResponse.json({ error: "Password-reset email is unavailable because RESEND_API_KEY and EMAIL_FROM are not configured" }, { status: 503 })
+
+    await centralDb.update(user).set({ mustChangePassword: true }).where(eq(user.id, target.id))
+    await centralDb.delete(centralSession).where(eq(centralSession.userId, target.id))
+    try {
+      await auth.api.requestPasswordReset({ body: { email: target.email, redirectTo: `${process.env.BETTER_AUTH_URL ?? ""}/reset-password` }, headers: request.headers })
+      if (!target.emailVerified) {
+        const verification = await requestAccountEmailVerification(target.email)
+        if (verification !== "sent") throw new Error("Email verification could not be sent")
+      }
+    } catch (error) {
+      await centralDb.update(user).set({ mustChangePassword: target.mustChangePassword }).where(eq(user.id, target.id))
+      throw error
+    }
+    await auditAccountAction({ schoolId: actor.schoolId, actorUserId: session.user.id, targetUserId: target.id, action: "password_reset_requested" })
+    return NextResponse.json({ success: true, message: "If the email provider accepted the request, a one-time password-reset link has been sent to the account email." })
+  } catch (error) {
+    console.error("POST password reset request failed", { errorType: error instanceof Error ? error.name : "unknown" })
+    return NextResponse.json({ error: "Password reset could not be requested. Check email-provider configuration." }, { status: 503 })
+  }
+}

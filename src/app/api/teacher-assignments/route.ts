@@ -1,31 +1,19 @@
-
 import { NextResponse } from "next/server"
 import { and, eq } from "drizzle-orm"
-
-import { auth } from "@/auth/auth"
 import { centralDb } from "@/db/central"
 import { user } from "@/db/centeral-schema"
-
 import { getSchoolDB } from "@/db"
-
 import {
     teacherAssignments,
     subjects,
     schoolClases,
 } from "@/db/schema"
-
 import {
     hasPermission,
     type Role,
 } from "@/auth/permissions"
-
 import { getActiveAcademicYear } from "@/db/academic-year"
-
-
-// =====================================================
-// POST
-// Create teacher assignment
-// =====================================================
+import { getRequestSession } from "@/auth/session"
 
 export async function POST(
     request: Request,
@@ -37,9 +25,7 @@ export async function POST(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -340,9 +326,7 @@ export async function GET(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -379,8 +363,11 @@ export async function GET(
         const db =
             await getSchoolDB()
 
-        const academicYear =
-            await getActiveAcademicYear()
+        const requestedYearId = new URL(request.url).searchParams.get("academicYearId")
+        const academicYear = requestedYearId
+            ? await db.query.academicYears.findFirst({ where: (years, { eq }) => eq(years.id, requestedYearId) })
+            : await getActiveAcademicYear()
+        if (!academicYear) return NextResponse.json({ error: "Academic year not found" }, { status: 404 })
 
 
         // =========================

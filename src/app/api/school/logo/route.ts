@@ -1,21 +1,15 @@
+import { getRequestSession } from "@/auth/session"
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import fs from "node:fs/promises"
 import path from "node:path"
 
-import { auth } from "@/auth/auth"
 import { centralDb } from "@/db/central"
 import { schools, user } from "@/db/centeral-schema"
+import { hasPermission, type Role } from "@/auth/permissions"
 
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
-
-const ALLOWED_TYPES = [
-    "image/png",
-    "image/jpeg",
-    "image/webp",
-]
-
 
 export async function POST(request: Request) {
 
@@ -25,9 +19,7 @@ export async function POST(request: Request) {
         // Authentication
         // =========================================
 
-        const session = await auth.api.getSession({
-            headers: request.headers,
-        })
+        const session = await getRequestSession(request.headers)
 
         if (!session?.user) {
 
@@ -41,6 +33,12 @@ export async function POST(request: Request) {
             )
         }
 
+
+        // Only administrators granted school.update may replace the logo.
+        const role = session.user.schoolRole as Role
+        if (!hasPermission(role, "school.update")) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
 
         // =========================================
         // Find user's school
@@ -118,48 +116,30 @@ export async function POST(request: Request) {
         }
 
 
-        // =========================================
-        // Validate file type
-        // =========================================
+        // Validate the actual file signature; client-provided MIME is not trusted.
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const isPng = buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+        const isJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff
+        const isWebp = buffer.length >= 12 && buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP"
 
-        if (!ALLOWED_TYPES.includes(file.type)) {
-
+        if (!isPng && !isJpeg && !isWebp) {
             return NextResponse.json(
-                {
-                    error:
-                        "Only PNG, JPG and WebP images are allowed",
-                },
-                {
-                    status: 400,
-                },
+                { error: "Only valid PNG, JPEG and WebP images are allowed" },
+                { status: 400 },
             )
         }
 
-
-        // =========================================
-        // File extension
-        // =========================================
-
-        const extension =
-            file.type === "image/png"
-                ? "png"
-                : file.type === "image/webp"
-                    ? "webp"
-                    : "jpg"
-
+        const extension = isPng ? "png" : isWebp ? "webp" : "jpg"
 
         // =========================================
         // Create upload directory
         // =========================================
 
-        const uploadDirectory =
-            path.join(
-                process.cwd(),
-                "public",
-                "uploads",
-                "schools",
-                String(schoolId),
-            )
+        const uploadsRoot = process.env.SCHOOL_UPLOADS_DIR?.trim()
+            ? path.resolve(process.env.SCHOOL_UPLOADS_DIR)
+            : path.join(process.cwd(), "public", "uploads")
+        const uploadDirectory = path.join(uploadsRoot, "schools", String(schoolId))
 
 
         await fs.mkdir(
@@ -188,12 +168,6 @@ export async function POST(request: Request) {
         // =========================================
         // Save file
         // =========================================
-
-        const bytes =
-            await file.arrayBuffer()
-
-        const buffer =
-            Buffer.from(bytes)
 
         await fs.writeFile(
             filePath,

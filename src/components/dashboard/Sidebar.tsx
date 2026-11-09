@@ -26,6 +26,7 @@ import {
   FileBarChart,
   History,
   Award,
+  CalendarClock,
 } from "lucide-react";
 
 import { authClient } from "@/auth/auth-client";
@@ -50,6 +51,7 @@ type School = {
   id: number;
   name: string;
   slug: string;
+  timetableEnabled?: boolean;
 };
 
 type SidebarProps = {
@@ -81,7 +83,7 @@ export default function Sidebar({
   const { data: session, isPending } = authClient.useSession();
 
   const schoolRole = session?.user?.schoolRole || "";
-
+  const isCollapsed = collapsed && !mobileOpen;
   // =================================================
   // School
   // =================================================
@@ -98,8 +100,16 @@ export default function Sidebar({
         }
 
         const result = await response.json();
-
         setSchool(result.school);
+        try {
+          const timetableResponse = await fetch("/api/timetable/status");
+          if (timetableResponse.ok) {
+            const timetableStatus = await timetableResponse.json();
+            setSchool((current) => current ? { ...current, timetableEnabled: Boolean(timetableStatus.enabled) } : current);
+          }
+        } catch {
+          // The optional timetable module stays hidden when its status cannot be read.
+        }
       } catch (error) {
         console.error("Failed to load school:", error);
       }
@@ -211,6 +221,9 @@ export default function Sidebar({
           icon: ClipboardList,
         },
 
+        ...(school?.timetableEnabled && !["parent", "student"].includes(schoolRole)
+          ? [{ label: "Timetable & Sessions", href: "/timetable", icon: CalendarClock }]
+          : []),
         {
           label: t.navigation.academicYear,
           href: "/academic-year",
@@ -303,14 +316,18 @@ export default function Sidebar({
       ],
     },
 
-    {
+{
   title: "Reports",
   items: [
-    {
-      label: t.reports.dailyReport,
-      href: "/reports/daily",
-      icon: FileBarChart,
-    },
+    ...(canViewDailyReport
+      ? [
+          {
+            label: t.reports.dailyReport,
+            href: "/reports/daily",
+            icon: FileBarChart,
+          },
+        ]
+      : []),
     {
       label: "Report Cards",
       href: "/report-cards",
@@ -334,481 +351,474 @@ export default function Sidebar({
   // Render
   // =====================================================
 
-  return (
-    <>
-      {/* Mobile overlay */}
 
-      {mobileOpen && (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          onClick={onCloseMobile}
-          className="
-            fixed inset-0 z-40
-            bg-black/40
-            backdrop-blur-[1px]
-            lg:hidden
-          "
-        />
-      )}
 
-      {/* Sidebar */}
+return (
+  <>
+    {/* Mobile overlay */}
+    {mobileOpen && (
+      <button
+        type="button"
+        aria-label="Close navigation"
+        onClick={onCloseMobile}
+        className="
+          fixed inset-0 z-40
+          bg-black/40
+          backdrop-blur-[1px]
+          lg:hidden
+        "
+      />
+    )}
 
-      <aside
-        id="primary-navigation"
+    {/* Sidebar */}
+    <aside
+      id="primary-navigation"
+      className={`
+        fixed inset-y-0 left-0 z-50
+        flex flex-col
+        border-r border-slate-800
+        bg-slate-950
+        text-slate-300
+        shadow-xl
+        transition-all duration-200
+        dark:border-slate-800
+        dark:bg-slate-950
+        ${isCollapsed ? "w-20" : "w-64"}
+        ${
+          mobileOpen
+            ? "translate-x-0"
+            : "hidden -translate-x-full lg:flex lg:translate-x-0"
+        }
+      `}
+    >
+      {/* =====================================
+          Brand
+      ===================================== */}
+      <div
         className={`
-          fixed inset-y-0 left-0 z-50
-          flex flex-col
-          border-r border-slate-800
-          bg-slate-950
-          text-slate-300
-          shadow-xl
-          transition-transform duration-200
-          dark:border-slate-800
-          dark:bg-slate-950
-
-          ${collapsed ? "w-64 lg:w-20" : "w-64"}
-
+          flex h-20 shrink-0
+          items-center
+          border-b border-slate-800
           ${
-            mobileOpen
-              ? "translate-x-0"
-              : "hidden -translate-x-full lg:flex lg:translate-x-0"
+            isCollapsed
+              ? "justify-center px-3"
+              : "justify-between px-5"
           }
         `}
       >
-        {/* =====================================
-            Brand
-        ===================================== */}
+        <Link
+          href="/dashboard"
+          onClick={onCloseMobile}
+          className="flex min-w-0 items-center gap-3"
+        >
+          <div
+            className="
+              flex h-10 w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              bg-white
+              text-sm
+              font-bold
+              text-slate-950
+              shadow-sm
+            "
+          >
+            SO
+          </div>
 
-        <div
+          {!isCollapsed && (
+            <div className="min-w-0">
+              <div
+                className="
+                  truncate
+                  text-lg
+                  font-bold
+                  text-white
+                "
+              >
+                {school?.name ?? "School"}
+              </div>
+
+              <div
+                className="
+                  truncate
+                  text-xs
+                  text-slate-500
+                "
+              >
+                School Management
+              </div>
+            </div>
+          )}
+        </Link>
+
+        <button
+          type="button"
+          onClick={onCloseMobile}
+          aria-label="Close navigation"
+          className="
+            rounded-lg
+            p-2
+            text-slate-400
+            transition
+            hover:bg-slate-900
+            hover:text-white
+            lg:hidden
+          "
+        >
+          <X size={19} />
+        </button>
+      </div>
+
+      {/* =====================================
+          Navigation
+      ===================================== */}
+      <nav
+        aria-label="Primary navigation"
+        className="
+          flex-1
+          overflow-y-auto
+          overflow-x-hidden
+          px-3
+          py-5
+        "
+      >
+        {menuGroups.map((group) => (
+          <div key={group.title} className="mb-6">
+            {!isCollapsed && (
+              <div
+                className="
+                  mb-2
+                  px-3
+                  text-[11px]
+                  font-semibold
+                  uppercase
+                  tracking-wider
+                  text-slate-500
+                "
+              >
+                {group.title}
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+
+                const active =
+                  pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onCloseMobile}
+                    title={isCollapsed ? item.label : undefined}
+                    aria-current={active ? "page" : undefined}
+                    className={`
+                      flex
+                      min-h-10
+                      items-center
+                      rounded-lg
+                      py-2.5
+                      text-sm
+                      transition
+                      ${
+                        isCollapsed
+                          ? "justify-center px-2"
+                          : "gap-3 px-3"
+                      }
+                      ${
+                        active
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                      }
+                    `}
+                  >
+                    <Icon
+                      size={18}
+                      strokeWidth={1.8}
+                      className="shrink-0"
+                    />
+
+                    {!isCollapsed && (
+                      <span className="truncate">
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* =====================================
+          Bottom area
+      ===================================== */}
+      <div
+        className="
+          shrink-0
+          border-t
+          border-slate-800
+          p-3
+        "
+      >
+        {/* Settings */}
+        <Link
+          href="/settings"
+          onClick={onCloseMobile}
+          title={isCollapsed ? t.common.settings : undefined}
           className={`
-            flex h-20 shrink-0
+            flex
+            min-h-10
             items-center
-            border-b border-slate-800
-
+            rounded-lg
+            py-2.5
+            text-sm
+            text-slate-400
+            transition
+            hover:bg-slate-900
+            hover:text-white
             ${
-              collapsed
-                ? "justify-center px-3"
-                : "justify-between px-5"
+              isCollapsed
+                ? "justify-center px-2"
+                : "gap-3 px-3"
             }
           `}
         >
-          <Link
-            href="/dashboard"
-            onClick={onCloseMobile}
-            className="flex min-w-0 items-center gap-3"
+          <Settings size={18} />
+
+          {!isCollapsed && (
+            <span>{t.common.settings}</span>
+          )}
+        </Link>
+
+        {/* User section */}
+        <div className="relative mt-2">
+          <button
+            type="button"
+            onClick={() =>
+              setUserMenuOpen((value) => !value)
+            }
+            title={isCollapsed ? displayName : undefined}
+            aria-expanded={userMenuOpen}
+            className={`
+              flex
+              min-h-10
+              w-full
+              items-center
+              rounded-lg
+              py-2.5
+              text-left
+              transition
+              hover:bg-slate-900
+              ${
+                isCollapsed
+                  ? "justify-center px-2"
+                  : "gap-3 px-2"
+              }
+            `}
           >
             <div
               className="
-                flex h-10 w-10
+                flex
+                h-9
+                w-9
                 shrink-0
                 items-center
                 justify-center
-                rounded-xl
-                bg-white
-                text-sm
-                font-bold
-                text-slate-950
-                shadow-sm
+                rounded-full
+                bg-blue-600
+                text-xs
+                font-semibold
+                text-white
               "
             >
-              SO
+              {initials}
             </div>
 
-            {!collapsed && (
+            {!isCollapsed && (
               <div className="min-w-0">
-                <div
+                <p
                   className="
                     truncate
-                    text-lg
-                    font-bold
+                    text-sm
+                    font-medium
                     text-white
                   "
                 >
-                  {school?.name ?? "School"}
-                </div>
+                  {displayName}
+                </p>
 
-                <div
+                <p
                   className="
                     truncate
                     text-xs
                     text-slate-500
                   "
                 >
-                  School Management
-                </div>
+                  {schoolRole}
+                </p>
               </div>
             )}
-          </Link>
-
-          <button
-            type="button"
-            onClick={onCloseMobile}
-            aria-label="Close navigation"
-            className="
-              rounded-lg
-              p-2
-              text-slate-400
-              transition
-              hover:bg-slate-900
-              hover:text-white
-              lg:hidden
-            "
-          >
-            <X size={19} />
           </button>
-        </div>
 
-        {/* =====================================
-            Navigation
-        ===================================== */}
-
-        <nav
-          aria-label="Primary navigation"
-          className="
-            flex-1
-            overflow-y-auto
-            px-3
-            py-5
-          "
-        >
-          {menuGroups.map((group) => (
-            <div key={group.title} className="mb-6">
-              {!collapsed && (
-                <div
-                  className="
-                    mb-2
-                    px-3
-                    text-[11px]
-                    font-semibold
-                    uppercase
-                    tracking-wider
-                    text-slate-500
-                  "
-                >
-                  {group.title}
-                </div>
-              )}
-
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-
-                  const active =
-                    pathname === item.href ||
-                    pathname.startsWith(`${item.href}/`);
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onCloseMobile}
-                      title={collapsed ? item.label : undefined}
-                      className={`
-                        flex
-                        min-h-10
-                        items-center
-                        rounded-lg
-                        py-2.5
-                        text-sm
-                        transition
-
-                        ${
-                          collapsed
-                            ? "justify-center px-2"
-                            : "gap-3 px-3"
-                        }
-
-                        ${
-                          active
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "text-slate-400 hover:bg-slate-900 hover:text-white"
-                        }
-                      `}
-                    >
-                      <Icon
-                        size={18}
-                        strokeWidth={1.8}
-                        className="shrink-0"
-                      />
-
-                      {!collapsed && (
-                        <span className="truncate">
-                          {item.label}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        {/* =====================================
-            Bottom area
-        ===================================== */}
-
-        <div
-          className="
-            shrink-0
-            border-t
-            border-slate-800
-            p-3
-          "
-        >
-          {/* Settings */}
-
-          <Link
-            href="/settings"
-            onClick={onCloseMobile}
-            title={collapsed ? t.common.settings : undefined}
-            className={`
-              flex
-              min-h-10
-              items-center
-              rounded-lg
-              py-2.5
-              text-sm
-              text-slate-400
-              transition
-              hover:bg-slate-900
-              hover:text-white
-
-              ${
-                collapsed
-                  ? "justify-center px-2"
-                  : "gap-3 px-3"
-              }
-            `}
-          >
-            <Settings size={18} />
-
-            {!collapsed && (
-              <span>{t.common.settings}</span>
-            )}
-          </Link>
-
-          {/* User section */}
-
-          <div className="relative mt-2">
-            <button
-              type="button"
-              onClick={() =>
-                setUserMenuOpen((value) => !value)
-              }
-              title={collapsed ? displayName : undefined}
+          {/* User menu */}
+          {userMenuOpen && (
+            <div
               className={`
-                flex
-                min-h-10
-                w-full
-                items-center
-                rounded-lg
-                py-2.5
-                text-left
-                transition
-                hover:bg-slate-900
-
+                absolute
+                bottom-full
+                z-50
+                mb-2
+                overflow-hidden
+                rounded-xl
+                border
+                border-slate-800
+                bg-slate-900
+                shadow-xl
                 ${
-                  collapsed
-                    ? "justify-center px-2"
-                    : "gap-3 px-2"
+                  isCollapsed
+                    ? "left-14 w-56"
+                    : "left-0 right-0"
                 }
               `}
             >
               <div
                 className="
-                  flex
-                  h-9
-                  w-9
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-blue-600
-                  text-xs
-                  font-semibold
-                  text-white
+                  border-b
+                  border-slate-800
+                  px-4
+                  py-3
                 "
               >
-                {initials}
-              </div>
+                <div className="flex items-center gap-3">
+                  <UserCircle
+                    size={20}
+                    className="shrink-0 text-slate-400"
+                  />
 
-              {!collapsed && (
-                <div className="min-w-0">
-                  <p
-                    className="
-                      truncate
-                      text-sm
-                      font-medium
-                      text-white
-                    "
-                  >
-                    {displayName}
-                  </p>
+                  <div className="min-w-0">
+                    <p
+                      className="
+                        truncate
+                        text-sm
+                        font-medium
+                        text-white
+                      "
+                    >
+                      {userName}
+                    </p>
 
-                  <p
-                    className="
-                      truncate
-                      text-xs
-                      text-slate-500
-                    "
-                  >
-                    {schoolRole}
-                  </p>
-                </div>
-              )}
-            </button>
-
-            {/* User menu */}
-
-            {userMenuOpen && (
-              <div
-                className={`
-                  absolute
-                  bottom-full
-                  mb-2
-                  overflow-hidden
-                  rounded-xl
-                  border
-                  border-slate-800
-                  bg-slate-900
-                  shadow-xl
-
-                  ${
-                    collapsed
-                      ? "left-14 w-56"
-                      : "left-0 right-0"
-                  }
-                `}
-              >
-                <div
-                  className="
-                    border-b
-                    border-slate-800
-                    px-4
-                    py-3
-                  "
-                >
-                  <div className="flex items-center gap-3">
-                    <UserCircle
-                      size={20}
-                      className="shrink-0 text-slate-400"
-                    />
-
-                    <div className="min-w-0">
-                      <p
-                        className="
-                          truncate
-                          text-sm
-                          font-medium
-                          text-white
-                        "
-                      >
-                        {userName}
-                      </p>
-
-                      <p
-                        className="
-                          truncate
-                          text-xs
-                          text-slate-500
-                        "
-                      >
-                        {userEmail}
-                      </p>
-                    </div>
+                    <p
+                      className="
+                        truncate
+                        text-xs
+                        text-slate-500
+                      "
+                    >
+                      {userEmail}
+                    </p>
                   </div>
                 </div>
-
-                <Link
-                  href="/dashboard/profile"
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    onCloseMobile();
-                  }}
-                  className="
-                    flex
-                    min-h-11
-                    items-center
-                    gap-3
-                    px-4
-                    py-3
-                    text-sm
-                    text-slate-300
-                    transition
-                    hover:bg-slate-800
-                    hover:text-white
-                  "
-                >
-                  <UserCircle size={17} />
-                  {t.navigation.profile}
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="
-                    flex
-                    min-h-11
-                    w-full
-                    items-center
-                    gap-3
-                    border-t
-                    border-slate-800
-                    px-4
-                    py-3
-                    text-sm
-                    text-red-400
-                    transition
-                    hover:bg-slate-800
-                    hover:text-red-300
-                  "
-                >
-                  <LogOut size={17} />
-                  {t.navigation.logout}
-                </button>
               </div>
-            )}
-          </div>
 
-          {/* Collapse button */}
+              <Link
+                href="/dashboard/profile"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  onCloseMobile();
+                }}
+                className="
+                  flex
+                  min-h-11
+                  items-center
+                  gap-3
+                  px-4
+                  py-3
+                  text-sm
+                  text-slate-300
+                  transition
+                  hover:bg-slate-800
+                  hover:text-white
+                "
+              >
+                <UserCircle size={17} />
+                {t.navigation.profile}
+              </Link>
 
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            aria-label={
-              collapsed
-                ? "Expand sidebar"
-                : "Collapse sidebar"
-            }
-            className="
-              mt-3
-              hidden
-              min-h-10
-              w-full
-              items-center
-              justify-center
-              rounded-lg
-              border
-              border-slate-800
-              py-2
-              text-slate-400
-              transition
-              hover:bg-slate-900
-              hover:text-white
-              lg:flex
-            "
-          >
-            {collapsed ? (
-              <ChevronRight size={18} />
-            ) : (
-              <ChevronLeft size={18} />
-            )}
-          </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="
+                  flex
+                  min-h-11
+                  w-full
+                  items-center
+                  gap-3
+                  border-t
+                  border-slate-800
+                  px-4
+                  py-3
+                  text-sm
+                  text-red-400
+                  transition
+                  hover:bg-slate-800
+                  hover:text-red-300
+                "
+              >
+                <LogOut size={17} />
+                {t.navigation.logout}
+              </button>
+            </div>
+          )}
         </div>
-      </aside>
-    </>
-  );
+
+        {/* Collapse button: desktop only */}
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          aria-label={
+            collapsed
+              ? "Expand sidebar"
+              : "Collapse sidebar"
+          }
+          aria-expanded={!collapsed}
+          className="
+            mt-3
+            hidden
+            min-h-10
+            w-full
+            items-center
+            justify-center
+            rounded-lg
+            border
+            border-slate-800
+            py-2
+            text-slate-400
+            transition
+            hover:bg-slate-900
+            hover:text-white
+            lg:flex
+          "
+        >
+          {collapsed ? (
+            <ChevronRight size={18} />
+          ) : (
+            <ChevronLeft size={18} />
+          )}
+        </button>
+      </div>
+    </aside>
+  </>
+);
+
+
+
 }
 

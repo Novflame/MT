@@ -3,12 +3,14 @@ import * as schema from "./schema"
 import { eq } from "drizzle-orm"
 import { runSchoolMigrations } from "./runtime-migrations"
 
-import path from "node:path"
 import fs from "node:fs"
 import Database from "better-sqlite3"
 
 import { headers } from "next/headers"
-import { auth } from "@/auth/auth"
+import { getRequestSession } from "@/auth/session"
+import { getSchoolDatabasePath } from "@/db/database-path"
+import { centralDb } from "@/db/central"
+import { user as centralUser, schools as centralSchools } from "@/db/centeral-schema"
 
 
 function createDB(
@@ -33,6 +35,8 @@ type SchoolConnection = {
 const connectionCache:
     Record<string, SchoolConnection> = {}
 
+    const schoolMaintenanceLocks = new Set<string>()
+
 
 
 export async function getSchoolDB() {
@@ -44,10 +48,7 @@ export async function getSchoolDB() {
     const requestHeaders =
         await headers()
 
-    const session =
-        await auth.api.getSession({
-            headers: requestHeaders,
-        })
+    const session = await getRequestSession(requestHeaders)
 
 
     if (!session) {
@@ -62,111 +63,60 @@ export async function getSchoolDB() {
     // School identity
     // =========================================
 
-    const schoolId =
-        session.user.schoolId
+    // Resolve the tenant from the central database, not from request parameters or
+    // an unverified client value. Do not silently create a database for stale IDs.
+    const centralRecord = await centralDb
+        .select({ schoolId: centralUser.schoolId })
+        .from(centralUser)
+        .innerJoin(centralSchools, eq(centralUser.schoolId, centralSchools.id))
+        .where(eq(centralUser.id, session.user.id))
+        .limit(1)
 
-
+    const schoolId = centralRecord[0]?.schoolId
     if (!schoolId) {
-        throw new Error(
-            "Authenticated user is not assigned to a school",
-        )
+        throw new Error("Authenticated user is not assigned to a valid school")
     }
 
-
-    const cacheKey =
-        String(schoolId)
-
-
-
-    // =========================================
-    // Existing connection
-    // =========================================
-
-    const existingConnection =
-        connectionCache[cacheKey]
-
-
-    if (existingConnection) {
-        return existingConnection.db
+    if (String(session.user.schoolId ?? "") !== String(schoolId)) {
+        throw new Error("Authenticated session school does not match the central account")
     }
 
+    return getSchoolDBForSystemTask(schoolId)
+}
 
+/**
+ * Opens a school database for trusted server-side jobs only. Never pass a school id
+ * supplied by a request; normal request handlers must use getSchoolDB().
+ */
+export async function getSchoolDBForSystemTask(schoolId: string | number) {
+    const normalizedSchoolId = String(schoolId)
+    const cacheKey = normalizedSchoolId
+    const existingConnection = connectionCache[cacheKey]
 
-    // =========================================
-    // Database directory
-    // =========================================
-
-    const dbFolder =
-        process.env.SCHOOL_DATABASE_DIR
-            ? path.resolve(
-                process.env.SCHOOL_DATABASE_DIR,
-            )
-            : path.join(
-                process.cwd(),
-                "databases",
-            )
-
-
-    fs.mkdirSync(
-        dbFolder,
-        {
-            recursive: true,
-        },
+    if (schoolMaintenanceLocks.has(normalizedSchoolId)) {
+    throw new Error(
+        `School database is temporarily unavailable for maintenance`,
     )
+}
+    if (existingConnection) return existingConnection.db
 
-
-
-    // =========================================
-    // School database path
-    // =========================================
-
-    const dbPath =
-        path.join(
-            dbFolder,
-            `school_${schoolId}.db`,
-        )
-
-
-
-    // =========================================
-    // Open SQLite
-    // =========================================
-
-    const sqlite =
-        new Database(dbPath)
-
-
-    sqlite.pragma(
-        "journal_mode = WAL",
-    )
-
-
-    runSchoolMigrations(
-        sqlite,
-    )
-
-
-
-    // =========================================
-    // Create Drizzle instance
-    // =========================================
-
-    const db =
-        createDB(sqlite)
-
-
-
-    // =========================================
-    // Cache connection
-    // =========================================
-
-    connectionCache[cacheKey] = {
-        sqlite,
-        db,
+    const dbPath = getSchoolDatabasePath(normalizedSchoolId)
+    if (!fs.existsSync(dbPath)) {
+        throw new Error(`School database is missing for school ${normalizedSchoolId}; refusing to create an empty tenant database`)
     }
+    const sqlite = new Database(dbPath, { fileMustExist: true })
+    sqlite.pragma("journal_mode = WAL")
+    sqlite.pragma("foreign_keys = ON")
 
-
-    return db
+    try {
+        runSchoolMigrations(sqlite)
+        const db = createDB(sqlite)
+        connectionCache[cacheKey] = { sqlite, db }
+        return db
+    } catch (error) {
+        sqlite.close()
+        throw error
+    }
 }
 
 
@@ -232,4 +182,28 @@ export async function getActiveAcademicYear() {
 
 
     return academicYear
+}
+export function beginSchoolDBMaintenance(
+    schoolId: string | number,
+) {
+    const normalizedSchoolId = String(schoolId)
+
+    if (schoolMaintenanceLocks.has(normalizedSchoolId)) {
+        throw new Error("School database maintenance is already running")
+    }
+
+    schoolMaintenanceLocks.add(normalizedSchoolId)
+
+    try {
+        closeSchoolDB(normalizedSchoolId)
+    } catch (error) {
+        schoolMaintenanceLocks.delete(normalizedSchoolId)
+        throw error
+    }
+}
+
+export function endSchoolDBMaintenance(
+    schoolId: string | number,
+) {
+    schoolMaintenanceLocks.delete(String(schoolId))
 }

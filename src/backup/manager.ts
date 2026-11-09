@@ -1,24 +1,19 @@
-﻿
 import crypto from "node:crypto"
 import fs from "node:fs/promises"
 import path from "node:path"
-
 import Database from "better-sqlite3"
-
 import {
   getSchoolMigrationMetadata,
 } from "@/db/runtime-migrations"
-
 import {
   createSQLiteBackup,
   verifySQLiteDatabase,
 } from "./adapters/sqlite"
-
 import {
   ensureBackupDirectory,
   getSchoolDatabasePath,
+  getSchoolUploadsDirectory,
 } from "./registry"
-
 import type {
   BackupManifest,
   BackupResult,
@@ -26,6 +21,7 @@ import type {
 import {
   verifySchoolBackup,
 } from "./verifier"
+import { sha256Directory } from "./file-integrity"
 
 const APP_VERSION = "1.0.0"
 
@@ -98,6 +94,17 @@ async function fileExists(
 
     return false
   }
+}
+
+async function copyDirectoryIfExists(sourcePath: string, destinationPath: string) {
+  try {
+    await fs.access(sourcePath)
+  } catch {
+    return false
+  }
+  await fs.mkdir(path.dirname(destinationPath), { recursive: true })
+  await fs.cp(sourcePath, destinationPath, { recursive: true, force: true, errorOnExist: false })
+  return true
 }
 
 
@@ -180,6 +187,9 @@ export async function createSchoolBackup({
       "manifest.json",
     )
 
+  const temporaryFilesDirectory = path.join(temporaryDirectory, "files", "schools", schoolId)
+  const finalFilesDirectory = path.join(finalDirectory, "files", "schools", schoolId)
+
 
   const finalDatabaseDirectory =
     path.join(
@@ -250,6 +260,11 @@ export async function createSchoolBackup({
         temporaryDatabasePath,
       )
 
+    const filesIncluded = await copyDirectoryIfExists(
+      getSchoolUploadsDirectory(schoolId),
+      temporaryFilesDirectory,
+    )
+    const filesSha256 = filesIncluded ? await sha256Directory(temporaryFilesDirectory) : undefined
 
     // --------------------------------------------------
     // 7. Build manifest
@@ -281,14 +296,13 @@ export async function createSchoolBackup({
 
       contents: {
         database: true,
-        files: false,
+        files: filesIncluded,
       },
 
       integrity: {
         algorithm: "sha256",
-
-        databaseSha256:
-          databaseSha256,
+        databaseSha256,
+        ...(filesSha256 ? { filesSha256 } : {}),
       },
     }
 
@@ -358,6 +372,11 @@ export async function createSchoolBackup({
       finalDatabasePath,
     )
 
+    if (filesIncluded) {
+      await fs.mkdir(path.dirname(finalFilesDirectory), { recursive: true })
+      await fs.rename(temporaryFilesDirectory, finalFilesDirectory)
+    }
+
     await fs.rename(
       temporaryManifestPath,
       finalManifestPath,
@@ -396,12 +415,11 @@ export async function createSchoolBackup({
       !finalDatabaseExists ||
       !finalManifestExists
     ) {
-
-      throw new Error(
-        "Final backup package is incomplete",
-      )
+      throw new Error("Final backup package is incomplete")
     }
 
+    const finalVerification = await verifySchoolBackup(finalDirectory, schoolId)
+    if (!finalVerification.valid) throw new Error(finalVerification.error ?? "Final backup package verification failed")
 
     // --------------------------------------------------
     // 14. Return result
@@ -474,6 +492,8 @@ export async function createEmergencySchoolBackup({
       "manifest.json",
     )
 
+  const filesDirectory = path.join(backupDirectory, "files", "schools", schoolId)
+
   const sqlite =
     new Database(sourcePath, {
       readonly: true,
@@ -520,6 +540,8 @@ export async function createEmergencySchoolBackup({
       await sha256File(
         databasePath,
       )
+    const filesIncluded = await copyDirectoryIfExists(getSchoolUploadsDirectory(schoolId), filesDirectory)
+    const filesSha256 = filesIncluded ? await sha256Directory(filesDirectory) : undefined
 
     const manifest: BackupManifest = {
       backupVersion: 1,
@@ -540,12 +562,12 @@ export async function createEmergencySchoolBackup({
       },
       contents: {
         database: true,
-        files: false,
+        files: filesIncluded,
       },
       integrity: {
         algorithm: "sha256",
-        databaseSha256:
-          databaseSha256,
+        databaseSha256,
+        ...(filesSha256 ? { filesSha256 } : {}),
       },
     }
 
@@ -560,9 +582,7 @@ export async function createEmergencySchoolBackup({
     )
 
     const verification =
-      await verifySchoolBackup(
-        backupDirectory,
-      )
+      await verifySchoolBackup(backupDirectory, schoolId)
 
     if (!verification.valid) {
       throw new Error(

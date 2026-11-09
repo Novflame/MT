@@ -1,0 +1,562 @@
+1. Executive Summary
+
+This repository is a school administration application built with Next.js 15, TypeScript, Tailwind CSS, Better Auth, Drizzle ORM, and SQLite. The UI is primarily a dashboard-style system with a dark, left-rail navigation shell for most administrative roles and a lighter, card-based management interface for pages that handle record creation and maintenance. The main evidence is concentrated in src/app/, src/components/dashboard/, src/components/head-of-department/, src/components/providers/LanguageProvider.tsx, and src/app/globals.css.
+
+The application uses a strong role split: unauthenticated users reach a login or school registration experience; principal and deputy users land in a dashboard shell with a dark primary sidebar and an overview layout; teacher and head-of-class users reach a teacher dashboard and subject/class workflow; head-of-department users have a separate department dashboard shell and sidebar; parent and student users reach simplified portal dashboards focused on attendance and academic records. Most management pages are built as large form-and-table workspaces using white cards, borders, and light gray backgrounds. The overall design language is consistent in card spacing, rounded corners, thin borders, blue-accent primary actions, and dark navigation shells; however, the codebase also includes several partially commented or inactive component implementations, especially in src/components/dashboard/DashboardOverview.tsx and src/components/attendance/AttendanceForm.tsx, so the visible UI is not fully complete or uniformly implemented across all modules.
+
+A clear visual pattern is present: dark navy sidebars and top bars for core admin shells; lighter page surfaces for records, forms, and lists; blue for primary actions and status emphasis; red for destructive or error states; neutral grays for general content; and a strong preference for rounded cards, forms, and tables. The application also supports English, Arabic, and French via src/lib/i18n/translations.ts and the language provider in src/components/providers/LanguageProvider.tsx, with direction switching in the root layout and an explicit dark-mode toggle in the top navigation. The design system is reusable but not fully standardized across every screen.
+
+2. Application and Role Inventory
+
+2.1 Public and entry routes
+
+- Route: "/" — source: src/app/page.tsx — purpose: a redirection entry point that routes authenticated users to role-appropriate dashboards and unauthenticated users to "/login"; the route uses redirect logic from src/auth/session and not a custom landing page.
+- Route: "/login" — source: src/app/login/page.tsx — purpose: sign-in screen; renders src/components/loginForm.tsx in a centered dark background with blue gradient glow effects.
+- Route: "/register" — source: src/app/register/page.tsx — purpose: school registration page; wraps SchoolRegisterForm in src/components/school-register/schoolRegisterForm.tsx.
+
+2.2 Principal and deputy role
+
+- Route: "/dashboard" — source: src/app/dashboard/page.tsx — purpose: principal/deputy overview dashboard. It redirects teacher, parent, student, and head_of_department roles to more specific routes; for principal/deputy it renders a dashboard shell and DashboardOverview component.
+- Route: "/dashboard/profile" — source: src/app/dashboard/profile/page.tsx — purpose: dashboard profile view for the signed-in user.
+- Route: "/dashboard/profile/manage" — source: src/app/dashboard/profile/manage/page.tsx — purpose: profile management flow for the dashboard user.
+- Route: "/students" — source: src/app/students/page.tsx — purpose: student roster management page with StudentsManager.
+- Route: "/students/[id]" — source: src/app/students/[id]/page.tsx — purpose: individual student record/detail page.
+- Route: "/staff" — source: src/app/staff/page.tsx — purpose: staff management page; enforces principal/deputy access.
+- Route: "/classes" / "/classess" — source: src/app/classes/page.tsx and src/app/classess/page.tsx — purpose: class management routes; the class route aliases to the classess route, suggesting a historical naming inconsistency in the app shell.
+- Route: "/subjects" — source: src/app/subjects/page.tsx — purpose: subject catalog and department grouping workbench.
+- Route: "/teacher-assignments" — source: src/app/teacher-assignments/page.tsx — purpose: assignment management view.
+- Route: "/academic-year" — source: src/app/academic-year/page.tsx — purpose: academic-year management screen.
+- Route: "/department-heads" — source: src/app/department-heads/page.tsx — purpose: department-head administration and assignment management.
+- Route: "/departments" — source: src/app/departments/page.tsx — purpose: department management page.
+- Route: "/parent-students" — source: src/app/parent-students/page.tsx — purpose: parent-to-student relationship management.
+- Route: "/portal-users" — source: src/app/portal-users/page.tsx — purpose: portal-user administration.
+- Route: "/school-history" — source: src/app/school-history/page.tsx — purpose: school history or longitudinal academic records page.
+- Route: "/graduates" — source: src/app/graduates/page.tsx — purpose: graduate record page.
+- Route: "/student-history" — source: src/app/student-history/page.tsx — purpose: historical student archive or lifecycle page.
+- Route: "/notifications" — source: src/app/notifications/page.tsx — purpose: notifications page.
+- Route: "/analytics" — source: src/app/analytics/page.tsx — purpose: analytics dashboard or reporting page.
+- Route: "/reports" — source: src/app/reports/page.tsx — purpose: reports landing page.
+- Route: "/reports/daily" — source: src/app/reports/daily/page.tsx — purpose: daily reports view.
+- Route: "/report-cards" — source: src/app/report-cards/page.tsx — purpose: report-card generation or management page.
+
+2.3 Teacher and head-of-class role
+
+- Route: "/teacher" — source: src/app/teacher/page.tsx — purpose: teacher dashboard with summary cards and personal teaching assignments.
+- Route: "/teacher/profile" — source: src/app/teacher/profile/page.tsx — purpose: teacher profile page.
+- Route: "/teacher/class/[classId]/subject/[subjectId]" — source: src/app/teacher/class/[classId]/subject/[subjectId]/page.tsx — purpose: subject/class teaching workspace; presents attendance and exams as action cards.
+- Route: "/teacher/class/[classId]/subject/[subjectId]/attendance" — source: src/app/teacher/class/[classId]/subject/[subjectId]/attendance/page.tsx — purpose: attendance-taking page for a selected class/subject.
+- Route: "/teacher/class/[classId]/subject/[subjectId]/exams" — source: src/app/teacher/class/[classId]/subject/[subjectId]/exams/page.tsx — purpose: exam management for a subject/class.
+- Route: "/teacher/class/[classId]/subject/[subjectId]/exams/[examsId]/grades" — source: src/app/teacher/class/[classId]/subject/[subjectId]/exams/[examsId]/grades/page.tsx — purpose: grade-entry page for a specific exam and class/subject.
+- Route: "/head-of-class" — source: src/app/head-of-class/page.tsx — purpose: class-head dashboard.
+- Route: "/head-of-class/profile" — source: src/app/head-of-class/profile/page.tsx — purpose: class-head profile page.
+
+2.4 Head-of-department role
+
+- Route: "/head-of-department" — source: src/app/head-of-department/page.tsx — purpose: department-level overview dashboard with department-specific subject, teacher, student, exam, and grade data.
+- Route: "/head-of-department/teachers" — source: src/app/head-of-department/teachers/page.tsx — purpose: department teacher roster.
+- Route: "/head-of-department/subjects" — source: src/app/head-of-department/subjects/page.tsx — purpose: department subject management.
+- Route: "/head-of-department/assignments" — source: src/app/head-of-department/assignments/page.tsx — purpose: department assignment page.
+- Route: "/head-of-department/tests" — source: src/app/head-of-department/tests/page.tsx — purpose: department test management.
+- Route: "/head-of-department/exams" — source: src/app/head-of-department/exams/page.tsx — purpose: department exam management.
+- Route: "/head-of-department/grades" — source: src/app/head-of-department/grades/page.tsx — purpose: department grade oversight.
+- Route: "/head-of-department/results" — source: src/app/head-of-department/results/page.tsx — purpose: result-viewing and reporting page.
+- Route: "/head-of-department/performance" — source: src/app/head-of-department/performance/page.tsx — purpose: performance dashboard or departmental analytics page.
+- Route: "/head-of-department/profile" — source: src/app/head-of-department/profile/page.tsx — purpose: head-of-department profile.
+- Route: "/head-of-department/settings" — source: src/app/head-of-department/settings/page.tsx — purpose: department settings.
+
+2.5 Parent and student portals
+
+- Route: "/parent" — source: src/app/parent/page.tsx — purpose: parent dashboard showing linked children, attendance summaries, and grade counts.
+- Route: "/parent/profile" — source: src/app/parent/profile/page.tsx — purpose: parent profile page.
+- Route: "/student" — source: src/app/student/page.tsx — purpose: student portal with class, grade count, and attendance summary.
+- Route: "/student/profile" — source: src/app/student/profile/page.tsx — purpose: student profile page.
+
+2.6 Assessment and admin workflow pages
+
+- Route: "/attendance" — source: src/app/attendance/page.tsx — purpose: attendance register entry point for selecting class, subject, and date.
+- Route: "/attendance/form" — source: src/app/attendance/form/page.tsx — purpose: detailed attendance form register workflow.
+- Route: "/tests" — source: src/app/tests/page.tsx — purpose: test-management page.
+- Route: "/exams" — source: src/app/exams/page.tsx — purpose: exam-management page with ExamsManager.
+- Route: "/grades" — source: src/app/grades/page.tsx — purpose: grades management page.
+- Route: "/results" — source: src/app/results/page.tsx — purpose: academic-result summary landing page.
+- Route: "/results/exams" — source: src/app/results/exams/page.tsx — purpose: exam result listing.
+- Route: "/results/student/[studentId]" — source: src/app/results/student/[studentId]/page.tsx — purpose: individual student result detail.
+
+2.7 School certificate and document routes
+
+- Route: "/school-certificates" — source: src/app/school-certificates/page.tsx — purpose: certificate workflow page.
+- Route: "/certificates/[enrollmentId]" — source: src/app/certificates/[enrollmentId]/page.tsx — purpose: personal certificate preview for a given enrollment.
+- Route: "/certificates/batch" — source: src/app/certificates/batch/page.tsx — purpose: batch certificate generation or export workflow.
+- Route: "/report-cards" — source: src/app/report-cards/page.tsx — purpose: report-card viewing or management route.
+
+2.8 Settings and system configuration
+
+- Route: "/settings" — source: src/app/settings/page.tsx — purpose: settings landing page with cards for School, Academic, Users, Account, and Backup & Restore.
+- Route: "/settings/school" — source: src/app/settings/school/page.tsx — purpose: school profile settings.
+- Route: "/settings/academic" — source: src/app/settings/academic/page.tsx — purpose: academic calendar and school academic settings.
+- Route: "/settings/users" — source: src/app/settings/users/page.tsx — purpose: user management list.
+- Route: "/settings/users/new" — source: src/app/settings/users/new/page.tsx — purpose: create user flow.
+- Route: "/settings/users/[id]" — source: src/app/settings/users/[id]/page.tsx — purpose: edit user details.
+- Route: "/settings/acount" — source: src/app/settings/acount/page.tsx — purpose: account profile settings.
+- Route: "/settings/backup" — source: src/app/settings/backup/page.tsx — purpose: backup and restore administration.
+
+3. Navigation and User Journeys
+
+3.1 Shared navigation conventions
+
+The strongest shared pattern is the dark sidebar shell used in the main admin experience. In src/components/dashboard/Sidebar.tsx, the navigation is organized into menu groups: Overview, Academic, People, Attendance, Assessment, Reports, and a footer area with Settings plus a user account flyout. The sidebar supports:
+
+- fixed left positioning on desktop
+- overlay behavior on mobile
+- collapse/expand on desktop
+- active state highlighting via pathname checks
+- keyboard escape to close the mobile overlay
+- user avatar, role label, and logout action in the lower panel
+
+This creates a consistent shell around all principal/deputy screens, and the app root redirects major roles into the same dashboard structure. The head-of-department shell in src/components/head-of-department/HeadOfDepartmentSidebar.tsx mirrors this pattern with a department-specific menu and a separate top bar for notifications and profile. The teacher route does not use the same shared dashboard shell; it presents a simpler, card-based teacher dashboard in src/app/teacher/page.tsx and then moves to subject/class workflow pages using direct links.
+
+3.2 Role-based journey patterns
+
+- Principal/deputy journey: login -> dashboard -> sidebar-driven modules such as students, subjects, classes, staff, reports, and settings. The sidebar is the main navigation anchor and is consistent across most principal/deputy screens.
+- Teacher journey: login or redirect -> /teacher -> summary view of teaching assignments -> linker cards to /teacher/class/[classId]/subject/[subjectId] -> attendance or exams -> subject-level workflows.
+- Department-head journey: login or redirect -> /head-of-department -> department dashboard shell -> department-specific modules for teachers, subjects, tests, exams, grades, results, performance, profile, and settings.
+- Parent journey: redirect to /parent -> summary cards for each child, attendance and grade counts, and no sidebar navigation. This is a simpler portal surface.
+- Student journey: redirect to /student -> student summary with class, grade count, attendance ratio, and grade list.
+- Settings journey: from the sidebar or a settings card entry, users move into the settings landing page and then to sub-settings pages such as school, academic, users, account, and backup.
+
+3.3 Navigation controls and connections
+
+The project uses standard link-based navigation throughout. Examples include:
+
+- Sidebar links in src/components/dashboard/Sidebar.tsx and src/components/head-of-department/HeadOfDepartmentSidebar.tsx.
+- Top navigation actions in src/components/dashboard/TopNavbar.tsx: search field, language selector, theme toggle, notifications, profile, and settings.
+- Action cards in src/app/teacher/class/[classId]/subject/[subjectId]/page.tsx that link to attendance and exams.
+- Settings cards in src/app/settings/page.tsx using Link and right-chevron affordances.
+- User dropdown menu in the sidebar with profile and logout operations.
+
+3.4 Shared and role-specific navigation conventions
+
+The strongest shared conventions are:
+
+- sidebar-based navigation for admin roles
+- consistent use of Link and pathname-based active states
+- mobile overlays and menu buttons in both dashboard shells
+- user profile/logout interactions attached to the lower sidebar area
+- dark admin shell and light content surfaces
+
+The main differences are:
+
+- teacher, parent, and student pages are simpler standalone screens without a shared shell
+- head-of-department uses a different sidebar/topbar pattern from the main admin shell
+- some admin pages use page-level cards and direct forms rather than a persistent shell
+
+4. UI Component Inventory
+
+The app uses a small number of reusable or repeated classes and component patterns.
+
+- src/components/dashboard/DashboardShell.tsx — shared layout shell for primary admin dashboard pages; collapsible sidebar and top navbar wrapper.
+- src/components/dashboard/Sidebar.tsx — main dark left navigation shell. Reused conceptually by all principal/deputy pages and consistent with the rest of the admin experience.
+- src/components/dashboard/TopNavbar.tsx — fixed top bar with mobile navigation, search field, language switcher, theme toggle, notifications, and profile/settings actions.
+- src/components/head-of-department/HeadOfDepartmentSidebar.tsx — role-specific department navigation shell.
+- src/components/head-of-department/HeadOfDepartmentTopbar.tsx — role-specific top bar with notifications, profile, and logout.
+- src/components/loginForm.tsx — sign-in form with email, password, validation, and redirect logic.
+- src/components/school-register/schoolRegisterForm.tsx — multi-field registration form for creating a new school account.
+- src/components/students/StudentsManager.tsx — a large student management UI with search, class filter, create/edit flows, parent matching, and student admission logic.
+- src/components/subjects/SubjectsManager.tsx — subject CRUD interface with list editing and department-based selection.
+- src/components/exams/ExamsManager.tsx — exam creation UI with department, subject, class, and exam-type selection; includes multilingual copy and theme toggling.
+- src/components/attendance/AttendanceForm.tsx — attendance management form; the file is primarily commented out, which suggests a planned or partially implemented attendance screen.
+- src/components/dashboard/DashboardOverview.tsx — dashboard analytics component; the file is mostly commented-out code, meaning the analytics cards/charts are not currently active in the visible admin dashboard.
+- src/components/settings/ManageUserForm.tsx — user configuration form for the app settings area.
+- src/components/profile/StaffProfile.tsx and src/components/profile/ManageStaffProfile.tsx — profile-related forms and presentation.
+- src/components/school-certificates/SchoolCertificatesManager.tsx — certificate management workflow.
+- src/components/notifications/NotificationsPanel.tsx — notification popover or panel component used in a role-specific shell.
+
+The repeated UI conventions across these files are: cards with borders and shadows, rounded inputs, blue primary buttons, neutral white surfaces, dark navigation shells, responsive stacked layout on narrow screens, and clear separation between header content and content body.
+
+5. Page Layout and Interaction Patterns
+
+5.1 General page structure
+
+The app uses a very consistent content pattern across management screens:
+
+- page-level outer container: `main` with min-height patterns and light gray backgrounds
+- a header row with page title and description
+- a content section with cards or a manager component
+- action buttons placed at the top or within the form region
+- card corners rounded and borders light
+
+Examples:
+
+- src/app/students/page.tsx uses a light gray background, a title block, and a StudentsManager component.
+- src/app/subjects/page.tsx uses a page header card and subject count badges before rendering the manager.
+- src/app/settings/page.tsx uses a grid of settings card links with icon blocks and right-chevron affordances.
+- src/app/teacher/page.tsx uses a dashboard-style summary and assignment cards.
+
+5.2 Form patterns
+
+Forms are the major shared pattern. They typically include:
+
+- labeled fields
+- border-based inputs with rounded corners
+- alert/validation messages inline or as banners
+- disabled states during loading submissions
+- button actions such as Save, Add, Create exam, Sign in
+
+Examples:
+
+- src/components/loginForm.tsx uses a centered card form with email and password fields and a blue submit button.
+- src/components/school-register/schoolRegisterForm.tsx uses a two-column style on larger screens and a structured registration layout.
+- src/components/students/StudentsManager.tsx contains long creation and edit logic, including student details, parent details, and class selection; it includes alerts for required fields.
+- src/components/subjects/SubjectsManager.tsx uses a minimal form with a subject name input, department select, and Add button.
+- src/components/exams/ExamsManager.tsx uses a more formal form frame with a visible header, select fields, and status messaging.
+
+5.3 Table and list patterns
+
+The data-heavy pages rely on cards and list rows, not always formal tables. Common patterns include:
+
+- inline list cards for subjects, students, and assignments
+- records rendered in card tiles or stacked rows
+- filters near the top of the manager component
+- quick entry forms adjacent to the list controls
+
+Examples include the list-like rendering in src/components/subjects/SubjectsManager.tsx and the assignment card grid in src/app/teacher/page.tsx. The project does not show a single uniform table component; instead, it uses a mix of card lists, list rows, and field-based management screens.
+
+5.4 Feedback states, loading, and alerts
+
+Feedback states and states exist in the code but are not uniformly implemented across all screens.
+
+- Login and registration pages show inline error messages in colored warning/error panels.
+- Exam creation includes success, error, and validation text in src/components/exams/ExamsManager.tsx.
+- The top navigation theme and language toggles persist settings and reload the page.
+- Several manager components use window.location.reload() after create/edit/delete actions rather than in-component optimistic updates, which is a consistent interaction pattern across the app.
+- Loading states are visible in submit buttons such as `Saving...`, `Creating...`, `Signing in...`.
+
+5.5 Confirmation and cancellation interactions
+
+The app uses browser-native confirmation dialogs for destructive operations in some forms, such as subject deletion via `confirm("Delete this subject?")` in src/components/subjects/SubjectsManager.tsx. Other screens rely on direct form submission and redirect flows rather than explicit modal confirmation windows. The visual design does not show a reusable confirmation modal system; the app mostly uses alert() and browser confirm() patterns.
+
+6. Responsive Design Findings
+
+This section is based on source-code evidence rather than visual testing.
+
+- The app uses Tailwind utility classes with mobile-first patterns throughout, including `sm:`, `md:`, `lg:`, and `min-h-dvh`, `max-w-*`, `grid`, and responsive spacing utilities.
+- The route layout in src/components/dashboard/DashboardShell.tsx uses a main container that changes margin on large screens based on sidebar collapsed state (`lg:ml-20` vs `lg:ml-64`) and keeps the content mobile-friendly with `px-4`, `sm:px-6`, and `lg:p-8`.
+- The mobile sidebar behavior is explicit: on mobile, the sidebar is hidden unless `mobileOpen` is true; an overlay is added before the sidebar, and the mobile menu button appears only under `lg:hidden` in src/components/dashboard/TopNavbar.tsx and src/components/head-of-department/HeadOfDepartmentTopbar.tsx.
+- Page layouts frequently stack vertically at small widths via `flex-col`, `grid gap`, `sm:flex-row`, `sm:grid-cols-*`, and `md:grid-cols-*` utilities.
+- Large forms and lists are kept readable by using `max-w-*` container widths and `min-w-0` content wrappers to avoid overflow.
+- Some layouts rely on wrapping cards and tables in `overflow-x-auto` or `min-w-0`; however, the app does not appear to rely on a single global table-responsiveness pattern, and many list-based screens are stackable rather than horizontally scrolling.
+- The app includes targeted mobile width behavior for 375px, 390px, and 414px concepts via container width classes and stacked spacing patterns, but not a highly tuned dedicated breakpoint stack for each device.
+- The certificate page in src/app/globals.css is a special-case design with strict viewport sizing and no page scrolling on certificate pages ("certificate-page" uses `height: 100dvh`, overflow hidden, and print-oriented layout). This is a notable exception to the more standard page scroll behavior seen elsewhere.
+- The code also contains explicit responsive observations for dark mode and language direction switching at the root HTML element in src/app/layout.tsx.
+
+Important limitation: the responsive findings here are source-based and not visually verified in a browser. They describe actual classes and layout conventions in the code, not a runtime UI test.
+
+7. Light and Dark Theme Findings
+
+The theme implementation is clear in the code and is not just a global background setting.
+
+- src/app/globals.css includes `@custom-variant dark (&:where(.dark, .dark *));` which means dark mode is toggled via a root `.dark` class.
+- src/components/dashboard/TopNavbar.tsx reads the stored school-theme value from localStorage and toggles `document.documentElement.classList.toggle("dark", nextTheme === "dark")`.
+- The dark-mode pattern is applied across component sets with utilities such as `dark:bg-slate-950`, `dark:border-slate-800`, `dark:text-white`, and `dark:hover:bg-slate-800`.
+- The main admin shell uses dark graphics (`bg-slate-950`, `border-slate-800`, `text-slate-300`) in the sidebar while the content area is light (`bg-slate-100` on the outer shell, then card-based white surfaces on individual pages).
+- The head-of-department shell follows the same dark-mode model but with a white content canvas and dark sidebar. It uses `dark:bg-slate-950`, `dark:border-slate-800`, `dark:text-slate-100` on the shell and topbar.
+- Light-mode defaults remain visible in forms and page surfaces (`bg-slate-50`, `bg-white`, `border-slate-200` etc.), while dark mode is used selectively for navigation surfaces and some cards.
+- Blue is the core interactive accent in both theme states, especially for on-page actions and selected state backgrounds.
+- The certificate and report documents use bespoke CSS variables and fixed palette values, including warm gold, navy, and off-white, which is a separate visual language from the main app shell.
+
+The app has a real theme implementation, but it is not a full global design-token system; it is primarily a utility-class-based dark mode layered onto Tailwind and page-specific classes.
+
+8. Visual Identity Inventory
+
+8.1 Color palette and semantic usage
+
+The UI is mostly built with slate and blue family values plus some warm neutral interfaces.
+
+- Core neutral background: slate-50, slate-100, slate-950, white.
+- Primary action accent: blue-600 / blue-500 / blue-700 across main buttons and selected navigation items.
+- Secondary or subtle action surfaces: indigo-50, blue-50, and light neutral cards.
+- Error and destructive states: red-50, red-200, red-500, red-400, plus `text-red-400` in the sidebar logout action.
+- Success or green-positive states are present in some components, especially in form buttons such as `bg-green-600` in src/components/classesForm.tsx, but green is not the dominant semantic action standard across the application.
+- Neutral surfaces dominate most record-management screens; positive/negative semantic signals are often limited to form states and error banners rather than a full highly structured semantic color system.
+- Certificate pages use warm gold and navy (#172b4d, #b69a55, off-white) for a formal document aesthetic, distinct from the software interface.
+
+8.2 Typography and hierarchy
+
+- Root font is `Geist` from `next/font/google`, defined in src/app/layout.tsx with `--font-geist-sans` and `--font-geist-mono`.
+- Headings vary from large bold `text-2xl`/`text-3xl` patterns, to semibold labels, to uppercase small labels for section headings.
+- The project uses bold, high-contrast text for titles and a lighter gray/neutral text for descriptions and metadata.
+- Many pages use `tracking-tight`, `font-bold`, and `text-sm` for list/metadata labels, which show a design system based on standard utility classes rather than custom typography tokens.
+- The certificate page uses a serif display for headings and a formal document style, which differs from the rest of the app interface.
+
+8.3 Spacing, radii, borders, shadows
+
+- Rounded surfaces are common: `rounded-xl`, `rounded-2xl`, `rounded-lg`.
+- Borders are thin and light; most cards use `border-slate-200`, `border-slate-800`, and subtle shadows (`shadow-sm`, `shadow-xl`, etc.).
+- Standard spacing is generous and card-based, especially in admin pages and settings screens.
+- The dashboard shell uses a fixed top bar height of 64px and a left sidebar with a clean 64px or 20px collapsed width logic. This creates a consistent shell width and rhythm.
+- Several certificate/printing-specific styles are custom CSS with fixed pixel rules and border-based framing, a stronger visual treatment than the general app pages.
+
+8.4 Button and control styles
+
+- Primary actions: blue backgrounds, white text, and shadows.
+- Secondary and neutral actions: white surfaces with borders and muted text.
+- Destructive actions: red text or red accents used in logout and validation error areas.
+- Buttons vary by context but do not appear to be generated from a central design-token component library; instead they rely on utility classes repeated in pages and components.
+
+8.5 Icons and status conventions
+
+- The app heavily uses Lucide icons in navigation and tiles: `Menu`, `Bell`, `Search`, `Settings`, `Users`, `School`, `BookOpen`, `BarChart3`, `FileText`, `LogOut`, etc.
+- Status colors are generally not formalized into a single badge or chip system. Instead, color appears in page-level UI and in success/error banners, with semantically important items still mostly relying on textual labels.
+- The intended future semantic standards in the task (green = approval/success, red = failure/absence/destructive, blue/indigo = primary informational states, neutrals = general content) are not uniformly implemented today; the app currently uses blue as the dominant action color, red for error and destructive states, and neutral grays as the default content treatment.
+
+9. Cross-Application UI/UX Patterns
+
+Across the app, several patterns recur and provide a usable design baseline for future planning:
+
+- Dark sidebar shell for core admin roles, with opposite light content surfaces.
+- Blue primary actions and elements, especially for primary navigation and main submit buttons.
+- Light-gray or white card surfaces with thin borders and tailored shadows for management workflows.
+- Role-specific simplification for teacher, parent, and student portals, which reduces the admin navigation complexity in favor of targeted dashboards.
+- Repeated use of page headers with title + supporting description.
+- Forms with labeled fields and action buttons; direct creation, edit, and delete operations in managers.
+- Strong use of URL-driven navigation and pathname active-state styling.
+- Multi-language support and per-page direction logic, especially for Arabic and English.
+- Certain inconsistent or duplicated patterns remain, including naming mismatches (classes vs classess), a partially commented dashboard analytics component, and a few different role shells that do not fully share the same design structure.
+
+10. Future UI/UX Planning Inputs
+
+10.1 User Experience
+
+- Decide whether the system should maintain the current role-based entry experience or move toward a more unified app shell with less role-specific branching.
+- Clarify the intended entry flow from login and registration to each role dashboard, including how users reach complex administration pages from the default overview view.
+- Decide whether the teacher, parent, and student portal screens should remain simplified standalone views or be merged into a more consistent, sidebar-based navigation approach.
+- Plan how major role-specific journeys will look on mobile, especially for complicated management pages like students, exams, attendance, and settings.
+
+10.2 UI Consistency
+
+- Establish a single shared visual standard for cards, forms, list rows, page headers, action groups, and destructive states.
+- Decide whether the app should standardize on one global shell or preserve the multiple role-specific shells that already exist.
+- Define a consistent pattern for validation messages, success banners, disabled states, and empty states across all managers.
+- Decide whether browser `alert()` and `confirm()` flows should be replaced by an in-app modal system or kept as-is for consistency.
+
+10.3 Responsive Design and Light/Dark Modes
+
+- Confirm the actual design target for 375px, 390px, and 414px widths. The current code uses responsive utility classes but not a uniquely tuned mobile design spec per screen size.
+- Define the expected mobile navigation pattern for all role shells, particularly in the admin and department dashboard layouts.
+- Decide whether dark mode should remain a selective shell-level theme or become a fully consistent application-wide design system.
+- Review how certificate and printing pages interact with the rest of the app and whether their fixed-size, no-scroll behavior should remain exclusive to that document area.
+
+10.4 Visual Identity
+
+- Decide the intended semantic role of green, blue, red, and neutrals across the app. The current app uses blue heavily for primary actions, red for destructive/error states, neutrals for background surfaces, and green only partially.
+- Choose whether the product should remain with a standard software dashboard style or adopt a more formal document-style treatment for academic records, certificates, and school reports.
+- Define reusable design tokens for button variants, border colors, shadow depth, radii, status chips, and form labels.
+- Reconcile the formal certificate-color palette (gold/navy) with the more standard software palette (slate/blue) so the document and app feel remain cohesive.
+
+11. Coverage and Evidence
+
+Directories and major page groups inspected:
+
+- src/app/ — all route groups and page entry points, including dashboard, auth, staff, students, attendance, reports, settings, teacher, parent, student, head-of-department, and certificates.
+- src/components/dashboard/ — dashboard shell, sidebar, topbar, and overview shell.
+- src/components/head-of-department/ — role-specific department dashboard shell and layout.
+- src/components/providers/LanguageProvider.tsx — locale and direction provider.
+- src/lib/i18n/translations.ts — English/Arabic/French translation catalog and navigation labels.
+- src/app/globals.css — global app styling, including the certificate layout system.
+- src/components/loginForm.tsx — sign-in interface evidence.
+- src/components/school-register/schoolRegisterForm.tsx — registration interface evidence.
+- src/components/students/StudentsManager.tsx — data management UI evidence.
+- src/components/subjects/SubjectsManager.tsx — CRUD management UI evidence.
+- src/components/exams/ExamsManager.tsx — exam-management UI evidence.
+- src/app/teacher/class/[classId]/subject/[subjectId]/page.tsx — teacher subject workflow evidence.
+
+Shared components inspected:
+
+- DashboardShell
+- Sidebar
+- TopNavbar
+- HeadOfDepartmentShell
+- HeadOfDepartmentSidebar
+- HeadOfDepartmentTopbar
+- LoginForm
+- SchoolRegisterForm
+- StudentsManager
+- SubjectsManager
+- ExamsManager
+- NotificationsPanel
+- LanguageProvider
+
+Theme and styling files inspected:
+
+- src/app/globals.css
+- src/app/layout.tsx
+- src/components/dashboard/TopNavbar.tsx
+- src/components/dashboard/Sidebar.tsx
+- src/components/head-of-department/HeadOfDepartmentSidebar.tsx
+- src/components/head-of-department/HeadOfDepartmentTopbar.tsx
+
+Areas not fully inspected or limited:
+
+- Some secondary managers and pages exist in the route tree but are not individually described in full detail due the size of the application; the route inventory captures the existence of the pages, while representative shared components and a subset of major flows provide the observed UI patterns.
+- Several components are partially commented out or inactive, especially src/components/dashboard/DashboardOverview.tsx and src/components/attendance/AttendanceForm.tsx. This limits the completeness of any claim about the full visible UI of those specific screens.
+- The report is based on source inspection, not browser-level visual testing; responsive and theme findings therefore describe code-level implementation and not fully verified rendered behavior.
+
+User-Observed UI/UX Concerns and Investigation Findings
+
+1. School Registration UI
+
+1.1 User's reported experience
+
+The school registration screen is described as visually poor and in need of a full UI/UX review. The concern is that users are asked to complete a multi-field onboarding form that may not currently provide a strong visual hierarchy or a confident onboarding journey.
+
+1.2 What the source code confirms
+
+- src/components/school-register/schoolRegisterForm.tsx renders a card-based registration experience with a blue gradient header, logo area, title, short description, and a form set beneath it.
+- The form uses a structured grid: `grid-cols-1` on mobile and `sm:grid-cols-2` on larger screens. This provides a two-column arrangement for most inputs, but it still relies on a single card and not a clear progressive-step journey.
+- Field grouping is visible in source: school name, school slug, principal name, principal email, password. The form includes `label` elements, placeholders, `required` validation, and inline error display through a red alert panel.
+- The submission flow is direct: `handleSubmit` normalizes the slug, submits to `/api/register-school`, displays `result.error` on failure, and then `router.push("/login")` on success. There is no visible success confirmation page or guided post-registration confirmation.
+- The layout supports light and dark modes with `dark:bg-slate-950`, `dark:border-slate-800`, `dark:text-white`, and blue-accented header backgrounds.
+- The page is wrapped by `src/app/register/page.tsx`, which renders the SchoolRegisterForm directly with no additional wrapper or step indicator.
+- Reusable design pattern: this interface follows the same centered-card form treatment used by `src/components/loginForm.tsx`, including a white or dark card, labeled fields, button emphasis, and inline validation surfaces.
+
+1.3 What remains unverified
+
+- No visual browser test was performed, so the exact perceived quality of the registration experience is not confirmed at runtime.
+- The source does not show a multi-step or guided onboarding experience beyond the single form submission and redirect.
+
+1.4 Implications for future UI/UX planning
+
+- The registration flow should be treated as a user onboarding screen rather than just a data collection form.
+- Future planning should decide whether to keep the single-card form, turn it into a progressive wizard, or add clearer sectioning and success-state guidance.
+- The existing blue header and card-based form pattern may be preserved, but the page needs a more deliberate hierarchy and stronger visual emphasis for required fields, validation, and completion states.
+
+2. Academic Year Experience
+
+2.1 User's reported experience
+
+Users may encounter an academic-year interface even if years are created or managed automatically behind the scenes. The concern is that the visual UI for academic years still needs to be understood as part of the overall user journey.
+
+2.2 What the source code confirms
+
+- `src/components/dashboard/Sidebar.tsx` includes an "Academic Year" navigation item using the `CalendarDays` icon and the route `/academic-year`.
+- The actual page is `src/app/academic-year/page.tsx`, which calls `AcademicYearsManager` and renders a page titled "Academic Years" with a short description: "Register and manage your schools academic years".
+- `src/components/academic-years/AcademicYearsManager.tsx` shows the user-facing year management UI: a create form, success/error states, a list of years, and an `Active`/`Closed` badge for each year.
+- The manager includes `isActive` in the academic year model and renders an active badge with the class name `styles.active` when the year is active; it also displays the year start and end dates.
+- The route `/settings/academic/page.tsx` currently returns `null`, which means there is a settings page route that exists but is empty in implementation. This is relevant because the app contains both a direct `/academic-year` page and a settings-level route that does not yet visibly surface the same experience.
+- This means the active academic year is communicated through the list UI, not necessarily through a global dashboard banner or persistent top-level indicator.
+
+2.3 What remains unverified
+
+- The report does not verify whether a dashboard or topbar automatically highlights the active year across all pages.
+- The backend may auto-generate academic-year information, but the UI still presents a visible management interface, and the app does not prove whether that management interface is fully integrated into the daily user journey.
+
+2.4 Implications for future UI/UX planning
+
+- Academic-year management should be treated as a user-visible administrative feature even when the system auto-creates or updates it.
+- Future design work should decide whether the active academic year should appear more persistently in the main dashboard shell, the settings area, and region-specific pages.
+- The current app exposes the academic year as a direct navigation item and a separate manager interface, but it does not yet present a strong global context cue for the current year.
+
+3. Login and Password Recovery Experience
+
+3.1 User's reported experience
+
+The login experience appears to lack a visible password recovery path, which means a user who forgets a password may have no clear recovery entry point or user journey.
+
+3.2 What the source code confirms
+
+- src/components/loginForm.tsx includes email and password input fields, a submit button labelled "Sign in", and a registration prompt: "Don't have a school account? Create a school".
+- There is no visible "Forgot password?" link or recovery action in the login form.
+- A direct search through `src` for terms such as `forgot`, `reset password`, `recover`, and `password recovery` returned no UI hits. This strongly indicates that no password-recovery entry point is currently implemented in the visible user interface.
+- The user journey currently ends at login success or a login error state; there is no alternate flow for account recovery in the source inspected.
+- The application also has a sign-up flow, but no equivalent password-recovery UI was found.
+
+3.3 What remains unverified
+
+- This report does not verify whether password recovery exists in backend logic or routed APIs outside the visible UI. The source evidence only confirms the absence of a visible user-facing path in the current UI implementation.
+- The application may support recovery through an unimplemented route or external system, but no visible entry point or recovery screen is present in the repository’s inspected interface.
+
+3.4 Implications for future UI/UX planning
+
+- A future recovery flow should be designed as an explicit, discoverable experience, not as an undocumented backend capability.
+- The login screen should include a clear recovery path and an expected journey such as email entry -> verification -> reset -> confirmation.
+- The current application’s known flow is: sign in or create school. A password-recovery journey is absent from the UI and should be planned intentionally.
+
+4. Persistent Dashboard Layout and Navigation
+
+4.1 User's reported experience
+
+Users report that the dashboard shell disappears after navigating to another page, forcing repeated navigation back to the dashboard to change language, theme, or jump to another section.
+
+4.2 What the source code confirms
+
+- The primary dashboard shell is built by `src/components/dashboard/DashboardShell.tsx`. It wraps content with a `Sidebar` and `TopNavbar` and applies the main collapsed/expanded margin logic.
+- The `Sidebar` component in `src/components/dashboard/Sidebar.tsx` is the main fixed-left navigation for principal/deputy users, with grouped routes and quick user controls for profile/logout.
+- The `TopNavbar` in `src/components/dashboard/TopNavbar.tsx` includes the visible settings panel with theme toggle and language selector, plus a notifications link and mobile navigation controls.
+- The `LanguageProvider` in `src/components/providers/LanguageProvider.tsx` stores the locale and can reload the page when the language changes, which makes the language setting part of the persistent dashboard controls. The theme toggle likewise writes localStorage and changes the root `.dark` class.
+- This shell is not global across all routes. Role-specific pages such as `/teacher`, `/student`, `/parent`, and `/login` are standalone pages and do not use the same `DashboardShell` wrapper. The head-of-department role gets a separate `HeadOfDepartmentShell` and `HeadOfDepartmentTopbar` instead of the main dashboard shell.
+- The pattern shows that the app has a persistent dashboard shell for some roles, but not a single global layout across the entire application.
+
+4.3 What remains unverified
+
+- The app was not visually tested in a browser, so the exact loss-of-context during navigation is not confirmed from a rendered page flow.
+- The report does not verify whether route transitions are fully persistent in all browsers or at all breakpoints, but the source clearly shows different layout wrappers for different routes.
+
+4.4 Implications for future UI/UX planning
+
+- A future design should clarify whether the application is intended to have a single persistent shell across all sections or a role-specific shell strategy.
+- If a persistent shell is desired, it should be applied consistently to all major pages so that settings, language, theme, and cross-section navigation remain accessible at all times.
+- The current implementation shows a strong but partial pattern: persistent admin navigation exists in the main dashboard and department dashboard, but it is not universal across all user journeys.
+
+5. Missing Navigation Items and Discoverability
+
+5.1 User's reported experience
+
+Many existing pages appear to be disconnected from obvious navigation menus or taskbars, making it difficult for users to discover relevant features without deep route knowledge or page-to-page links.
+
+5.2 What the source code confirms
+
+- The main dashboard sidebar in `src/components/dashboard/Sidebar.tsx` exposes the most obvious admin route list, including Dashboard, Classes, Subjects, Teacher Assignments, Academic Year, Students, Teachers, Parents, Attendance, Tests, Exams, Grades, Results, Reports, Analytics, and Settings.
+- This sidebar does not include every route that exists in the app. Examples of routes that exist but are not obviously surfaced in the main sidebar include `/school-history`, `/graduates`, `/student-history`, `/notifications`, `/dashboard/profile`, `/dashboard/profile/manage`, and some settings subpages.
+- Certain pages are reachable only through other pages or direct URL entry. For example, the teacher classroom route is linked from `src/app/teacher/page.tsx`, and settings subpages are linked from `src/app/settings/page.tsx`.
+- Some pages are not obvious from their parent route: the application has both `/academic-year` and `/settings/academic`, but the latter is currently `null`, leaving a gap in discoverability and consistency.
+- Role navigation varies significantly: principal/deputy get the full dashboard shell; teacher, student, and parent pages are simpler and not all linked from a persistent shared sidebar; head-of-department has a separate sidebar and topbar.
+
+5.3 What remains unverified
+
+- The app was not tested in a browser for discoverability, so the “missing navigation” issue is described based on route and component evidence rather than observed user flow.
+- Some pages may be intentionally hidden by role permissions or support flows yet to be fully surfaced, but the code indicates that not all existing screens are discoverable in the shared navigation patterns.
+
+5.4 Implications for future UI/UX planning
+
+- A navigation audit should distinguish between routes that are intended as deep-link pages and those that should be surfaced in the main shells.
+- Future UI work should define a consistent entry pattern for settings, historical records, reporting, notifications, and role-specific pages.
+- The current implementation suggests that good navigation principles are present for the main shell, but they are not applied uniformly across the whole app.
+
+6. User-Observed Concerns Summary for Future UI/UX Planning
+
+6.1 User’s reported experience
+
+The combined user concern is that the app has functional screens and pages, but the user journey is fragmented: registration is visually weak, academic-year management is present but not strongly surfaced, password recovery is not visible, the primary shell is not persistent across all roles, and many pages are not discoverable from obvious navigation elements.
+
+6.2 What the source code confirms
+
+- The UI does present a registration form, academic-year management UI, role-specific dashboards, settings, and multiple administrative pages.
+- The main patterns are clear and consistent within the shell-based sections, but there are notable gaps in consistency, discoverability, and design continuity between shells and route groups.
+- The code also shows direct evidence for the lack of a password recovery link and the route-level inconsistencies in the academic-year and settings experience.
+
+6.3 What remains unverified
+
+- The exact emotional or usability impact cannot be measured without a browser-level validation or user testing.
+- This report purposely avoids backend or permissions review; it focuses only on the user-facing UI/UX evidence.
+
+6.4 Implications for future UI/UX planning
+
+- The app already has a strong base of role-based navigation and card-based form patterns, but it needs a unified navigation strategy and clearer presentation of onboarding, active context, and discoverability.
+- The future improvement plan should focus on: onboarding clarity, stronger context for active academic year, visible recovery flows, consistent cross-role shell behavior, and a clearer map of where actions and pages are accessible in the interface.
+- This is a design and experience planning problem, not an implementation task: the repository already contains the relevant pages, modules, and navigation patterns, but those patterns are not yet organized into a fully coherent and persistent user experience.
+
+Protection requirement for the future implementation phase:
+
+The Final Year Certificate is strictly out of scope for modification and must remain unchanged. This requirement applies to the certificate text, wording, layout, colors, styling, rendering, PDF/export behavior, and functionality. This report does not propose changes to the certificate or to shared UI components that could affect it.
+
+No application source files were modified as part of this read-only discovery task.

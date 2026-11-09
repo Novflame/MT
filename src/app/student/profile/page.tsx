@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { requireSession } from "@/auth/session"
-import { getActiveAcademicYear, getSchoolDB } from "@/db"
+import { getSchoolDB } from "@/db"
 
 export default async function StudentProfilePage() {
     const session = await requireSession()
@@ -11,7 +11,6 @@ export default async function StudentProfilePage() {
     }
 
     const db = await getSchoolDB()
-    const academicYear = await getActiveAcademicYear()
 
     const studentUser = await db.query.studentUsers.findFirst({
         where: (studentUser, { eq }) =>

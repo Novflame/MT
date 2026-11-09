@@ -1,9 +1,6 @@
-
 "use client"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-
 
 type SchoolUser = {
     id: string
@@ -11,6 +8,9 @@ type SchoolUser = {
     email: string
     schoolRole: string
     banned: boolean | null
+    emailVerified?: boolean
+    mustChangePassword?: boolean
+    provisioningStatus?: string
 }
 
 
@@ -98,6 +98,10 @@ export default function ManageUserForm({
 
     const [deleting, setDeleting] =
         useState(false)
+
+    const [resetting, setResetting] = useState(false)
+    const [verifying, setVerifying] = useState(false)
+    const [repairing, setRepairing] = useState(false)
 
     const [error, setError] =
         useState("")
@@ -196,7 +200,7 @@ export default function ManageUserForm({
 
         const confirmed =
             window.confirm(
-                `Delete ${user.name}? This action cannot be undone.`,
+                `Disable ${user.name}? Their school records will be preserved, but they will no longer be able to sign in.` ,
             )
 
 
@@ -260,8 +264,58 @@ export default function ManageUserForm({
     }
 
 
+    async function handleRepairAccount() {
+        setError("")
+        setSuccess("")
+        setRepairing(true)
+        try {
+            const response = await fetch(`/api/settings/users/${user.id}/repair`, { method: "POST" })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error ?? "Account repair failed")
+            setSuccess(result.message ?? "Account repaired and reset requested.")
+            router.refresh()
+        } catch (caught) {
+            setError(caught instanceof Error ? caught.message : "Account repair failed")
+        } finally {
+            setRepairing(false)
+        }
+    }
+
+    async function handleRequestVerification() {
+        setError("")
+        setSuccess("")
+        setVerifying(true)
+        try {
+            const response = await fetch(`/api/settings/users/${user.id}/verify-email`, { method: "POST" })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error ?? "Email verification could not be requested")
+            setSuccess(result.message ?? "Verification request accepted by the provider.")
+            router.refresh()
+        } catch (caught) {
+            setError(caught instanceof Error ? caught.message : "Email verification could not be requested")
+        } finally {
+            setVerifying(false)
+        }
+    }
+
+    async function handleResetPassword() {
+        setError("")
+        setSuccess("")
+        setResetting(true)
+        try {
+            const response = await fetch(`/api/settings/users/${user.id}`, { method: "POST" })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error ?? "Password reset could not be requested")
+            setSuccess(result.message ?? "Password-reset request accepted by the configured provider.")
+        } catch (caught) {
+            setError(caught instanceof Error ? caught.message : "Password reset could not be requested")
+        } finally {
+            setResetting(false)
+        }
+    }
+
     const disabled =
-        saving || deleting
+        saving || deleting || resetting || verifying || repairing
 
 
     return (
@@ -349,6 +403,11 @@ export default function ManageUserForm({
 
                 </div>
 
+                <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
+                    <p>Email verification: <strong>{user.emailVerified ? "Verified" : "Not verified"}</strong></p>
+                    <p>Initial password change: <strong>{user.mustChangePassword ? "Required" : "Complete"}</strong></p>
+                    <p>Provisioning: <strong>{user.provisioningStatus ?? "unknown"}</strong></p>
+                </div>
 
                 {/* Role */}
 
@@ -648,6 +707,27 @@ export default function ManageUserForm({
                 p-4 sm:p-6
             ">
 
+                {user.provisioningStatus === "failed" && (
+                    <button type="button" onClick={handleRepairAccount} disabled={disabled} className="w-full sm:w-auto rounded-lg border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-medium text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">
+                        {repairing ? "Repairing account…" : "Repair Account & Send Reset Link"}
+                    </button>
+                )}
+
+                {!user.emailVerified && (
+                    <button type="button" onClick={handleRequestVerification} disabled={disabled} className="w-full sm:w-auto rounded-lg border border-blue-200 bg-white px-5 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50">
+                        {verifying ? "Requesting verification…" : "Send Verification Email"}
+                    </button>
+                )}
+
+                <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={disabled}
+                    className="w-full sm:w-auto rounded-lg border border-blue-200 bg-white px-5 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    {resetting ? "Requesting reset…" : "Send Password Reset Link"}
+                </button>
+
                 <button
                     type="button"
                     onClick={handleDelete}
@@ -669,8 +749,8 @@ export default function ManageUserForm({
                     "
                 >
                     {deleting
-                        ? "Deleting..."
-                        : "Delete User"}
+                        ? "Disabling..."
+                        : "Disable User"}
                 </button>
 
 

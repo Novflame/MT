@@ -1,7 +1,5 @@
-
 "use client"
-
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import {
     AlertCircle,
     CalendarDays,
@@ -254,6 +252,29 @@ function getStoredTheme(): "light" | "dark" {
         : "light"
 }
 
+function subscribeLanguage(callback: () => void) {
+    if (typeof window === "undefined") return () => {}
+    window.addEventListener("storage", callback)
+    window.addEventListener("school-language-change", callback)
+    return () => {
+        window.removeEventListener("storage", callback)
+        window.removeEventListener("school-language-change", callback)
+    }
+}
+
+function subscribeTheme(callback: () => void) {
+    if (typeof window === "undefined") return () => {}
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    window.addEventListener("storage", callback)
+    window.addEventListener("school-theme-change", callback)
+    media.addEventListener("change", callback)
+    return () => {
+        window.removeEventListener("storage", callback)
+        window.removeEventListener("school-theme-change", callback)
+        media.removeEventListener("change", callback)
+    }
+}
+
 function getExamTypeLabel(
     type: ExamType,
     t: Translation,
@@ -293,11 +314,8 @@ export default function ExamsManager({
     const [loading, setLoading] =
         useState(false)
 
-    const [language, setLanguage] =
-        useState<Language>("en")
-
-    const [theme, setTheme] =
-        useState<"light" | "dark">("light")
+    const language = useSyncExternalStore(subscribeLanguage, getStoredLanguage, (): Language => "en")
+    const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, (): "light" | "dark" => "light")
 
     const [error, setError] =
         useState("")
@@ -306,28 +324,10 @@ export default function ExamsManager({
         useState("")
 
     useEffect(() => {
-        const storedLanguage =
-            getStoredLanguage()
-
-        const storedTheme =
-            getStoredTheme()
-
-        setLanguage(storedLanguage)
-        setTheme(storedTheme)
-
-        document.documentElement.classList.toggle(
-            "dark",
-            storedTheme === "dark",
-        )
-
-        document.documentElement.lang =
-            storedLanguage
-
-        document.documentElement.dir =
-            storedLanguage === "ar"
-                ? "rtl"
-                : "ltr"
-    }, [])
+        document.documentElement.classList.toggle("dark", theme === "dark")
+        document.documentElement.lang = language
+        document.documentElement.dir = language === "ar" ? "rtl" : "ltr"
+    }, [language, theme])
 
     const t =
         translations[language]
@@ -361,17 +361,8 @@ export default function ExamsManager({
                 ? "dark"
                 : "light"
 
-        setTheme(nextTheme)
-
-        document.documentElement.classList.toggle(
-            "dark",
-            nextTheme === "dark",
-        )
-
-        window.localStorage.setItem(
-            "school-theme",
-            nextTheme,
-        )
+        window.localStorage.setItem("school-theme", nextTheme)
+        window.dispatchEvent(new Event("school-theme-change"))
     }
 
     async function createExam() {

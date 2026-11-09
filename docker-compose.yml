@@ -11,6 +11,8 @@ services:
       INTERNAL_REGISTRATION_SECRET: ${INTERNAL_REGISTRATION_SECRET}
       CENTRAL_DATABASE_PATH: /app/data/central/central.db
       SCHOOL_DATABASE_DIR: /app/data/schools
+      BACKUP_DIRECTORY: /app/data/backups
+      SCHOOL_UPLOADS_DIR: /app/data/uploads
     volumes:
       - school-data:/app/data
     restart: unless-stopped

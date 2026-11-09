@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { requireSession } from "@/auth/session"
 import { getSchoolDB } from "@/db"
 import { getActiveAcademicYear } from "@/db/academic-year"
-import { departmentHeads, exams, grades, subjects, teacherAssignments, tests } from "@/db/schema"
+import { departmentHeads, exams, subjects, teacherAssignments, tests } from "@/db/schema"
 import HeadOfDepartmentShell from "@/components/head-of-department/HeadOfDepartmentShell"
 
 export default async function HeadOfDepartmentPerformancePage() {

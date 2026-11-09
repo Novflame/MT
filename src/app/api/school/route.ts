@@ -1,9 +1,10 @@
+import { getRequestSession } from "@/auth/session"
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 
-import { auth } from "@/auth/auth"
 import { centralDb } from "@/db/central"
 import { schools, user } from "@/db/centeral-schema"
+import { hasPermission, type Role } from "@/auth/permissions"
 
 
 export async function GET(request: Request) {
@@ -11,9 +12,7 @@ export async function GET(request: Request) {
     try {
 
         // Get the currently authenticated user
-        const session = await auth.api.getSession({
-            headers: request.headers,
-        })
+        const session = await getRequestSession(request.headers)
 
         if (!session?.user) {
             return NextResponse.json(
@@ -107,9 +106,7 @@ export async function PATCH(request: Request) {
     try {
 
         // Get authenticated user
-        const session = await auth.api.getSession({
-            headers: request.headers,
-        })
+        const session = await getRequestSession(request.headers)
 
         if (!session?.user) {
             return NextResponse.json(
@@ -122,6 +119,12 @@ export async function PATCH(request: Request) {
             )
         }
 
+
+        // Only roles explicitly granted school.update may mutate school settings.
+        const role = session.user.schoolRole as Role
+        if (!hasPermission(role, "school.update")) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
 
         // Find the user's school
         const currentUser = await centralDb

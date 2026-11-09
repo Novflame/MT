@@ -1,0 +1,52 @@
+'use strict'
+
+const test = require('node:test')
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const path = require('node:path')
+
+const root = path.resolve(__dirname, '..')
+const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
+
+test('Windows payload, service, and configuration agree on the root Node executable', () => {
+  const packager = read('scripts/package-windows.cjs')
+  const service = read('scripts/installer/TASEETYService.cs')
+  const configure = read('scripts/installer/Configure-TASEETY.ps1')
+  const builder = read('scripts/installer/Build-Windows.ps1')
+  assert.match(packager, /path\.join\(payloadRoot, 'node\.exe'\)/)
+  assert.match(service, /Path\.Combine\(installRoot, "node\.exe"\)/)
+  assert.match(configure, /Join-Path \$runtimeRoot 'node\.exe'/)
+  assert.match(builder, /Join-Path \$payload 'node\.exe'/)
+  assert.doesNotMatch(service, /runtime\\node\.exe/)
+  assert.doesNotMatch(configure, /runtime\\node\.exe/)
+})
+
+test('central migrations resolve relative to the script, not the caller working directory', () => {
+  const migrator = read('scripts/migrate-central.cjs')
+  assert.match(migrator, /path\.resolve\(__dirname, '\.\.', 'drizzle', 'central'\)/)
+  assert.doesNotMatch(migrator, /path\.resolve\(\s*process\.cwd\(\),\s*['"]drizzle\/central/)
+})
+
+test('installer retains the existing upgrade AppId and stores the port as a string', () => {
+  const iss = read('installer/TASEETY.iss')
+  const configure = read('scripts/installer/Configure-TASEETY.ps1')
+  assert.match(iss, /A81C6E91-9D6B-4C13-A6F1-7C5E92D7A410/i)
+  assert.match(iss, /RegQueryStringValue\(HKLM, 'SOFTWARE\\TASEETY', Name, S\)/)
+  assert.match(configure, /Set-ItemProperty -Path \$registryPath -Name Port -Value \(\[string\]\$Port\)/)
+})
+
+test('backup manifest is marked complete only after database and upload verification', () => {
+  const backup = read('scripts/installer/backup-before-upgrade.cjs')
+  assert.match(backup, /integrity_check/)
+  assert.match(backup, /sourceHash !== backupHash/)
+  assert.match(backup, /manifest\.status = 'complete'/)
+  assert.match(backup, /writeFileSync\(manifestPath[\s\S]*flag: 'wx'/)
+})
+
+test('Windows payload packager rejects secrets and SQLite sidecar files', () => {
+  const packager = read('scripts/package-windows.cjs')
+  assert.match(packager, /\\\.env\(\?:\$\|\\\.\)/)
+  assert.match(packager, /db\|sqlite\|sqlite3/)
+  assert.match(packager, /wal\|shm\|journal/)
+  assert.match(packager, /pem\|p8\|p12\|pfx\|key/)
+})

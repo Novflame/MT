@@ -1,14 +1,13 @@
 import fs from "node:fs/promises"
 import crypto from "node:crypto"
 import path from "node:path"
-
 import {
   verifySQLiteDatabase,
 } from "./adapters/sqlite"
-
 import type {
   BackupManifest,
 } from "./types"
+import { sha256Directory } from "./file-integrity"
 
 async function sha256File(
   filePath: string,
@@ -99,7 +98,8 @@ function isBackupManifest(
     manifest.integrity.algorithm ===
       "sha256" &&
     typeof manifest.integrity.databaseSha256 ===
-      "string"
+      "string" &&
+    (manifest.contents.files !== true || typeof manifest.integrity.filesSha256 === "string")
   )
 }
 
@@ -211,14 +211,20 @@ export async function verifyImportedBackup({
     return {
       valid: false,
       manifest,
-      checksum: {
-        expected:
-          manifest.integrity.databaseSha256,
-        actual:
-          actualSha256,
-      },
-      error:
-        "Backup database failed SQLite integrity check",
+      checksum: { expected: manifest.integrity.databaseSha256, actual: actualSha256 },
+      error: "Backup database failed SQLite integrity check",
+    }
+  }
+
+  if (manifest.contents.files) {
+    const filesDirectory = path.join(backupDirectory, "files", "schools", expectedSchoolId)
+    try {
+      const actualFilesSha256 = await sha256Directory(filesDirectory)
+      if (actualFilesSha256.toLowerCase() !== manifest.integrity.filesSha256?.toLowerCase()) {
+        return { valid: false, manifest, error: "Backup upload checksum does not match manifest" }
+      }
+    } catch {
+      return { valid: false, manifest, error: "Backup upload files are missing or invalid" }
     }
   }
 

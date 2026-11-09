@@ -1,8 +1,6 @@
-import { headers } from "next/headers"
 
-import { requirePermission } from "@/auth/session"
+import {requirePermission, requireSession} from "@/auth/session"
 import TeacherAssignmentsManager from "@/components/teacher-assignments/TeacherAssignmentsManager"
-import { auth } from "@/auth/auth"
 
 import { centralDb } from "@/db/central"
 import { user } from "@/db/centeral-schema"
@@ -34,9 +32,7 @@ export default async function TeacherAssignmentsPage() {
 
   
 
-    const session = await auth.api.getSession({
-    headers: await headers(),
-})
+    const session = await requireSession()
  if (!session) {
         return null
     }

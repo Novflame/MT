@@ -1,8 +1,9 @@
+import { requireSession } from "@/auth/session"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
+import { assertTimetableEnabled } from "@/lib/timetable/access"
 
-import { auth } from "@/auth/auth"
 
 type Assignment = {
     teacherId: string
@@ -24,10 +25,7 @@ export default async function TeacherPage() {
     // Authentication
     // =========================
 
-    const session =
-        await auth.api.getSession({
-            headers: await headers(),
-        })
+    const session = await requireSession()
 
     if (!session) {
         redirect("/login")
@@ -84,6 +82,14 @@ export default async function TeacherPage() {
         Assignment[] =
         data.assignments ?? []
 
+    let timetableEnabled = false
+    try {
+        await assertTimetableEnabled(session.user.id)
+        timetableEnabled = true
+    } catch {
+        timetableEnabled = false
+    }
+
 
     // =========================
     // Dashboard
@@ -106,6 +112,7 @@ export default async function TeacherPage() {
                         Welcome,{" "}
                         {session.user.name}
                     </p>
+                    {timetableEnabled && <Link href="/timetable" className="mt-4 inline-flex items-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800">Timetable & Class Sessions</Link>}
 
                 </header>
 

@@ -43,6 +43,20 @@
       "when": 1791546518924,
       "tag": "0005_add_school_certificates",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793210000000,
+      "tag": "0006_normalize_final_exam_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793211000000,
+      "tag": "0007_grade_integrity_constraints",
+      "breakpoints": true
     }
   ]
 }

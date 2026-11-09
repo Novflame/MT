@@ -29,6 +29,7 @@ type Props = {
     message: string
     onMessageChange: (message: string) => void
     onPrint?: () => void
+    compact?: boolean
 }
 
 const copy = {
@@ -95,6 +96,7 @@ export default function CertificateTemplatePreview({
     message,
     onMessageChange,
     onPrint,
+    compact = false,
 }: Props) {
     const t = copy[language]
     const isArabic = language === "ar"
@@ -104,7 +106,7 @@ export default function CertificateTemplatePreview({
     const title = useMemo(() => t[certificateType], [t, certificateType])
 
     return (
-        <section className={styles.wrapper}>
+        <section className={`${styles.wrapper} ${compact ? styles.thumbnail : ""}`}>
             <div className={styles.toolbar}>
                 <div>
                     <h2 className={styles.toolbarTitle}>{title}</h2>
@@ -130,7 +132,10 @@ export default function CertificateTemplatePreview({
                         type="button"
                         className={styles.primaryButton}
                         onClick={() => {
-                            onPrint?.()
+                            if (onPrint) {
+                                onPrint();
+                                return;
+                            }
                             window.print()
                         }}
                         disabled={!message.trim()}

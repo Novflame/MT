@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server"
-import { and, eq, isNotNull } from "drizzle-orm"
+import { eq, isNotNull } from "drizzle-orm"
 
 import { getSchoolDB } from "@/db"
 
 import {
-    exams,
     grades,
-    coreSubjects,
-    studentEnrollments,
-    subjects,
     studentUsers,
     parents,
     parentStudents,
+    teacherAssignments,
+    classHeads,
+    departmentHeads,
 } from "@/db/schema"
 
-import { requirePermission } from "@/auth/session"
+import { requireApiPermission, ApiAuthorizationError } from "@/auth/api-authorization"
 
 
 // ============================================================
@@ -48,9 +47,7 @@ export async function GET(
         // --------------------------------------------------------
 
         const session =
-            await requirePermission(
-                "results.read",
-            )
+            await requireApiPermission(request, "results.read")
 
 
         const db =
@@ -197,12 +194,7 @@ export async function GET(
             // Final exams ONLY
             // ----------------------------------------------------
 
-            db.query.exams.findMany({
-                where: eq(
-                    exams.type,
-                    "final",
-                ),
-            }),
+            db.query.exams.findMany(),
 
 
             // ----------------------------------------------------
@@ -216,6 +208,55 @@ export async function GET(
             }),
         ])
 
+
+        // ========================================================
+        // Enforce role-level academic scope on the server
+        // ========================================================
+        let allowedEnrollmentKeys: Set<string> | null = null
+        let allowedSubjectIds: Set<string> | null = null
+        const role = session.user.schoolRole
+
+        if (role === "teacher") {
+            const assignments = await db.query.teacherAssignments.findMany({
+                where: eq(teacherAssignments.teacherId, session.user.id),
+            })
+            allowedEnrollmentKeys = new Set(
+                enrollments.filter((enrollment) => assignments.some((assignment) =>
+                    assignment.classId === enrollment.classId &&
+                    assignment.academicYearId === enrollment.academicYearId
+                )).map((enrollment) => enrollment.id),
+            )
+            allowedSubjectIds = new Set(assignments.map((assignment) => assignment.subjectId))
+        } else if (role === "head_of_class") {
+            const heads = await db.query.classHeads.findMany({
+                where: eq(classHeads.userId, session.user.id),
+            })
+            allowedEnrollmentKeys = new Set(
+                enrollments.filter((enrollment) => heads.some((head) =>
+                    head.classId === enrollment.classId &&
+                    head.academicYearId === enrollment.academicYearId
+                )).map((enrollment) => enrollment.id),
+            )
+        } else if (role === "head_of_department") {
+            const heads = await db.query.departmentHeads.findMany({
+                where: eq(departmentHeads.userId, session.user.id),
+            })
+            const departmentIds = new Set(heads.map((head) => head.departmentId))
+            allowedSubjectIds = new Set(allSubjects.filter((subject) =>
+                subject.departmentId && departmentIds.has(subject.departmentId)
+            ).map((subject) => subject.id))
+            allowedEnrollmentKeys = new Set(
+                enrollments.filter((enrollment) => allCoreSubjects.some((core) =>
+                    core.academicYearId === enrollment.academicYearId &&
+                    core.classId === enrollment.classId &&
+                    allowedSubjectIds!.has(core.subjectId)
+                )).map((enrollment) => enrollment.id),
+            )
+        }
+
+        const finalExams = allFinalExams.filter((exam) =>
+            String(exam.type).trim().toLowerCase() === "final"
+        )
 
         // ========================================================
         // Filter enrollments
@@ -261,6 +302,9 @@ export async function GET(
                         return false
                     }
 
+                    if (allowedEnrollmentKeys && !allowedEnrollmentKeys.has(enrollment.id)) {
+                        return false
+                    }
 
                     return true
                 },
@@ -282,11 +326,9 @@ export async function GET(
                     const requiredCoreSubjects =
                         allCoreSubjects.filter(
                             (coreSubject) =>
-                                coreSubject.academicYearId ===
-                                    enrollment.academicYearId
-                                &&
-                                coreSubject.classId ===
-                                    enrollment.classId,
+                                coreSubject.academicYearId === enrollment.academicYearId &&
+                                coreSubject.classId === enrollment.classId &&
+                                (!allowedSubjectIds || allowedSubjectIds.has(coreSubject.subjectId)),
                         )
 
 
@@ -294,14 +336,12 @@ export async function GET(
                     // Final exams for this year/class
                     // =================================================
 
-                    const finalExams =
-                        allFinalExams.filter(
+                    const enrollmentFinalExams =
+                        finalExams.filter(
                             (exam) =>
-                                exam.academicYearId ===
-                                    enrollment.academicYearId
-                                &&
-                                exam.classId ===
-                                    enrollment.classId,
+                                exam.academicYearId === enrollment.academicYearId &&
+                                exam.classId === enrollment.classId &&
+                                (!allowedSubjectIds || allowedSubjectIds.has(exam.subjectId)),
                         )
 
 
@@ -389,7 +429,7 @@ export async function GET(
                         // ------------------------------------------------
 
                         const exam =
-                            finalExams.find(
+                            enrollmentFinalExams.find(
                                 (item) =>
                                     item.subjectId ===
                                     coreSubject.subjectId,
@@ -646,17 +686,10 @@ export async function GET(
         )
 
     } catch (error) {
-
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to get results",
-            },
-            {
-                status: 500,
-            },
-        )
+        if (error instanceof ApiAuthorizationError) {
+            return NextResponse.json({ error: error.message }, { status: error.status })
+        }
+        console.error("GET /api/results failed:", error)
+        return NextResponse.json({ error: "Failed to get results" }, { status: 500 })
     }
 }

@@ -1,5 +1,5 @@
 "use client"
-
+import Image from "next/image"
 import { useEffect, useState } from "react"
 
 type School = {
@@ -164,9 +164,12 @@ export default function SchoolSettingsPage() {
 
                                     {school.logo ? (
 
-                                        <img
+                                        <Image
                                             src={school.logo}
                                             alt={`${school.name} logo`}
+                                            width={80}
+                                            height={80}
+                                            unoptimized
                                             className="h-full w-full object-contain"
                                         />
 

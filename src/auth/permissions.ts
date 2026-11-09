@@ -69,6 +69,12 @@ export const permissions = [
   "attendance.create",
   "attendance.update",
 
+  // Timetable and class sessions
+  "timetable.read",
+  "timetable.manage",
+  "sessions.manage",
+  "sessions.attendance",
+
   // Tests
   "tests.read",
   "tests.create",
@@ -139,6 +145,8 @@ const rolePermissions: Record<Role, Permission[]> = {
     "attendance.read",
     "attendance.create",
     "attendance.update",
+    "timetable.read",
+    "sessions.attendance",
 
     "tests.read",
     "grades.read",
@@ -208,6 +216,8 @@ const rolePermissions: Record<Role, Permission[]> = {
     "attendance.read",
     "attendance.create",
     "attendance.update",
+    "timetable.read",
+    "sessions.attendance",
 
     "tests.read",
     "tests.create",
@@ -228,7 +238,8 @@ const rolePermissions: Record<Role, Permission[]> = {
 };
 
 export function hasPermission(role: Role, permission: Permission): boolean {
-  return rolePermissions[role].includes(permission);
+  const assignedPermissions = rolePermissions[role]
+  return Array.isArray(assignedPermissions) && assignedPermissions.includes(permission)
 }
 
 

@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server"
-import { and, eq } from "drizzle-orm"
+import { and, eq, gte } from "drizzle-orm"
 import { getSchoolDB } from "@/db"
 import { grades, tests, exams,
    studentEnrollments, studentUsers,parents,
     parentStudents, notifications,
-     teacherAssignments } from "@/db/schema"
+     teacherAssignments, classHeads, departmentHeads } from "@/db/schema"
 
-import { requirePermission } from "@/auth/session"
+import { requireApiPermission, ApiAuthorizationError } from "@/auth/api-authorization"
 import { type Role } from "@/auth/permissions"
 import { canManageAcademicResource } from "@/auth/assessment-authorization"
 
 export async function GET(request: Request) {
   try {
-    const session = await requirePermission("grades.read")
+    const session = await requireApiPermission(request, "grades.read")
     const db = await getSchoolDB()
     const url = new URL(request.url)
     const assessmentId = url.searchParams.get("assessmentId")
@@ -48,20 +48,38 @@ const ids = new Set(links.map((x) => x.studentId))
     } else if (session.user.schoolRole === "teacher") {
       const assignments = await db.query.teacherAssignments.findMany({ where: eq(teacherAssignments.teacherId, session.user.id) })
       data = data.filter((g) => {
-        const a = g.test ?? g.exam
-        return !!a && assignments.some((x) => x.classId === a.classId && x.subjectId === a.subjectId && x.academicYearId === a.academicYearId)
+        const assessment = g.test ?? g.exam
+        return !!assessment && assignments.some((x) => x.classId === assessment.classId && x.subjectId === assessment.subjectId && x.academicYearId === assessment.academicYearId)
+      })
+    } else if (session.user.schoolRole === "head_of_class") {
+      const heads = await db.query.classHeads.findMany({ where: eq(classHeads.userId, session.user.id) })
+      data = data.filter((g) => {
+        const assessment = g.test ?? g.exam
+        return !!assessment && heads.some((head) => head.classId === assessment.classId && head.academicYearId === assessment.academicYearId)
+      })
+    } else if (session.user.schoolRole === "head_of_department") {
+      const heads = await db.query.departmentHeads.findMany({ where: eq(departmentHeads.userId, session.user.id) })
+      const departmentIds = new Set(heads.map((head) => head.departmentId))
+      const subjectRows = await db.query.subjects.findMany()
+      const subjectIds = new Set(subjectRows.filter((subject) => subject.departmentId && departmentIds.has(subject.departmentId)).map((subject) => subject.id))
+      const yearIds = new Set(heads.map((head) => head.academicYearId))
+      data = data.filter((grade) => {
+        const assessment = grade.test ?? grade.exam
+        return !!assessment && subjectIds.has(assessment.subjectId) && yearIds.has(assessment.academicYearId)
       })
     }
 
     return NextResponse.json(data)
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to get grades" }, { status: 500 })
+    if (error instanceof ApiAuthorizationError) return NextResponse.json({ error: error.message }, { status: error.status })
+    console.error("GET /api/grades failed:", error)
+    return NextResponse.json({ error: "Failed to get grades" }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
     try {
-        const session = await requirePermission("grades.create")
+        const session = await requireApiPermission(request, "grades.create")
         const body = await request.json()
         const enrollmentId = String(body.studentEnrollmentId ?? "")
         const testId = body.testId ? String(body.testId) : null
@@ -109,13 +127,17 @@ export async function POST(request: Request) {
             eq(grades.examId, examId!)) })
         if (existing) {
             const [updated] = await db.update(grades).set({ score: Math.round(score), note: body.note ? String(body.note) : null, updatedAt: new Date().toISOString() }).where(eq(grades.id, existing.id)).returning()
-            await notifyGradeRecipients(db, enrollmentId, `Grade updated`, `A grade was updated for your student record.`)
+            await notifyGradeRecipients(db, enrollmentId, `Grade updated`, `A grade was updated for assessment ${testId ?? examId}.`)
             return NextResponse.json(updated)
         }
         const [grade] = await db.insert(grades).values({ id: crypto.randomUUID(), studentEnrollmentId: enrollmentId, testId, examId, score: Math.round(score), note: body.note ? String(body.note) : null, updatedAt: new Date().toISOString() }).returning()
-        await notifyGradeRecipients(db, enrollmentId, `New grade posted`, `A new grade has been posted for your student record.`)
+        await notifyGradeRecipients(db, enrollmentId, `New grade posted`, `A new grade has been posted for assessment ${testId ?? examId}.`)
         return NextResponse.json(grade, { status: 201 })
-    } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to save grade" }, { status: 500 }) }
+    } catch (error) {
+        if (error instanceof ApiAuthorizationError) return NextResponse.json({ error: error.message }, { status: error.status })
+        console.error("POST /api/grades failed:", error)
+        return NextResponse.json({ error: "Failed to save grade" }, { status: 500 })
+    }
 }
 
 
@@ -125,9 +147,32 @@ async function notifyGradeRecipients(db: Awaited<ReturnType<typeof import("@/db"
     const recipients = new Set<string>()
     const student = await db.query.studentUsers.findFirst({ where: eq(studentUsers.studentId, enrollment.studentId) })
     if (student) recipients.add(student.userId)
-    const parents = await db.query.parentStudents.findMany({ where: eq(parentStudents.studentId, enrollment.studentId) })
-    parents.forEach((p) => recipients.add(p.parentId))
+    const parentLinks = await db.query.parentStudents.findMany({
+        where: eq(parentStudents.studentId, enrollment.studentId),
+        with: { parent: true },
+    })
+    parentLinks.forEach((link) => {
+        if (link.parent.userId) recipients.add(link.parent.userId)
+    })
     if (!recipients.size) return
-    const now = new Date().toISOString()
-    await db.insert(notifications).values([...recipients].map((recipientUserId) => ({ id: crypto.randomUUID(), recipientUserId, title, message, type: "grade", isRead: false, createdAt: now })))
+    const nowDate = new Date()
+    const now = nowDate.toISOString()
+    const retryWindow = new Date(nowDate.getTime() - 60_000).toISOString()
+    const newRecipients: string[] = []
+    for (const recipientUserId of recipients) {
+        const duplicate = await db.query.notifications.findFirst({
+            where: and(
+                eq(notifications.recipientUserId, recipientUserId),
+                eq(notifications.title, title),
+                eq(notifications.message, message),
+                gte(notifications.createdAt, retryWindow),
+            ),
+        })
+        if (!duplicate) newRecipients.push(recipientUserId)
+    }
+    if (!newRecipients.length) return
+    await db.insert(notifications).values(newRecipients.map((recipientUserId) => ({
+        id: crypto.randomUUID(), recipientUserId, title, message,
+        type: "grade", isRead: false, createdAt: now,
+    })))
 }

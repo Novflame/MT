@@ -1,0 +1,431 @@
+UI/UX Inventory and Navigation Map
+
+Scope
+- This inventory is limited to user experience, UI consistency, responsive design, light/dark modes, and visual identity.
+- It is based on source-code inspection and the current known runtime status.
+- Browser verification was not performed because the application was not running at the time of inspection.
+
+A. Findings supported by source code
+
+A1. Entry and public flows
+1) /
+- Purpose: root redirect based on session role.
+- Role: all authenticated users and unauthenticated visitors.
+- Structure: server component checks session and redirects to /dashboard, /teacher, /department-heads, /parent, /student, or /login.
+- Shared layout: none; this is an entry redirect only.
+- Navigation entry points: no user-facing navigation; it is a redirect layer.
+- Discoverability: not intended as a landing page; it is infrastructure for route selection.
+- Responsive/theme evidence: none beyond redirect logic.
+- Apparent inconsistency: role-specific routing is handled centrally instead of a single shell.
+
+2) /login
+- Purpose: sign-in.
+- Role: all users before authentication.
+- Structure: centered card form with email, password, error banner, submit button, and a create-school call-to-action.
+- Shared layout: standalone auth page; not part of dashboard shell.
+- Navigation entry points: direct URL; registration link from the login form; no visible forgot-password link in the current source.
+- Discoverability: direct and obvious for returning users; password recovery is not visibly surfaced.
+- Responsive/theme evidence: the form uses a centered card, dark-mode classes, blue accent, rounded inputs, and a dark background shell.
+- Apparent inconsistency: consistent with registration pattern, but no recovery affordance appears in source.
+
+3) /register
+- Purpose: school signup and initial admin onboarding.
+- Role: school owner/principal setup flow.
+- Structure: single card with header, logo, school registration fields, submit action, validation, and redirect to /login on success.
+- Shared layout: standalone page; not part of dashboard shell.
+- Navigation entry points: direct URL and login form link to /register.
+- Discoverability: visible from login page only; no clear step-wise onboarding flow beyond the form itself.
+- Responsive/theme evidence: uses min-h-dvh, responsive grid (single column on mobile, two columns on larger screens), dark:bg-slate-950, and blue gradient header.
+- Apparent inconsistency: strong card form pattern but no visible completion-state or onboarding guidance beyond immediate redirect.
+
+A2. Principal/deputy and main dashboard shell
+4) /dashboard
+- Purpose: principal/deputy overview dashboard.
+- Role: principal, deputy.
+- Structure: DashboardShell + header + DashboardOverview.
+- Shared layout: yes; uses main DashboardShell with Sidebar + TopNavbar.
+- Navigation entry points: main sidebar and role redirect flow.
+- Discoverability: high within principal/deputy flows.
+- Responsive/theme evidence: left sidebar with mobile overlay, collapsed desktop state, fixed top bar, dark shell, and light content surfaces.
+- Apparent inconsistency: the dashboard shell is a core pattern for admin flows, but not universal across all routes.
+
+5) /students
+- Purpose: student roster administration.
+- Role: principal/deputy.
+- Structure: page header + StudentsManager for list/search/filter/create/edit record management.
+- Shared layout: yes, dashboard shell.
+- Navigation entry points: main dashboard sidebar; direct route from admin flows.
+- Discoverability: good within admin shell.
+- Responsive/theme evidence: card/list layouts, rounded forms, filtered data list, light surfaces with dark shell.
+- Apparent inconsistency: data-heavy screens are not all using a single table component; they mix cards, stacked rows, and forms.
+
+6) /staff
+- Purpose: staff management page.
+- Role: principal/deputy.
+- Structure: management screen for staff records, likely under the same admin shell pattern.
+- Shared layout: yes, dashboard shell inferred by route group.
+- Navigation entry points: direct sidebar nav in admin shell, depending on menu content.
+- Discoverability: likely good within admin shell.
+- Responsive/theme evidence: follows standard dashboard card/form patterns.
+- Apparent inconsistency: route inventory suggests admin pages are numerous and some may not surface equally through main sidebar groups.
+
+7) /classes and /classess
+- Purpose: class management.
+- Role: principal/deputy.
+- Structure: class management route(s) under admin workflow pattern.
+- Shared layout: likely yes; dashboard shell.
+- Navigation entry points: dashboard sidebar uses /classess route and the app includes both /classes and /classess, suggesting naming duplication in route structure.
+- Discoverability: moderate to high within admin shell.
+- Responsive/theme evidence: standard admin grid and card design.
+- Apparent inconsistency: route-name duplication suggests historical or transitional naming inconsistency.
+
+8) /subjects
+- Purpose: subject management and catalog.
+- Role: principal/deputy.
+- Structure: page header, counts/badges, subject manager UI, creation/editing flows.
+- Shared layout: yes, dashboard shell.
+- Navigation entry points: dashboard sidebar.
+- Discoverability: good within admin shell.
+- Responsive/theme evidence: admin cards and forms with light background surfaces and dark sidebar.
+- Apparent inconsistency: subject screens are consistent with general data-manager patterns, but not always mirrored elsewhere.
+
+9) /teacher-assignments
+- Purpose: teacher assignment management.
+- Role: principal/deputy.
+- Structure: assignment management workflow.
+- Shared layout: yes, dashboard shell.
+- Navigation entry points: sidebar or direct route.
+- Discoverability: likely present in admin shell but not always obvious from related academic menus.
+- Responsive/theme evidence: standard admin cards and lists.
+- Apparent inconsistency: a role-specific admin workflow is included but not always visible in all role shells.
+
+10) /academic-year
+- Purpose: academic-year management.
+- Role: principal/deputy; also admin-level context.
+- Structure: page header, create form, year list, active/closed badges, dates.
+- Shared layout: yes, dashboard shell.
+- Navigation entry points: dashboard sidebar menu item and direct route.
+- Discoverability: good within admin flow.
+- Responsive/theme evidence: uses form/list layout and active-state badge styling.
+- Apparent inconsistency: source also includes /settings/academic, but that route is currently empty; the direct management page is not consistently mirrored in settings navigation.
+
+11) /analytics
+- Purpose: analytics dashboard/reporting page.
+- Role: principal/deputy.
+- Structure: analytics/reporting route under admin workflow.
+- Shared layout: likely yes, dashboard shell.
+- Navigation entry points: sidebar reports/analytics route if present in shell.
+- Discoverability: likely moderate within admin shell.
+- Responsive/theme evidence: standard dashboard pattern.
+- Apparent inconsistency: not every analytics or reporting page is equally obvious from all navigation groups.
+
+12) /reports and /reports/daily
+- Purpose: reporting workflows.
+- Role: principal/deputy.
+- Structure: reports landing page and daily report view.
+- Shared layout: yes; dashboard shell.
+- Navigation entry points: sidebar and direct links.
+- Discoverability: likely good within admin shell.
+- Responsive/theme evidence: standard dashboard and form/report cards.
+- Apparent inconsistency: some reporting routes may be reachable but not equally surfaced in all role-specific shell patterns.
+
+13) /report-cards and /school-certificates
+- Purpose: report-card and certificate management/document generation.
+- Role: admin / academic workflows.
+- Structure: certificate and report-card workflow pages.
+- Shared layout: mostly standalone document-like screens; style differs from main software shell.
+- Navigation entry points: route inventory suggests direct access but not necessarily top-level sidebar visibility.
+- Discoverability: moderate; not always obvious from the main admin navigation.
+- Responsive/theme evidence: certificate pages use custom CSS, fixed-height document styling, and formal palette differences.
+- Apparent inconsistency: document pages have visually distinct styling from regular app screens.
+
+A3. Teacher and class-head experiences
+14) /teacher
+- Purpose: teacher dashboard.
+- Role: teacher, head_of_class.
+- Structure: header, summary stats (classes, subjects, assignments), teaching assignment cards, no persistent sidebar shell.
+- Shared layout: standalone page; not wrapped by DashboardShell.
+- Navigation entry points: direct route only; assignment cards link to subject/class pages.
+- Discoverability: direct route is clear for the role, but the deeper flows are not all accessible from a consistent shell.
+- Responsive/theme evidence: min-h-screen, gray background, card grid with sm:grid-cols-2 and lg:grid-cols-3, responsive typography.
+- Apparent inconsistency: differs from principal/deputy dashboard shell in layout and navigation model.
+
+15) /teacher/class/[classId]/subject/[subjectId]
+- Purpose: subject/class workspace.
+- Role: teacher, head_of_class.
+- Structure: assignment/workspace screen with actions for attendance and exams.
+- Shared layout: standalone route; no main shell.
+- Navigation entry points: reached from teacher dashboard assignment cards.
+- Discoverability: likely good once on the teacher page, but not from a universal role shell.
+- Responsive/theme evidence: standard card-based layout and action panels.
+- Apparent inconsistency: the teacher pathway is more fragmented than admin shell routes.
+
+16) /teacher/class/[classId]/subject/[subjectId]/attendance
+- Purpose: attendance-taking workflow.
+- Role: teacher, head_of_class.
+- Structure: subject/class attendance workflow.
+- Shared layout: standalone route.
+- Navigation entry points: direct workflow links from the teacher workspace.
+- Discoverability: indirect; not prominent from a global navigation menu.
+- Responsive/theme evidence: likely follows the same card/form pattern as other managers.
+- Apparent inconsistency: attendance is workflow-specific and not consistently connected to a top-level shell.
+
+17) /teacher/class/[classId]/subject/[subjectId]/exams and grade entry routes
+- Purpose: exam and grade entry for a teaching assignment.
+- Role: teacher, head_of_class.
+- Structure: exam management and grade-entry workflow.
+- Shared layout: standalone subordinate pages.
+- Navigation entry points: teacher assignment cards and subject workspace links.
+- Discoverability: indirect; dependent on teacher route flow.
+- Responsive/theme evidence: similar card/form patterns with manager components.
+- Apparent inconsistency: workflow is deep-linked and not always visible in a global navigation map.
+
+18) /head-of-class
+- Purpose: class-head dashboard.
+- Role: head_of_class.
+- Structure: likely a short dashboard similar to the teacher dashboard or class-level overview.
+- Shared layout: standalone route by role.
+- Navigation entry points: direct route; possible redirect from root based on role.
+- Discoverability: direct but not tied to a persistent shell.
+- Responsive/theme evidence: expected to follow teacher-like card-based dashboard patterns.
+- Apparent inconsistency: role-specific experience is simplified and differs from the admin shell.
+
+A4. Department head experience
+19) /head-of-department
+- Purpose: department dashboard and department-level overview.
+- Role: head_of_department.
+- Structure: department metrics, summary counts, and department-specific academic data.
+- Shared layout: yes, department shell pattern with separate sidebar and topbar.
+- Navigation entry points: department sidebar.
+- Discoverability: good within the department shell.
+- Responsive/theme evidence: dark sidebar, white main canvas, topbar, consistent with admin shell but separate implementation.
+- Apparent inconsistency: role-specific shell differs from principal/deputy shell even though it follows the same navigation model.
+
+20) /head-of-department/teachers, /subjects, /assignments, /tests, /exams, /grades, /results, /performance, /profile, /settings
+- Purpose: department-specific management and reporting routes.
+- Role: head_of_department.
+- Structure: role-specific management flows using a department shell.
+- Shared layout: yes, department shell.
+- Navigation entry points: department sidebar and topbar.
+- Discoverability: good within department shell.
+- Responsive/theme evidence: follows same dark-rail + light-content pattern as admin shell.
+- Apparent inconsistency: shell is separate from main admin shell but consistent in structure.
+
+A5. Parent and student portal flows
+21) /parent
+- Purpose: parent portal overview.
+- Role: parent.
+- Structure: summary cards showing linked children, attendance totals, grade counts, and child sections.
+- Shared layout: standalone page; no shared sidebar shell in source.
+- Navigation entry points: direct role redirect and direct page route; no global sidebar evident.
+- Discoverability: direct route is clear, but there is no persistent cross-page shell shown in source.
+- Responsive/theme evidence: light-gray background, card sections, stacked layout, some sm:flex-row behavior.
+- Apparent inconsistency: parent experience is simplified and visually separate from admin shell.
+
+22) /student
+- Purpose: student portal overview.
+- Role: student.
+- Structure: class, grades, attendance summary and grade list.
+- Shared layout: standalone page; no shared shell.
+- Navigation entry points: direct role redirect and direct route.
+- Discoverability: direct but limited to a simple portal experience.
+- Responsive/theme evidence: light-gray background, cards, responsive grid, text-based metric cards.
+- Apparent inconsistency: role-specific portal is isolated from main admin navigation patterns.
+
+23) /parent/profile and /student/profile
+- Purpose: profile pages.
+- Role: parent / student.
+- Structure: profile screens under role-specific portal.
+- Shared layout: likely standalone pages.
+- Navigation entry points: likely direct route or a profile link from role-specific portal UI but not obviously surfaced in the current route inventory.
+- Discoverability: not fully clear from source.
+- Responsive/theme evidence: likely follow minimal portal card pattern.
+- Apparent inconsistency: role-specific profile pages are smaller and less integrated than admin profile flows.
+
+A6. Settings and system configuration
+24) /settings
+- Purpose: settings landing page.
+- Role: administrative users.
+- Structure: header, “System Settings” section, grid of settings cards, and a Backup & Restore block.
+- Shared layout: standalone page under the broader app, but generally designed with light cards and page-level spacing.
+- Navigation entry points: main dashboard sidebar, plus links in settings cards.
+- Discoverability: good when user is already inside the admin shell; less obvious from some other route groups.
+- Responsive/theme evidence: grid layout with sm:grid-cols-2; dark-mode card variants; right-chevron affordances.
+- Apparent inconsistency: settings routes are fragmented across the app and the /settings/academic route is currently empty in source.
+
+25) /settings/school
+- Purpose: school profile settings.
+- Role: principal/deputy/admin context.
+- Structure: school profile configuration area.
+- Shared layout: settings section page.
+- Navigation entry points: settings landing grid.
+- Discoverability: good within settings.
+- Responsive/theme evidence: likely consistent with settings card pattern.
+- Apparent inconsistency: route exists, but actual details depend on the page implementation.
+
+26) /settings/academic
+- Purpose: academic settings and academic-year area.
+- Role: admin.
+- Structure: currently empty in source (returns null).
+- Shared layout: none in current implementation.
+- Navigation entry points: from settings landing page.
+- Discoverability: inconsistent; the settings link exists, but the screen is not implemented.
+- Responsive/theme evidence: not present.
+- Apparent inconsistency: direct /academic-year management exists separately, while /settings/academic is empty.
+
+27) /settings/users, /settings/users/new, /settings/users/[id]
+- Purpose: user management and user-creation flows.
+- Role: admin.
+- Structure: bulk user management and form-based create/edit user flows.
+- Shared layout: settings section pages.
+- Navigation entry points: settings landing page and any direct links.
+- Discoverability: good within settings when the section is reached.
+- Responsive/theme evidence: likely consistent with form-based manager screens.
+- Apparent inconsistency: some user-management flows are nested under settings and may be less discoverable from main shell.
+
+28) /settings/acount and /settings/backup
+- Purpose: account settings and backup/restore.
+- Role: admin / personal account.
+- Structure: profile/account and backup restoration flows.
+- Shared layout: settings pages.
+- Navigation entry points: settings landing page, direct route.
+- Discoverability: likely moderate within settings path.
+- Responsive/theme evidence: consistent card and action patterns.
+- Apparent inconsistency: account settings route is spelled /acount, which may be a naming inconsistency.
+
+A7. Academic workflows and records
+29) /attendance and /attendance/form
+- Purpose: attendance management and register workflow.
+- Role: admin / teacher / class workflows depending on access.
+- Structure: attendance selection and register entry form.
+- Shared layout: likely standalone pages or manager pages, not always in main shell.
+- Navigation entry points: sidebar menu, teacher subject workflow, direct route.
+- Discoverability: mixed; present in routes but not always surfaced in a consistently obvious way.
+- Responsive/theme evidence: card/list patterns, manager form layout, and responsive stacked fields.
+- Apparent inconsistency: the presence of an AttendanceForm component that is mostly commented out suggests incomplete or unfinished visibility for part of the attendance UI.
+
+30) /exams, /grades, /results, /results/exams, /results/student/[studentId]
+- Purpose: exam management, marking, and academic result views.
+- Role: admin / teacher / department / student / parent depending on flow.
+- Structure: result and grade management pages, exam workflow pages, and student result details.
+- Shared layout: mostly standalone routes with nested cards and forms.
+- Navigation entry points: sidebar links and specific role-linking pages.
+- Discoverability: moderate within admin/teacher routes; not all are equally accessible from a single menu structure.
+- Responsive/theme evidence: standard card and form patterns; no universal table treatment.
+- Apparent inconsistency: deep-link pages are common and not always obvious in the main navigation map.
+
+31) /tests, /promotion, /student-history, /school-history, /graduates
+- Purpose: academic lifecycle/history and promotion workflows.
+- Role: admin / academic.
+- Structure: historical, promotion, and archive pages.
+- Shared layout: likely standalone or admin pages.
+- Navigation entry points: some are accessible from sidebar/report groups, others may be direct route only.
+- Discoverability: uncertain without deeper route validation; some seem less obvious from the visible navigation structure.
+- Responsive/theme evidence: likely standard card or list pattern.
+- Apparent inconsistency: route inventory suggests an extensive feature set that is not always directly surfaced in the primary navigation.
+
+32) /notifications
+- Purpose: notifications page.
+- Role: user-facing account actions.
+- Structure: standalone notifications route.
+- Shared layout: likely not part of the main shell.
+- Navigation entry points: may appear in top navbar or other shell elements but not obvious in route inventory.
+- Discoverability: not obvious from route inventory alone.
+- Responsive/theme evidence: likely uses standard card/list patterns.
+- Apparent inconsistency: notification surface may not be consistently discoverable across all role shells.
+
+A8. Visual identity and styling pattern inventory
+33) Core design language
+- Default shell: dark sidebar + light main content for admin role screens.
+- Use of blue as primary action and selected state accent.
+- Neutral slate/white backgrounds with dark gray borders.
+- Rounded cards and inputs; consistent border and shallow shadow system.
+- Forms use label + input + validation error panel patterns.
+- Navigations leverage Lucide icons and active-state highlighting by pathname.
+
+34) Theme patterns
+- Light/dark mode is implemented via a root .dark class and Tailwind dark variant.
+- TopNavbar loads theme from localStorage and toggles document.documentElement.classList.toggle("dark", ...).
+- Dark mode is used primarily for shell surfaces and some cards; light backgrounds remain the default content surface.
+- Role shells differ slightly in implementation: main admin shell and department shell share the same dark-nav pattern but are not the same component tree.
+
+35) Responsive patterns
+- The app uses Tailwind responsive utilities (sm:, md:, lg:).
+- Main dashboard shell changes content spacing and margin based on sidebar state.
+- Mobile navigation hides the sidebar behind an overlay and toggles via a menu button.
+- Content frequently stacks vertically on small screens and expands to multi-column layouts on larger screens.
+- Some pages rely on card grids and minimum width constraints instead of a single global table component.
+- Several document and certificate screens use custom fixed-height or print-oriented CSS; these are visually distinct from the general app shell.
+
+B. Findings verified in a browser
+- No browser verification was performed because the application was not running during the inspection window.
+- Therefore, this section is intentionally empty.
+
+C. Questions that cannot yet be answered
+- Whether the dashboard shell truly disappears in practice when navigating between pages.
+- Whether the language and theme controls remain reachable from all role flows beyond the source pattern.
+- Whether the intended navigation model is a single persistent shell or multiple role-specific shells.
+- Whether some pages are intentionally deep-link-only or simply under-discoverable.
+- Whether registration and login flows are actually perceived as weak or confusing by real users.
+- Whether password recovery exists outside the visible interface, even if no UI entry point is present in source.
+- Whether the academic-year UI is perceived as context-setting or merely a disconnected management screen.
+
+Navigation map summary
+Main admin shell
+- Overview
+  - /dashboard
+- Academic
+  - /classess, /subjects, /teacher-assignments, /academic-year
+- People
+  - /students, /staff, /department-heads, /departments, /parent-students, /portal-users
+- Attendance
+  - /attendance, /attendance/form
+- Assessment
+  - /tests, /exams, /grades, /results, /results/exams, /results/student/[studentId]
+- Reports
+  - /reports, /reports/daily, /analytics, /report-cards, /school-history, /graduates, /student-history
+- Settings
+  - /settings, /settings/school, /settings/academic, /settings/users, /settings/backup, /settings/acount
+
+Role-specific shells and direct routes
+- Principal/deputy: main dashboard shell
+- Head of department: separate department shell with department navigation
+- Teacher/head of class: standalone teacher dashboard and subject-class workflows
+- Parent: standalone parent portal
+- Student: standalone student portal
+
+Important pages with no obvious global navigation entry point (source-based observation)
+- /dashboard/profile
+- /dashboard/profile/manage
+- /settings/academic (empty page in source)
+- /school-history
+- /graduates
+- /student-history
+- /notifications
+- /parent/profile
+- /student/profile
+- /teacher/class/[classId]/subject/[subjectId] deep links
+- /teacher/class/[classId]/subject/[subjectId]/attendance
+- /teacher/class/[classId]/subject/[subjectId]/exams
+- /teacher/class/[classId]/subject/[subjectId]/exams/[examsId]/grades
+- /results/student/[studentId]
+
+Links between related pages supported by source code
+- /login -> /register
+- /dashboard role redirects to /teacher, /parent, /student, or /head-of-department as appropriate
+- teacher dashboard assignment cards link to /teacher/class/[classId]/subject/[subjectId]
+- subject/class pages link to attendance and exam workflows
+- settings landing page links to sub-settings pages
+- admin shell uses nested route navigation via sidebar items and pathname-based active states
+
+Important navigation gaps or ambiguities supported by source code
+- There are multiple route groups with different shells rather than one universal shell.
+- /settings/academic exists but is empty while /academic-year exists and is active.
+- Several deep-link pages are not obvious in the main navigation.
+- The app includes both /classes and /classess, indicating naming inconsistency in route-level navigation.
+- Parent/student/teacher experiences are isolated from the main admin shell and rely on direct access rather than a persistent global navigation model.
+- The login flow has a visible registration path but no apparent visible password-recovery route.
+
+Do not modify application source code, styles, configuration, or data.
+Do not implement improvements or fix any issues as part of this inventory.
+Protected area: the Final Year Certificate is out of scope and must not be modified or affected.

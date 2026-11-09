@@ -1,9 +1,5 @@
-
 import { NextResponse } from "next/server"
-
-import { auth } from "@/auth/auth"
 import { getSchoolDB } from "@/db"
-
 import {
     students,
     parents,
@@ -13,16 +9,14 @@ import {
 import {
     getActiveAcademicYear,
 } from "@/db/academic-year"
-
 import {
     hasPermission,
     type Role,
 } from "@/auth/permissions"
-
 import {
     canCreateStudent,
 } from "@/auth/authorization"
-
+import { getRequestSession } from "@/auth/session"
 
 export async function POST(
     request: Request,
@@ -33,9 +27,7 @@ export async function POST(
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(

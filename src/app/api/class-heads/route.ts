@@ -1,23 +1,18 @@
 import { NextResponse } from "next/server"
 import { and, eq } from "drizzle-orm"
-
-import { auth } from "@/auth/auth"
 import { centralDb } from "@/db/central"
 import { user } from "@/db/centeral-schema"
-
 import { getSchoolDB } from "@/db"
 import {
     classHeads,
     schoolClases,
 } from "@/db/schema"
-
 import {
     hasPermission,
     type Role,
 } from "@/auth/permissions"
-
 import { getActiveAcademicYear } from "@/db/academic-year"
-
+import { getRequestSession } from "@/auth/session"
 
 export async function POST(request: Request) {
     try {
@@ -27,9 +22,7 @@ export async function POST(request: Request) {
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -279,9 +272,7 @@ export async function GET(request: Request) {
         // =========================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(

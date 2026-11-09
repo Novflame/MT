@@ -8,6 +8,6 @@ export default defineConfig({
     dialect: "sqlite",
 
     dbCredentials: {
-        url: "./central.db",
+        url: process.env.CENTRAL_DATABASE_PATH ?? "./central.db",
     },
 })

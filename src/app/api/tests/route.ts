@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { and, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { getSchoolDB } from "@/db"
 import { getActiveAcademicYear } from "@/db/academic-year"
 import { tests, teacherAssignments, grades } from "@/db/schema"
@@ -51,7 +51,13 @@ export async function PATCH(request: Request) {
         const session = await requirePermission("tests.update")
         const body = await request.json(); const id=String(body.id??""); const db=await getSchoolDB(); const test=await db.query.tests.findFirst({where:eq(tests.id,id)}); if(!test)return NextResponse.json({error:"Test not found"},{status:404})
         const allowed=await canManageAcademicResource({ id: session.user.id, role: session.user.schoolRole as Role },"tests.update",{academicYearId:test.academicYearId,classId:test.classId,subjectId:test.subjectId}); if(!allowed)return NextResponse.json({error:"Forbidden"},{status:403})
-        const [updated]=await db.update(tests).set({name:body.name!==undefined?String(body.name).trim():test.name,testDate:body.testDate!==undefined?String(body.testDate):test.testDate,maxScore:body.maxScore!==undefined?Number(body.maxScore):test.maxScore,term:body.term!==undefined?String(body.term):test.term}).where(eq(tests.id,id)).returning(); return NextResponse.json(updated)
+        const nextMaxScore = body.maxScore !== undefined ? Number(body.maxScore) : test.maxScore
+        if (!Number.isInteger(nextMaxScore) || nextMaxScore <= 0) return NextResponse.json({ error: "Maximum score must be a positive whole number" }, { status: 400 })
+        if (nextMaxScore !== test.maxScore) {
+            const existingGrades = await db.query.grades.findMany({ where: eq(grades.testId, id) })
+            if (existingGrades.some((grade) => grade.score > nextMaxScore)) return NextResponse.json({ error: "Maximum score cannot be lower than an existing grade" }, { status: 409 })
+        }
+        const [updated]=await db.update(tests).set({name:body.name!==undefined?String(body.name).trim():test.name,testDate:body.testDate!==undefined?String(body.testDate):test.testDate,maxScore:nextMaxScore,term:body.term!==undefined?String(body.term):test.term}).where(eq(tests.id,id)).returning(); return NextResponse.json(updated)
     } catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Failed to update test"},{status:500})}
 }
 export async function DELETE(request: Request) {

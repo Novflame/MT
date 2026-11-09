@@ -1,8 +1,7 @@
+import { requireSession } from "@/auth/session"
 
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
 
-import { auth } from "@/auth/auth"
 
 import DashboardOverview from "@/components/dashboard/DashboardOverview"
 import DashboardShell from "@/components/dashboard/DashboardShell"
@@ -11,9 +10,7 @@ import { getLocale } from "@/lib/i18n/server"
 import type { Locale } from "@/lib/i18n/translations"
 
 export default async function DashboardPage() {
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    })
+    const session = await requireSession()
 
     if (!session) {
         redirect("/login")

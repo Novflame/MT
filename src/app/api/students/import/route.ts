@@ -2,11 +2,8 @@ import { NextResponse } from "next/server"
 import Papa from "papaparse"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
-
-import { auth } from "@/auth/auth"
 import { getSchoolDB } from "@/db"
 import { getActiveAcademicYear } from "@/db/academic-year"
-
 import {
     students,
     parents,
@@ -14,20 +11,14 @@ import {
     studentEnrollments,
     
 } from "@/db/schema"
-
 import {
     hasPermission,
     type Role,
 } from "@/auth/permissions"
-
 import {
     canCreateStudent,
 } from "@/auth/authorization"
-
-
-// ============================================================
-// Limits
-// ============================================================
+import { getRequestSession } from "@/auth/session"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const MAX_ROWS = 5000
@@ -129,9 +120,7 @@ export async function GET(
 ) {
     try {
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(
@@ -220,9 +209,7 @@ export async function POST(
         // =====================================================
 
         const session =
-            await auth.api.getSession({
-                headers: request.headers,
-            })
+            await getRequestSession(request.headers)
 
         if (!session) {
             return NextResponse.json(

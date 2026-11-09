@@ -1,7 +1,7 @@
 
 import { and, eq } from "drizzle-orm"
 
-import { getSchoolDB } from "@/db"
+import type { SchoolDB } from "@/db"
 import {
     academicYears,
     attendance,
@@ -35,9 +35,9 @@ function getTodayDate() {
 }
 
 export async function checkDailyAttendanceReports(
+    db: SchoolDB,
     date = getTodayDate(),
 ): Promise<DailyAttendanceCheckResult> {
-    const db = await getSchoolDB()
 
     const academicYear = await db.query.academicYears.findFirst({
         where: eq(academicYears.isActive, true),

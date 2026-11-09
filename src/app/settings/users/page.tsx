@@ -1,6 +1,4 @@
-
 "use client"
-
 import { useEffect, useState } from "react"
 import Link from "next/link"
 
@@ -10,6 +8,9 @@ type SchoolUser = {
     email: string
     schoolRole: string
     banned: boolean | number
+    emailVerified?: boolean
+    mustChangePassword?: boolean
+    provisioningStatus?: string
 }
 
 export default function UsersSettingsPage() {
@@ -505,6 +506,11 @@ export default function UsersSettingsPage() {
                                                             </span>
 
                                                         )}
+                                                        <div className="mt-2 space-y-1 text-xs text-slate-500">
+                                                            <div>Email: {schoolUser.emailVerified ? "Verified" : "Not verified"}</div>
+                                                            <div>Password: {schoolUser.mustChangePassword ? "Change required" : "Current"}</div>
+                                                            <div>Setup: {schoolUser.provisioningStatus ?? "unknown"}</div>
+                                                        </div>
 
                                                     </td>
 

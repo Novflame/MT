@@ -1,7 +1,7 @@
+import { getRequestSession } from "@/auth/session"
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 
-import { auth } from "@/auth/auth"
 import { centralDb } from "@/db/central"
 import { user } from "@/db/centeral-schema"
 
@@ -14,9 +14,7 @@ export async function GET(request: Request) {
 
     try {
 
-        const session = await auth.api.getSession({
-            headers: request.headers,
-        })
+        const session = await getRequestSession(request.headers)
 
         if (!session?.user) {
 
@@ -92,9 +90,7 @@ export async function PATCH(request: Request) {
 
     try {
 
-        const session = await auth.api.getSession({
-            headers: request.headers,
-        })
+        const session = await getRequestSession(request.headers)
 
         if (!session?.user) {
 
