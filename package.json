@@ -18,10 +18,14 @@
     "test:migrations": "python tests/test_migration_compatibility.py",
     "predev": "node scripts/migrate-central.cjs",
     "test": "node --test tests/*.test.cjs && python tests/test_migration_compatibility.py && python tests/test_account_lifecycle_migrations.py",
-    "test:integration": "node --test tests/account-api-integration.test.cjs && python tests/test_migration_compatibility.py && python tests/test_account_lifecycle_migrations.py"
+    "test:integration": "node --test tests/account-api-integration.test.cjs && python tests/test_migration_compatibility.py && python tests/test_account_lifecycle_migrations.py",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build:windows": "tauri build --bundles nsis"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
+    "@tauri-apps/api": "^2.12.4",
     "adm-zip": "^0.6.1",
     "better-auth": "^1.3.34",
     "better-sqlite3": "^12.4.1",
@@ -41,6 +45,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
+    "@tauri-apps/cli": "^2.12.4",
     "@types/adm-zip": "^0.5.8",
     "@types/better-sqlite3": "^7.6.13",
     "@types/fontkit": "^2.0.9",
@@ -58,5 +63,4 @@
   "engines": {
     "node": ">=20.9.0"
   }
-  
 }

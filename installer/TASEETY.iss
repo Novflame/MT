@@ -68,7 +68,7 @@ begin
   L := TLabel.Create(WizardForm); L.Parent := ConfigPage.Surface; L.Caption := 'Persistent data directory (kept during upgrade and uninstall):'; L.Left := 0; L.Top := 8;
   DataDirEdit := TEdit.Create(WizardForm); DataDirEdit.Parent := ConfigPage.Surface; DataDirEdit.Left := 0; DataDirEdit.Top := 30; DataDirEdit.Width := ConfigPage.SurfaceWidth; DataDirEdit.Text := ExistingDataDir;
   if DataDirEdit.Text = '' then DataDirEdit.Text := ExpandConstant('{commonappdata}') + '\TASEETY';
-  L := TLabel.Create(WizardForm); L.Parent := ConfigPage.Surface; L.Caption := 'LAN hostname or IPv4 address (example: TASEETY-SERVER or 192.168.1.10):'; L.Left := 0; L.Top := 76;
+  L := TLabel.Create(WizardForm); L.Parent := ConfigPage.Surface; L.Caption := 'LAN hostname or IPv4 address (desktop discovery requires the server private IPv4 address):'; L.Left := 0; L.Top := 76;
   HostEdit := TEdit.Create(WizardForm); HostEdit.Parent := ConfigPage.Surface; HostEdit.Left := 0; HostEdit.Top := 98; HostEdit.Width := ConfigPage.SurfaceWidth; HostEdit.Text := ReadRegString('PublicHost');
   if HostEdit.Text = '' then HostEdit.Text := GetEnv('COMPUTERNAME');
   L := TLabel.Create(WizardForm); L.Parent := ConfigPage.Surface; L.Caption := 'TCP port:'; L.Left := 0; L.Top := 144;

@@ -16,3 +16,6 @@ tsconfig.tsbuildinfo
 # Local backup files and uploaded assets
 backups/
 public/uploads/
+
+# Rust and Tauri build artifacts
+/src-tauri/target/

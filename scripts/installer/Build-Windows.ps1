@@ -32,6 +32,7 @@ $required = @(
 'scripts\migrate-central.cjs',
 'scripts\installer\TASEETYService.cs',
 'scripts\installer\Configure-TASEETY.ps1',
+'installer\Configure-TASEETY-DiscoveryFirewall.ps1',
 'scripts\installer\Uninstall-TASEETY.ps1',
 'scripts\installer\backup-before-upgrade.cjs',
 'scripts\installer\relocate-central.cjs',
@@ -179,6 +180,7 @@ $installerScripts = Join-Path $payload 'scripts\installer'
 New-Item -ItemType Directory -Path $installerScripts -Force | Out-Null
 
 Copy-Item (Join-Path $PSScriptRoot 'Configure-TASEETY.ps1') $installerScripts -Force
+Copy-Item (Join-Path $root 'installer\Configure-TASEETY-DiscoveryFirewall.ps1') $installerScripts -Force
 Copy-Item (Join-Path $PSScriptRoot 'Uninstall-TASEETY.ps1') $installerScripts -Force
 
 foreach ($requiredPayload in @(

@@ -306,5 +306,14 @@ if (!$healthy) {
     Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     throw "TASEETY failed its local HTTP health check at $healthUrl. Data has been preserved; inspect $logDir\service.log and the installer log."
 }
+$discoveryFirewallScript = Join-Path $PSScriptRoot 'Configure-TASEETY-DiscoveryFirewall.ps1'
+try {
+    & $discoveryFirewallScript -NodePath $node
+} catch {
+    Stop-Service -Name 'TASEETYService' -Force -ErrorAction SilentlyContinue
+    Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+    Get-NetFirewallRule -DisplayName 'TASEETY LAN Discovery (UDP 47777)' -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+    throw "Could not configure LAN discovery. TASEETY service was stopped; inspect the installer log. Details: $($_.Exception.Message)"
+}
 Write-Host "TASEETY is running. Open http://${PublicHost}:$Port"
 Write-Warning 'HTTP is intended only for a trusted private LAN. Do not expose this port directly to the public internet; use HTTPS with a trusted certificate for internet access.'

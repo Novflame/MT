@@ -63,7 +63,7 @@ The build runs TypeScript checking and the project tests, builds Next.js standal
 
 ## Network
 
-The installer configures HTTP for a trusted private LAN and creates a Windows Firewall rule restricted to Domain and Private profiles. Do not expose the application port directly to the public internet. Public access requires HTTPS termination with a trusted certificate and a corresponding `BETTER_AUTH_URL`.
+The installer configures HTTP for a trusted private LAN and creates Windows Firewall rules restricted to Domain and Private profiles: TCP on the configured application port, and UDP 47777 for LAN discovery, scoped to the installed `node.exe`. The discovery rule is removed during uninstall. For desktop discovery, set the installer?s `PublicHost` to the server's private LAN IPv4 address (not its default computer hostname), so the advertised `BETTER_AUTH_URL` matches the address the client validates and Better Auth trusts. Do not expose either port directly to the public internet. Public access requires HTTPS termination with a trusted certificate and a corresponding `BETTER_AUTH_URL`.
 
 Better Auth trusts the configured application origin and `localhost`/`127.0.0.1` on the configured port for local access. If initial school registration is interrupted, retry with the same school slug, principal name, and principal email so the pending provisioning operation can safely recover its principal account.
 

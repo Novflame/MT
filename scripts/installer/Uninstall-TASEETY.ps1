@@ -22,6 +22,11 @@ if ($service) {
     }
 }
 
+$discoveryFirewallScript = Join-Path $PSScriptRoot 'Configure-TASEETY-DiscoveryFirewall.ps1'
+if (Test-Path -LiteralPath $discoveryFirewallScript -PathType Leaf) {
+    & $discoveryFirewallScript -Remove
+}
+
 if (Test-Path -LiteralPath $registryPath) {
     $port = (Get-ItemProperty -Path $registryPath -Name Port -ErrorAction SilentlyContinue).Port
     if ($port) {
