@@ -1069,3 +1069,5 @@ export function CertificatePrintablePage({
     </main>
   );
 }
+
+   

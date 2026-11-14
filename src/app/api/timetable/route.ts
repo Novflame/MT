@@ -4,7 +4,28 @@ import { randomUUID } from "node:crypto"
 import { getSchoolDB } from "@/db"
 import { academicYears, classTimetables, classTimetableSlots, classTimetableAuditLogs, schoolClases, subjects, teacherAssignments } from "@/db/schema"
 import { requireApiPermission, ApiAuthorizationError } from "@/auth/api-authorization"
-import { assertTimetableEnabled, canAccessTimetableClass, isValidTime } from "@/lib/timetable/access"
+import { assertTimetableEnabled, canAccessTimetableClass } from "@/lib/timetable/access"
+
+
+function normalizeId(value: unknown): string {
+    return typeof value === "string" ? value.trim() : ""
+}
+
+function normalizeInteger(value: unknown): number | null {
+    if (typeof value !== "number" && typeof value !== "string") return null
+    if (typeof value === "string" && !value.trim()) return null
+    const parsed = Number(value)
+    return Number.isInteger(parsed) ? parsed : null
+}
+
+/** Accept browser time values in HH:mm or HH:mm:ss format and store HH:mm. */
+function normalizeSlotTime(value: unknown): string | null {
+    if (typeof value !== "string") return null
+    const normalized = value.trim()
+    const match = /^(?:([01]\d|2[0-3])):([0-5]\d)(?::([0-5]\d))?$/.exec(normalized)
+    if (!match || (match[3] !== undefined && match[3] !== "00")) return null
+    return `${match[1]}:${match[2]}`
+}
 
 function fail(error: unknown) {
     const message = error instanceof Error ? error.message : "Request failed"
@@ -37,25 +58,54 @@ export async function POST(request: Request) {
         const session = await requireApiPermission(request, "timetable.manage")
         await assertTimetableEnabled(session.user.id)
         const body = await request.json()
-        const { academicYearId, classId, subjectId, teacherId, dayOfWeek, periodNumber, startTime, endTime, name = "Main timetable" } = body
-        if (![academicYearId, classId, subjectId, teacherId].every(v => typeof v === "string" && v.trim()) || !Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6 || !Number.isInteger(periodNumber) || periodNumber < 1 || !isValidTime(startTime) || !isValidTime(endTime) || startTime >= endTime) return NextResponse.json({ error: "Invalid timetable slot data" }, { status: 400 })
+        const name = typeof body?.name === "string" ? body.name : "Main timetable"
+        const academicYearId = normalizeId(body?.academicYearId)
+        const classId = normalizeId(body?.classId)
+        const subjectId = normalizeId(body?.subjectId)
+        const teacherId = normalizeId(body?.teacherId)
+        const dayOfWeek = normalizeInteger(body?.dayOfWeek)
+        const periodNumber = normalizeInteger(body?.periodNumber)
+        const startTime = normalizeSlotTime(body?.startTime)
+        const endTime = normalizeSlotTime(body?.endTime)
+        const invalidFields = [
+            !academicYearId && "academicYearId",
+            !classId && "classId",
+            !subjectId && "subjectId",
+            !teacherId && "teacherId",
+            (dayOfWeek === null || dayOfWeek < 0 || dayOfWeek > 6) && "dayOfWeek",
+            (periodNumber === null || periodNumber < 1) && "periodNumber",
+            !startTime && "startTime",
+            !endTime && "endTime",
+            startTime && endTime && startTime >= endTime && "timeRange",
+        ].filter(Boolean)
+        if (invalidFields.length) return NextResponse.json({ error: "Invalid timetable slot data", invalidFields }, { status: 400 })
+        const validSlot = {
+            academicYearId: academicYearId as string,
+            classId: classId as string,
+            subjectId: subjectId as string,
+            teacherId: teacherId as string,
+            dayOfWeek: dayOfWeek as number,
+            periodNumber: periodNumber as number,
+            startTime: startTime as string,
+            endTime: endTime as string,
+        }
         const db = await getSchoolDB()
-        const [year] = await db.select({ id: academicYears.id }).from(academicYears).where(eq(academicYears.id, academicYearId)).limit(1)
-        const [assignment] = await db.select({ teacherId: teacherAssignments.teacherId }).from(teacherAssignments).where(and(eq(teacherAssignments.academicYearId, academicYearId), eq(teacherAssignments.classId, classId), eq(teacherAssignments.subjectId, subjectId), eq(teacherAssignments.teacherId, teacherId))).limit(1)
+        const [year] = await db.select({ id: academicYears.id }).from(academicYears).where(eq(academicYears.id, validSlot.academicYearId)).limit(1)
+        const [assignment] = await db.select({ teacherId: teacherAssignments.teacherId }).from(teacherAssignments).where(and(eq(teacherAssignments.academicYearId, validSlot.academicYearId), eq(teacherAssignments.classId, validSlot.classId), eq(teacherAssignments.subjectId, validSlot.subjectId), eq(teacherAssignments.teacherId, validSlot.teacherId))).limit(1)
         if (!year || !assignment) return NextResponse.json({ error: "Invalid academic year or teacher assignment" }, { status: 400 })
-        const [existing] = await db.select({ id: classTimetables.id }).from(classTimetables).where(and(eq(classTimetables.academicYearId, academicYearId), eq(classTimetables.classId, classId), eq(classTimetables.isActive, true))).limit(1)
+        const [existing] = await db.select({ id: classTimetables.id }).from(classTimetables).where(and(eq(classTimetables.academicYearId, validSlot.academicYearId), eq(classTimetables.classId, validSlot.classId), eq(classTimetables.isActive, true))).limit(1)
         const now = new Date().toISOString()
         const timetableId = existing?.id ?? randomUUID()
-        const slots = await db.select().from(classTimetableSlots).where(eq(classTimetableSlots.academicYearId, academicYearId))
-        const overlap = slots.find(slot => slot.isActive && slot.academicYearId === academicYearId && slot.dayOfWeek === dayOfWeek && slot.startTime < endTime && startTime < slot.endTime && (slot.classId === classId || slot.teacherId === teacherId))
-        if (overlap) return NextResponse.json({ error: overlap.classId === classId ? "CLASS_TIME_CONFLICT" : "TEACHER_TIME_CONFLICT" }, { status: 409 })
-        if (!existing) await db.insert(classTimetables).values({ id: timetableId, academicYearId, classId, name: String(name).slice(0, 100), createdBy: session.user.id, createdAt: now, updatedAt: now })
-        const inactiveSlot = slots.find(slot => slot.timetableId === timetableId && slot.dayOfWeek === dayOfWeek && slot.periodNumber === periodNumber && !slot.isActive)
+        const slots = await db.select().from(classTimetableSlots).where(eq(classTimetableSlots.academicYearId, validSlot.academicYearId))
+        const overlap = slots.find(slot => slot.isActive && slot.academicYearId === validSlot.academicYearId && slot.dayOfWeek === validSlot.dayOfWeek && slot.startTime < validSlot.endTime && validSlot.startTime < slot.endTime && (slot.classId === validSlot.classId || slot.teacherId === validSlot.teacherId))
+        if (overlap) return NextResponse.json({ error: overlap.classId === validSlot.classId ? "CLASS_TIME_CONFLICT" : "TEACHER_TIME_CONFLICT" }, { status: 409 })
+        if (!existing) await db.insert(classTimetables).values({ id: timetableId, academicYearId: validSlot.academicYearId, classId: validSlot.classId, name: String(name).slice(0, 100), createdBy: session.user.id, createdAt: now, updatedAt: now })
+        const inactiveSlot = slots.find(slot => slot.timetableId === timetableId && slot.dayOfWeek === validSlot.dayOfWeek && slot.periodNumber === validSlot.periodNumber && !slot.isActive)
         const slotId = inactiveSlot?.id ?? randomUUID()
-        const slot = { id: slotId, timetableId, academicYearId, classId, subjectId, teacherId, dayOfWeek, periodNumber, startTime, endTime, isActive: true, createdAt: inactiveSlot?.createdAt ?? now }
-        if (inactiveSlot) await db.update(classTimetableSlots).set({ subjectId, teacherId, startTime, endTime, isActive: true }).where(eq(classTimetableSlots.id, slotId))
+        const slot = { id: slotId, timetableId, academicYearId: validSlot.academicYearId, classId: validSlot.classId, subjectId: validSlot.subjectId, teacherId: validSlot.teacherId, dayOfWeek: validSlot.dayOfWeek, periodNumber: validSlot.periodNumber, startTime: validSlot.startTime, endTime: validSlot.endTime, isActive: true, createdAt: inactiveSlot?.createdAt ?? now }
+        if (inactiveSlot) await db.update(classTimetableSlots).set({ subjectId: validSlot.subjectId, teacherId: validSlot.teacherId, startTime: validSlot.startTime, endTime: validSlot.endTime, isActive: true }).where(eq(classTimetableSlots.id, slotId))
         else await db.insert(classTimetableSlots).values(slot)
-        await db.insert(classTimetableAuditLogs).values({ id: randomUUID(), timetableId, slotId, actorUserId: session.user.id, action: inactiveSlot ? "slot_reactivated" : "slot_created", details: JSON.stringify({ dayOfWeek, periodNumber, startTime, endTime, subjectId, teacherId }), createdAt: now })
+        await db.insert(classTimetableAuditLogs).values({ id: randomUUID(), timetableId, slotId, actorUserId: session.user.id, action: inactiveSlot ? "slot_reactivated" : "slot_created", details: JSON.stringify({ dayOfWeek: validSlot.dayOfWeek, periodNumber: validSlot.periodNumber, startTime: validSlot.startTime, endTime: validSlot.endTime, subjectId: validSlot.subjectId, teacherId: validSlot.teacherId }), createdAt: now })
         return NextResponse.json({ slot }, { status: 201 })
     } catch (error) { return fail(error) }
 }
@@ -72,20 +122,37 @@ export async function PATCH(request: Request) {
         const [current] = await db.select().from(classTimetableSlots).where(eq(classTimetableSlots.id, slotId)).limit(1)
         if (!current) return NextResponse.json({ error: "Slot not found" }, { status: 404 })
         const next = {
-            subjectId: body.subjectId ?? current.subjectId,
-            teacherId: body.teacherId ?? current.teacherId,
-            dayOfWeek: body.dayOfWeek ?? current.dayOfWeek,
-            periodNumber: body.periodNumber ?? current.periodNumber,
-            startTime: body.startTime ?? current.startTime,
-            endTime: body.endTime ?? current.endTime,
+            subjectId: body.subjectId === undefined ? current.subjectId : normalizeId(body.subjectId),
+            teacherId: body.teacherId === undefined ? current.teacherId : normalizeId(body.teacherId),
+            dayOfWeek: body.dayOfWeek === undefined ? current.dayOfWeek : normalizeInteger(body.dayOfWeek),
+            periodNumber: body.periodNumber === undefined ? current.periodNumber : normalizeInteger(body.periodNumber),
+            startTime: body.startTime === undefined ? current.startTime : normalizeSlotTime(body.startTime),
+            endTime: body.endTime === undefined ? current.endTime : normalizeSlotTime(body.endTime),
         }
-        if (typeof next.subjectId !== "string" || typeof next.teacherId !== "string" || !Number.isInteger(next.dayOfWeek) || next.dayOfWeek < 0 || next.dayOfWeek > 6 || !Number.isInteger(next.periodNumber) || next.periodNumber < 1 || !isValidTime(next.startTime) || !isValidTime(next.endTime) || next.startTime >= next.endTime) return NextResponse.json({ error: "Invalid timetable slot data" }, { status: 400 })
-        const [assignment] = await db.select({ teacherId: teacherAssignments.teacherId }).from(teacherAssignments).where(and(eq(teacherAssignments.academicYearId, current.academicYearId), eq(teacherAssignments.classId, current.classId), eq(teacherAssignments.subjectId, next.subjectId), eq(teacherAssignments.teacherId, next.teacherId))).limit(1)
+        const invalidFields = [
+            !next.subjectId && "subjectId",
+            !next.teacherId && "teacherId",
+            (next.dayOfWeek === null || next.dayOfWeek < 0 || next.dayOfWeek > 6) && "dayOfWeek",
+            (next.periodNumber === null || next.periodNumber < 1) && "periodNumber",
+            !next.startTime && "startTime",
+            !next.endTime && "endTime",
+            next.startTime && next.endTime && next.startTime >= next.endTime && "timeRange",
+        ].filter(Boolean)
+        if (invalidFields.length) return NextResponse.json({ error: "Invalid timetable slot data", invalidFields }, { status: 400 })
+        const validNext = next as {
+            subjectId: string
+            teacherId: string
+            dayOfWeek: number
+            periodNumber: number
+            startTime: string
+            endTime: string
+        }
+        const [assignment] = await db.select({ teacherId: teacherAssignments.teacherId }).from(teacherAssignments).where(and(eq(teacherAssignments.academicYearId, current.academicYearId), eq(teacherAssignments.classId, current.classId), eq(teacherAssignments.subjectId, validNext.subjectId), eq(teacherAssignments.teacherId, validNext.teacherId))).limit(1)
         if (!assignment) return NextResponse.json({ error: "Invalid teacher assignment" }, { status: 400 })
         const allSlots = await db.select().from(classTimetableSlots).where(eq(classTimetableSlots.academicYearId, current.academicYearId))
-        const conflict = allSlots.find(item => item.isActive && item.id !== slotId && item.dayOfWeek === next.dayOfWeek && item.startTime < next.endTime && next.startTime < item.endTime && (item.classId === current.classId || item.teacherId === next.teacherId))
+        const conflict = allSlots.find(item => item.isActive && item.id !== slotId && item.dayOfWeek === validNext.dayOfWeek && item.startTime < validNext.endTime && validNext.startTime < item.endTime && (item.classId === current.classId || item.teacherId === validNext.teacherId))
         if (conflict) return NextResponse.json({ error: conflict.classId === current.classId ? "CLASS_TIME_CONFLICT" : "TEACHER_TIME_CONFLICT" }, { status: 409 })
-        await db.update(classTimetableSlots).set(next).where(eq(classTimetableSlots.id, slotId))
+        await db.update(classTimetableSlots).set(validNext).where(eq(classTimetableSlots.id, slotId))
         const now = new Date().toISOString()
         await db.insert(classTimetableAuditLogs).values({ id: randomUUID(), timetableId: current.timetableId, slotId, actorUserId: session.user.id, action: "slot_updated", details: JSON.stringify({ before: current, after: next }), createdAt: now })
         return NextResponse.json({ success: true })

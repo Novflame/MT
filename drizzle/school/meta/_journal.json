@@ -57,6 +57,13 @@
       "when": 1793211000000,
       "tag": "0007_grade_integrity_constraints",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794394527766,
+      "tag": "0008_clumsy_synch",
+      "breakpoints": true
     }
   ]
 }

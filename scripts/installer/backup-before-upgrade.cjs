@@ -1,6 +1,6 @@
 'use strict'
 
-// Run only after the TASEETY service has stopped. Source databases are never modified.
+// Run only after the TASEETY service has stopped; no application transactions are written.
 const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
@@ -50,10 +50,13 @@ function assertRegularFile(file, label) {
   const stat = fs.lstatSync(file)
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`${label} is not a regular file: ${file}`)
 }
+function openSourceDatabase(file) {
+  return new Database(file, { readonly: false, fileMustExist: true })
+}
 async function snapshot(source, destination, label) {
   assertRegularFile(source, `${label} database`)
   fs.mkdirSync(path.dirname(destination), { recursive: true })
-  const sourceDb = new Database(source, { readonly: true, fileMustExist: true })
+  const sourceDb = openSourceDatabase(source)
   try {
     const integrity = sourceDb.pragma('integrity_check', { simple: true })
     if (integrity !== 'ok') throw new Error(`${label} source integrity_check failed: ${integrity}`)
@@ -84,7 +87,7 @@ function listFiles(root) {
 
 async function main() {
   await snapshot(centralPath, path.join(target, 'central.db'), 'central')
-  const central = new Database(centralPath, { readonly: true, fileMustExist: true })
+  const central = openSourceDatabase(centralPath)
   let schoolIds
   try {
     const hasSchools = central.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='schools'").get()

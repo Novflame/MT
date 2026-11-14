@@ -223,7 +223,7 @@ export async function POST(
     // All school-side writes and verification happen in one
     // synchronous better-sqlite3 transaction.
     db.transaction((tx) => {
-
+    
       if (target.provisioningType === "staff") {
         const existing = tx
           .select()

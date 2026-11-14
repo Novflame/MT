@@ -1,0 +1,1 @@
+CREATE INDEX `user_provisioning_status_idx` ON `user` (`provisioning_status`);

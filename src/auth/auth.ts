@@ -6,8 +6,16 @@ import { centralDb } from "@/db/central";
 import * as schema from "@/db/centeral-schema";
 import { createAuthMiddleware, APIError } from "better-auth/api";
 
+const localAuthPort = process.env.PORT || "3000";
+const trustedOrigins = [
+  process.env.BETTER_AUTH_URL,
+  `http://localhost:${localAuthPort}`,
+  `http://127.0.0.1:${localAuthPort}`,
+].filter((origin): origin is string => Boolean(origin));
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins,
   database: drizzleAdapter(centralDb, {
     provider: "sqlite",
     schema,

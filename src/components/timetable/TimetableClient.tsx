@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLanguage } from "@/components/providers/LanguageProvider";
 import {
   CalendarDays,
   RefreshCw,
@@ -72,6 +73,8 @@ const buttonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function TimetableClient({ role }: { role: string }) {
+  const { locale } = useLanguage();
+  const tr = (en: string, ar: string, fr: string = en) => locale === "ar" ? ar : locale === "fr" ? fr : en;
   const isAdmin = role === "principal" || role === "deputy";
   const [years, setYears] = useState<Year[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -113,10 +116,10 @@ export default function TimetableClient({ role }: { role: string }) {
       const response = await fetch(`/api/timetable/sessions?${query}`);
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.error ?? "Failed to load sessions");
+        throw new Error(data.error ?? tr("Failed to load sessions", "تعذر تحميل الحصص", "Échec du chargement des cours"));
       setSessions(data.sessions ?? []);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "تعذر تحميل الحصص");
+      setMessage(error instanceof Error ? error.message : tr("Could not load lessons", "تعذر تحميل الحصص", "Impossible de charger les cours"));
     } finally {
       setBusy(false);
     }
@@ -133,7 +136,7 @@ export default function TimetableClient({ role }: { role: string }) {
         ]);
 
         if (!yearResponse.ok || !classResponse.ok) {
-          throw new Error("Failed to load timetable data");
+          throw new Error(tr("Failed to load timetable data", "تعذر تحميل بيانات الجدول", "Échec du chargement de l’emploi du temps"));
         }
 
         const [yearData, classData] = await Promise.all([
@@ -166,7 +169,7 @@ export default function TimetableClient({ role }: { role: string }) {
           setMessage(
             error instanceof Error
               ? error.message
-              : "تعذر تحميل بيانات الجدول",
+              : tr("Could not load timetable data", "تعذر تحميل بيانات الجدول", "Impossible de charger l’emploi du temps"),
           );
         }
       } finally {
@@ -198,14 +201,14 @@ export default function TimetableClient({ role }: { role: string }) {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error ?? "Failed to load sessions");
+          throw new Error(data.error ?? tr("Failed to load sessions", "تعذر تحميل الحصص", "Échec du chargement des cours"));
         }
 
         if (active) setSessions(data.sessions ?? []);
       } catch (error) {
         if (active) {
           setMessage(
-            error instanceof Error ? error.message : "تعذر تحميل الحصص",
+            error instanceof Error ? error.message : tr("Could not load lessons", "تعذر تحميل الحصص", "Impossible de charger les cours"),
           );
         }
       }
@@ -272,13 +275,11 @@ export default function TimetableClient({ role }: { role: string }) {
         body: JSON.stringify({ date, academicYearId: yearId }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Generation failed");
-      setMessage(
-        `تم إنشاء ${data.created} حصة، والحصص الموجودة مسبقاً ${data.existing}`,
-      );
+      if (!response.ok) throw new Error(data.error ?? tr("Generation failed", "تعذر إنشاء الحصص", "Échec de la génération des cours"));
+      setMessage(tr(`${data.created} lessons created; ${data.existing} already existed.`, `تم إنشاء ${data.created} حصة، والحصص الموجودة مسبقاً ${data.existing}`, `${data.created} cours créés ; ${data.existing} existaient déjà.`));
       await loadSessions();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "تعذر إنشاء الحصص");
+      setMessage(error instanceof Error ? error.message : tr("Could not generate lessons", "تعذر إنشاء الحصص", "Impossible de générer les cours"));
     } finally {
       setBusy(false);
     }
@@ -297,17 +298,25 @@ export default function TimetableClient({ role }: { role: string }) {
           ...(editingSlotId
             ? { slotId: editingSlotId }
             : { academicYearId: yearId, classId }),
-          ...slot,
-          dayOfWeek: Number(slot.dayOfWeek),
-          periodNumber: Number(slot.periodNumber),
+          subjectId: slot.subjectId.trim(),
+          teacherId: slot.teacherId.trim(),
+          dayOfWeek: Number.parseInt(slot.dayOfWeek, 10),
+          periodNumber: Number.parseInt(slot.periodNumber, 10),
+          startTime: slot.startTime.trim().slice(0, 5),
+          endTime: slot.endTime.trim().slice(0, 5),
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Failed to save slot");
+      if (!response.ok) {
+        const details = Array.isArray(data.invalidFields) && data.invalidFields.length
+          ? ` (${data.invalidFields.join(", ")})`
+          : "";
+        throw new Error(`${data.error ?? tr("Failed to save slot", "تعذر حفظ الحصة", "Échec de l’enregistrement du créneau")}${details}`);
+      }
       setMessage(
         editingSlotId
-          ? "تم تحديث الحصة"
-          : "تمت إضافة الحصة إلى الجدول الأسبوعي",
+          ? tr("Lesson updated", "تم تحديث الحصة", "Cours mis à jour")
+          : tr("Lesson added to the weekly timetable", "تمت إضافة الحصة إلى الجدول الأسبوعي", "Cours ajouté à l’emploi du temps hebdomadaire"),
       );
       setEditingSlotId(null);
       setSlot({
@@ -324,7 +333,7 @@ export default function TimetableClient({ role }: { role: string }) {
       const timetableData = await timetableResponse.json();
       setWeeklySlots(timetableData.slots ?? []);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "تعذر حفظ الحصة");
+      setMessage(error instanceof Error ? error.message : tr("Could not save the lesson", "تعذر حفظ الحصة", "Impossible d’enregistrer le cours"));
     } finally {
       setBusy(false);
     }
@@ -347,7 +356,7 @@ export default function TimetableClient({ role }: { role: string }) {
   async function deleteSlot(slotId: string) {
     if (
       !window.confirm(
-        "هل تريد تعطيل هذه الحصة من الجدول؟ ستظل الحصص السابقة محفوظة.",
+        tr("Disable this timetable slot? Past lessons will remain preserved.", "هل تريد تعطيل هذه الحصة من الجدول؟ ستظل الحصص السابقة محفوظة.", "Désactiver ce créneau ? Les cours passés resteront conservés."),
       )
     )
       return;
@@ -358,16 +367,16 @@ export default function TimetableClient({ role }: { role: string }) {
         { method: "DELETE" },
       );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Failed to remove slot");
+      if (!response.ok) throw new Error(data.error ?? tr("Failed to remove slot", "تعذر حذف الحصة", "Échec de la suppression du créneau"));
       setWeeklySlots((rows) => rows.filter((row) => row.slot.id !== slotId));
       setMessage(
         data.preservedForHistory
-          ? "تم تعطيل الحصة مع الحفاظ على سجلاتها السابقة"
-          : "تم حذف الحصة",
+          ? tr("The slot was disabled; previous records were preserved.", "تم تعطيل الحصة مع الحفاظ على سجلاتها السابقة", "Le créneau a été désactivé ; les enregistrements précédents sont conservés.")
+          : tr("The slot was deleted.", "تم حذف الحصة", "Le créneau a été supprimé."),
       );
       if (editingSlotId === slotId) setEditingSlotId(null);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "تعذر تعطيل الحصة");
+      setMessage(error instanceof Error ? error.message : tr("Could not disable the lesson", "تعذر تعطيل الحصة", "Impossible de désactiver le cours"));
     } finally {
       setBusy(false);
     }
@@ -381,7 +390,7 @@ export default function TimetableClient({ role }: { role: string }) {
         `/api/timetable/sessions/${sessionId}/student-attendance`,
       );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Failed to load roster");
+      if (!response.ok) throw new Error(data.error ?? tr("Failed to load roster", "تعذر تحميل قائمة الطلاب", "Échec du chargement de la liste des élèves"));
       const rows: RosterRow[] = data.roster ?? [];
       setRoster(rows);
       setAttendance(
@@ -390,7 +399,7 @@ export default function TimetableClient({ role }: { role: string }) {
         ),
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "تعذر تحميل الطلاب");
+      setMessage(error instanceof Error ? error.message : tr("Could not load students", "تعذر تحميل الطلاب", "Impossible de charger les élèves"));
     }
   }
 
@@ -415,11 +424,11 @@ export default function TimetableClient({ role }: { role: string }) {
       );
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.error ?? "Failed to save attendance");
-      setMessage(`تم تسجيل حضور ${data.saved} طالباً`);
+        throw new Error(data.error ?? tr("Failed to save attendance", "تعذر حفظ الحضور", "Échec de l’enregistrement des présences"));
+      setMessage(tr(`Attendance saved for ${data.saved} students.`, `تم تسجيل حضور ${data.saved} طالباً`, `Présence enregistrée pour ${data.saved} élèves.`));
       await loadSessions();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "تعذر حفظ الحضور");
+      setMessage(error instanceof Error ? error.message : tr("Could not save attendance", "تعذر حفظ الحضور", "Impossible d’enregistrer les présences"));
     } finally {
       setBusy(false);
     }
@@ -441,13 +450,13 @@ export default function TimetableClient({ role }: { role: string }) {
       );
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.error ?? "Attendance action failed");
+        throw new Error(data.error ?? tr("Attendance action failed", "تعذر تسجيل الحضور", "Échec du pointage"));
       setMessage(
-        action === "check_in" ? "تم تسجيل حضور المعلم" : "تم إنهاء الحصة",
+        action === "check_in" ? tr("Teacher checked in", "تم تسجيل حضور المعلم", "Enseignant pointé") : tr("Lesson ended", "تم إنهاء الحصة", "Cours terminé"),
       );
       await loadSessions();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "تعذر تسجيل الحضور");
+      setMessage(error instanceof Error ? error.message : tr("Could not record attendance", "تعذر تسجيل الحضور", "Impossible d’enregistrer la présence"));
     } finally {
       setBusy(false);
     }
@@ -465,22 +474,22 @@ export default function TimetableClient({ role }: { role: string }) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
-                Academic operations
+                {tr("Academic operations", "العمليات الأكاديمية", "Opérations académiques")}
               </p>
-              <h1 className="mt-1 text-2xl font-bold">الجدول الدراسي والحصص</h1>
+              <h1 className="mt-1 text-2xl font-bold">{tr("Timetable and lessons", "الجدول الدراسي والحصص", "Emploi du temps et cours")}</h1>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                إدارة الجدول الأسبوعي ومتابعة تنفيذ الحصص والحضور الفعلي.
+                {tr("Manage the weekly timetable and monitor lessons and attendance.", "إدارة الجدول الأسبوعي ومتابعة تنفيذ الحصص والحضور الفعلي.", "Gérez l’emploi du temps hebdomadaire et suivez les cours et les présences.")}
               </p>
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
               <CalendarDays size={17} />
-              {className || "جميع الصفوف"}
+              {className || tr("All classes", "جميع الصفوف", "Toutes les classes")}
             </div>
           </div>
         </header>
         <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4 dark:border-slate-800 dark:bg-slate-900">
           <label className="text-sm font-medium">
-            السنة الدراسية
+            {tr("Academic year", "السنة الدراسية", "Année scolaire")}
             <select
               className={`${inputClass} mt-1`}
               value={yearId}
@@ -489,19 +498,19 @@ export default function TimetableClient({ role }: { role: string }) {
               {years.map((y) => (
                 <option key={y.id} value={y.id}>
                   {y.name}
-                  {y.isActive ? " (نشطة)" : ""}
+                  {y.isActive ? (locale === "ar" ? " (نشطة)" : " (active)") : ""}
                 </option>
               ))}
             </select>
           </label>
           <label className="text-sm font-medium">
-            الصف
+            {tr("Class", "الصف", "Classe")}
             <select
               className={`${inputClass} mt-1`}
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
             >
-              <option value="">كل الصفوف المسموحة</option>
+              <option value="">{tr("All available classes", "كل الصفوف المسموحة", "Toutes les classes disponibles")}</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -510,7 +519,7 @@ export default function TimetableClient({ role }: { role: string }) {
             </select>
           </label>
           <label className="text-sm font-medium">
-            التاريخ
+            {tr("Date", "التاريخ", "Date")}
             <input
               className={`${inputClass} mt-1`}
               type="date"
@@ -524,7 +533,7 @@ export default function TimetableClient({ role }: { role: string }) {
               onClick={() => void loadSessions()}
               disabled={busy}
             >
-              <RefreshCw size={16} /> تحديث
+              <RefreshCw size={16} /> {tr("Refresh", "تحديث", "Actualiser")}
             </button>
             {isAdmin && (
               <button
@@ -532,7 +541,7 @@ export default function TimetableClient({ role }: { role: string }) {
                 onClick={() => void generateDay()}
                 disabled={busy || !yearId}
               >
-                إنشاء حصص اليوم
+                {tr("Generate today’s lessons", "إنشاء حصص اليوم", "Générer les cours du jour")}
               </button>
             )}
           </div>
@@ -542,8 +551,8 @@ export default function TimetableClient({ role }: { role: string }) {
             <div className="mb-3 flex items-center justify-between gap-3">
               <h2 className="font-bold">
                 {editingSlotId
-                  ? "تعديل الحصة الأسبوعية"
-                  : "إضافة حصة للجدول الأسبوعي"}
+                  ? tr("Edit weekly slot", "تعديل الحصة الأسبوعية", "Modifier le créneau hebdomadaire")
+                  : tr("Add a weekly slot", "إضافة حصة للجدول الأسبوعي", "Ajouter un créneau hebdomadaire")}
               </h2>
               {editingSlotId && (
                 <button
@@ -561,7 +570,7 @@ export default function TimetableClient({ role }: { role: string }) {
                     });
                   }}
                 >
-                  إلغاء التعديل
+                  {tr("Cancel editing", "إلغاء التعديل", "Annuler la modification")}
                 </button>
               )}
             </div>
@@ -570,7 +579,7 @@ export default function TimetableClient({ role }: { role: string }) {
               className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
             >
               <label className="text-sm">
-                المادة
+                {tr("Subject", "المادة", "Matière")}
                 <select
                   required
                   className={`${inputClass} mt-1`}
@@ -583,7 +592,7 @@ export default function TimetableClient({ role }: { role: string }) {
                     }))
                   }
                 >
-                  <option value="">اختر المادة</option>
+                  <option value="">{tr("Select subject", "اختر المادة", "Choisir une matière")}</option>
                   {Array.from(
                     new Map(
                       subjectOptions.map((a) => [a.subjectId, a]),
@@ -596,7 +605,7 @@ export default function TimetableClient({ role }: { role: string }) {
                 </select>
               </label>
               <label className="text-sm">
-                المعلم
+                {tr("Teacher", "المعلم", "Enseignant")}
                 <select
                   required
                   className={`${inputClass} mt-1`}
@@ -605,7 +614,7 @@ export default function TimetableClient({ role }: { role: string }) {
                     setSlot((v) => ({ ...v, teacherId: e.target.value }))
                   }
                 >
-                  <option value="">اختر المعلم</option>
+                  <option value="">{tr("Select teacher", "اختر المعلم", "Choisir un enseignant")}</option>
                   {Array.from(
                     new Map(
                       teacherForSubject.map((a) => [a.teacherId, a]),
@@ -618,7 +627,7 @@ export default function TimetableClient({ role }: { role: string }) {
                 </select>
               </label>
               <label className="text-sm">
-                اليوم
+                {tr("Day", "اليوم", "Jour")}
                 <select
                   className={`${inputClass} mt-1`}
                   value={slot.dayOfWeek}
@@ -627,13 +636,7 @@ export default function TimetableClient({ role }: { role: string }) {
                   }
                 >
                   {[
-                    "الأحد",
-                    "الإثنين",
-                    "الثلاثاء",
-                    "الأربعاء",
-                    "الخميس",
-                    "الجمعة",
-                    "السبت",
+                    ...(locale === "ar" ? ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"] : locale === "fr" ? ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"] : ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]),
                   ].map((d, i) => (
                     <option key={i} value={i}>
                       {d}
@@ -642,7 +645,7 @@ export default function TimetableClient({ role }: { role: string }) {
                 </select>
               </label>
               <label className="text-sm">
-                رقم الحصة
+                {tr("Period number", "رقم الحصة", "Numéro du cours")}
                 <input
                   className={`${inputClass} mt-1`}
                   type="number"
@@ -654,7 +657,7 @@ export default function TimetableClient({ role }: { role: string }) {
                 />
               </label>
               <label className="text-sm">
-                من
+                {tr("From", "من", "De")}
                 <input
                   className={`${inputClass} mt-1`}
                   type="time"
@@ -665,7 +668,7 @@ export default function TimetableClient({ role }: { role: string }) {
                 />
               </label>
               <label className="text-sm">
-                إلى
+                {tr("To", "إلى", "À")}
                 <input
                   className={`${inputClass} mt-1`}
                   type="time"
@@ -682,13 +685,12 @@ export default function TimetableClient({ role }: { role: string }) {
                     busy || !classId || !slot.subjectId || !slot.teacherId
                   }
                 >
-                  {editingSlotId ? "حفظ التعديلات" : "حفظ الحصة"}
+                  {editingSlotId ? tr("Save changes", "حفظ التعديلات", "Enregistrer les modifications") : tr("Save slot", "حفظ الحصة", "Enregistrer le créneau")}
                 </button>
               </div>
             </form>
             <p className="mt-2 text-xs text-slate-500">
-              تظهر المواد والمعلمون بناءً على تكليفات السنة النشطة المعروضة في
-              النظام.
+              {tr("Subjects and teachers are based on the assignments for the selected academic year.", "تظهر المواد والمعلمون بناءً على تكليفات السنة الدراسية المحددة.", "Les matières et les enseignants dépendent des affectations de l’année scolaire sélectionnée.")}
             </p>
           </section>
         )}
@@ -702,27 +704,27 @@ export default function TimetableClient({ role }: { role: string }) {
         )}
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-800">
-            <h2 className="font-bold">الجدول الأسبوعي</h2>
+            <h2 className="font-bold">{tr("Weekly timetable", "الجدول الأسبوعي", "Emploi du temps hebdomadaire")}</h2>
             <p className="mt-1 text-xs text-slate-500">
-              الحصص المتكررة للسنة والصف المحددين.
+              {tr("Recurring lessons for the selected year and class.", "الحصص المتكررة للسنة والصف المحددين.", "Cours récurrents pour l’année et la classe sélectionnées.")}
             </p>
           </div>
           {weeklySlots.length === 0 ? (
             <p className="p-5 text-sm text-slate-500">
-              لا توجد حصص أسبوعية مسجلة لهذا الاختيار.
+              {tr("No weekly lessons are registered for this selection.", "لا توجد حصص أسبوعية مسجلة لهذا الاختيار.", "Aucun cours hebdomadaire n’est enregistré pour cette sélection.")}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] text-sm">
                 <thead className="bg-slate-50 dark:bg-slate-950">
                   <tr>
-                    <th className="p-3 text-start">الصف</th>
-                    <th className="p-3 text-start">اليوم</th>
-                    <th className="p-3 text-start">الحصة</th>
-                    <th className="p-3 text-start">المادة</th>
-                    <th className="p-3 text-start">المعلم</th>
-                    <th className="p-3 text-start">الوقت</th>
-                    {isAdmin && <th className="p-3 text-start">إجراءات</th>}
+                    <th className="p-3 text-start">{tr("Class", "الصف", "Classe")}</th>
+                    <th className="p-3 text-start">{tr("Day", "اليوم", "Jour")}</th>
+                    <th className="p-3 text-start">{tr("Period", "الحصة", "Cours")}</th>
+                    <th className="p-3 text-start">{tr("Subject", "المادة", "Matière")}</th>
+                    <th className="p-3 text-start">{tr("Teacher", "المعلم", "Enseignant")}</th>
+                    <th className="p-3 text-start">{tr("Time", "الوقت", "Heure")}</th>
+                    {isAdmin && <th className="p-3 text-start">{tr("Actions", "إجراءات", "Actions")}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -741,15 +743,11 @@ export default function TimetableClient({ role }: { role: string }) {
                         <td className="p-3">{row.className}</td>
                         <td className="p-3">
                           {
-                            [
-                              "الأحد",
-                              "الإثنين",
-                              "الثلاثاء",
-                              "الأربعاء",
-                              "الخميس",
-                              "الجمعة",
-                              "السبت",
-                            ][row.slot.dayOfWeek]
+                            (locale === "ar"
+                              ? ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"]
+                              : locale === "fr"
+                                ? ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]
+                                : ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])[row.slot.dayOfWeek]
                           }
                         </td>
                         <td className="p-3">{row.slot.periodNumber}</td>
@@ -769,14 +767,14 @@ export default function TimetableClient({ role }: { role: string }) {
                                 className="text-xs font-semibold text-blue-700"
                                 onClick={() => editSlot(row)}
                               >
-                                تعديل
+                                {tr("Edit", "تعديل", "Modifier")}
                               </button>
                               <button
                                 className="text-xs font-semibold text-red-600"
                                 onClick={() => void deleteSlot(row.slot.id)}
                                 disabled={busy}
                               >
-                                تعطيل
+                                {tr("Disable", "تعطيل", "Désactiver")}
                               </button>
                             </div>
                           </td>
@@ -791,24 +789,23 @@ export default function TimetableClient({ role }: { role: string }) {
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-800">
             <div>
-              <h2 className="font-bold">حصص اليوم</h2>
+              <h2 className="font-bold">{tr("Today’s lessons", "حصص اليوم", "Cours du jour")}</h2>
               <p className="mt-1 text-xs text-slate-500">
-                {date} · {sessions.length} حصة
+                {date} · {sessions.length} {tr("lessons", "حصة", "cours")}
               </p>
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold dark:bg-slate-800">
-              {busy ? "جارٍ التحديث" : "محدث"}
+              {busy ? tr("Refreshing", "جارٍ التحديث", "Actualisation") : tr("Up to date", "محدث", "À jour")}
             </span>
           </div>
           {loading ? (
             <div className="p-8 text-center text-sm text-slate-500">
-              جارٍ تحميل الجدول...
+              {tr("Loading timetable...", "جارٍ تحميل الجدول...", "Chargement de l’emploi du temps...")}
             </div>
           ) : sessions.length === 0 ? (
             <div className="p-10 text-center text-sm text-slate-500">
               <AlertCircle className="mx-auto mb-2" />
-              لا توجد حصص لهذا التاريخ. يمكن للإدارة إنشاء حصص اليوم من الجدول
-              الأسبوعي.
+              {tr("No lessons are scheduled for this date. Administrators can generate today’s lessons from the weekly timetable.", "لا توجد حصص لهذا التاريخ. يمكن للإدارة إنشاء حصص اليوم من الجدول الأسبوعي.", "Aucun cours n’est prévu à cette date. L’administration peut générer les cours du jour à partir de l’emploi du temps hebdomadaire.")}
             </div>
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -828,11 +825,11 @@ export default function TimetableClient({ role }: { role: string }) {
                         · {item.startTime}–{item.endTime}
                       </h3>
                       <p className="mt-1 text-xs text-slate-500">
-                        المعلم:{" "}
+                        {tr("Teacher", "المعلم", "Enseignant")}:{" "}
                         {assignments.find(
                           (a) => a.teacherId === item.actualTeacherId,
                         )?.teacher?.name ?? item.actualTeacherId}{" "}
-                        · الحضور المسجل: {item.recordedStudentCount}
+                        · {tr("Recorded attendance:", "الحضور المسجل:", "Présences enregistrées :")} {item.recordedStudentCount}
                       </p>
                       <span className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs dark:bg-slate-800">
                         {item.status}
@@ -850,7 +847,7 @@ export default function TimetableClient({ role }: { role: string }) {
                             }
                             disabled={busy}
                           >
-                            تسجيل حضور المعلم
+                            {tr("Teacher check-in", "تسجيل حضور المعلم", "Pointage de l’enseignant")}
                           </button>
                           <button
                             className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
@@ -859,7 +856,7 @@ export default function TimetableClient({ role }: { role: string }) {
                             }
                             disabled={busy}
                           >
-                            إنهاء الحصة
+                            {tr("End lesson", "إنهاء الحصة", "Terminer le cours")}
                           </button>
                         </>
                       )}
@@ -867,7 +864,7 @@ export default function TimetableClient({ role }: { role: string }) {
                       className={buttonClass}
                       onClick={() => void openRoster(item.id)}
                     >
-                      <Users size={15} /> حضور الطلاب
+                      <Users size={15} /> {tr("Student attendance", "حضور الطلاب", "Présence des élèves")}
                     </button>
                   </div>
                 </article>
@@ -879,22 +876,22 @@ export default function TimetableClient({ role }: { role: string }) {
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800">
               <div>
-                <h2 className="font-bold">تسجيل حضور الطلاب</h2>
-                <p className="text-xs text-slate-500">{roster.length} طالب</p>
+                <h2 className="font-bold">{tr("Student attendance", "تسجيل حضور الطلاب", "Présence des élèves")}</h2>
+                <p className="text-xs text-slate-500">{roster.length} {tr("students", "طالب", "élèves")}</p>
               </div>
               <button
                 className="text-sm text-slate-500"
                 onClick={() => setSelected(null)}
               >
-                إغلاق
+                {tr("Close", "إغلاق", "Fermer")}
               </button>
             </div>
             <div className="max-h-[28rem] overflow-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-slate-50 dark:bg-slate-950">
                   <tr>
-                    <th className="p-3 text-start">الطالب</th>
-                    <th className="p-3 text-start">الحالة</th>
+                    <th className="p-3 text-start">{tr("Student", "الطالب", "Élève")}</th>
+                    <th className="p-3 text-start">{tr("Status", "الحالة", "Statut")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -919,11 +916,11 @@ export default function TimetableClient({ role }: { role: string }) {
                             }))
                           }
                         >
-                          <option value="">غير مسجل</option>
+                          <option value="">{tr("Not recorded", "غير مسجل", "Non enregistré")}</option>
                           {["present", "absent", "late", "excused"].map(
                             (status) => (
                               <option key={status} value={status}>
-                                {status}
+                                {status === "present" ? tr("Present", "حاضر", "Présent") : status === "absent" ? tr("Absent", "غائب", "Absent") : status === "late" ? tr("Late", "متأخر", "En retard") : tr("Excused", "بعذر", "Excusé")}
                               </option>
                             ),
                           )}
@@ -940,7 +937,7 @@ export default function TimetableClient({ role }: { role: string }) {
                 onClick={() => void saveRoster()}
                 disabled={busy}
               >
-                <CheckCircle2 size={16} /> حفظ الحضور
+                <CheckCircle2 size={16} /> {tr("Save attendance", "حفظ الحضور", "Enregistrer les présences")}
               </button>
             </div>
           </section>
@@ -948,28 +945,28 @@ export default function TimetableClient({ role }: { role: string }) {
         {isAdmin && (
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-800">
-              <h2 className="font-bold">مؤشرات أداء المعلمين</h2>
+              <h2 className="font-bold">{tr("Teacher performance metrics", "مؤشرات أداء المعلمين", "Indicateurs de performance des enseignants")}</h2>
               <p className="mt-1 text-xs text-slate-500">
-                محسوبة مباشرة من سجلات الحصص والحضور.
+                {tr("Calculated from lesson and attendance records.", "محسوبة مباشرة من سجلات الحصص والحضور.", "Calculés à partir des cours et des présences enregistrés.")}
               </p>
             </div>
             {teacherMetrics.length === 0 ? (
               <p className="p-5 text-sm text-slate-500">
-                لا توجد بيانات أداء بعد.
+                {tr("No performance data yet.", "لا توجد بيانات أداء بعد.", "Aucune donnée de performance pour le moment.")}
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-950">
                     <tr>
-                      <th className="p-3 text-start">المعلم</th>
-                      <th className="p-3 text-start">الحصص</th>
-                      <th className="p-3 text-start">المنفذة</th>
-                      <th className="p-3 text-start">التأخير</th>
-                      <th className="p-3 text-start">متوسط التأخير</th>
-                      <th className="p-3 text-start">غياب تسجيل الدخول</th>
-                      <th className="p-3 text-start">غياب تسجيل الخروج</th>
-                      <th className="p-3 text-start">اكتمال حضور الطلاب</th>
+                      <th className="p-3 text-start">{tr("Teacher", "المعلم", "Enseignant")}</th>
+                      <th className="p-3 text-start">{tr("Lessons", "الحصص", "Cours")}</th>
+                      <th className="p-3 text-start">{tr("Completed", "المنفذة", "Terminés")}</th>
+                      <th className="p-3 text-start">{tr("Late", "التأخير", "Retards")}</th>
+                      <th className="p-3 text-start">{tr("Average delay", "متوسط التأخير", "Retard moyen")}</th>
+                      <th className="p-3 text-start">{tr("Missing check-ins", "غياب تسجيل الدخول", "Pointages d’arrivée manquants")}</th>
+                      <th className="p-3 text-start">{tr("Missing check-outs", "غياب تسجيل الخروج", "Pointages de départ manquants")}</th>
+                      <th className="p-3 text-start">{tr("Student attendance completion", "اكتمال حضور الطلاب", "Complétude des présences élèves")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -987,7 +984,7 @@ export default function TimetableClient({ role }: { role: string }) {
                         <td className="p-3">{metric.completedSessions}</td>
                         <td className="p-3">{metric.lateCheckIns}</td>
                         <td className="p-3">
-                          {metric.averageLateMinutes} دقيقة
+                          {metric.averageLateMinutes} {tr("min", "دقيقة", "min")}
                         </td>
                         <td className="p-3">{metric.missingTeacherCheckIns}</td>
                         <td className="p-3">

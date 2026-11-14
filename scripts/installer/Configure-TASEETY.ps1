@@ -194,6 +194,24 @@ foreach ($protectedFile in @($config, (Join-Path (Split-Path -Parent $centralPat
         throw "Could not set secure permissions on: $protectedFile. Details: $($fileAclOutput -join ' ')"
     }
 }
+$sqliteFiles = [System.Collections.Generic.List[string]]::new()
+foreach ($databasePath in @($centralPath)) {
+    foreach ($suffix in @('', '-wal', '-shm', '-journal')) {
+        $sqliteFiles.Add($databasePath + $suffix)
+    }
+}
+if (Test-Path -LiteralPath $dbDir -PathType Container) {
+    foreach ($tenantDatabase in Get-ChildItem -LiteralPath $dbDir -File | Where-Object { $_.Name -match '^school_\d+\.db(?:-(?:wal|shm|journal))?$' }) {
+        $sqliteFiles.Add($tenantDatabase.FullName)
+    }
+}
+foreach ($sqliteFile in $sqliteFiles | Select-Object -Unique) {
+    if (!(Test-Path -LiteralPath $sqliteFile -PathType Leaf)) { continue }
+    $sqliteAclOutput = & icacls.exe $sqliteFile /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' /C 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not set secure permissions on SQLite database or sidecar: $sqliteFile. Details: $($sqliteAclOutput -join ' ')"
+    }
+}
 
 # Load the exact persisted configuration into this process for maintenance scripts.
 foreach ($line in $lines) {

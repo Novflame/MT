@@ -1,0 +1,73 @@
+{
+  "generatedAt": "2026-10-31T14:15:49.406Z",
+  "baseUrl": "http://localhost:3000",
+  "timings": [
+    {
+      "route": "/dashboard",
+      "status": 200,
+      "domContentLoadedMs": 765
+    },
+    {
+      "route": "/students",
+      "status": 200,
+      "domContentLoadedMs": 1652
+    },
+    {
+      "route": "/classes",
+      "status": 200,
+      "domContentLoadedMs": 392
+    },
+    {
+      "route": "/subjects",
+      "status": 200,
+      "domContentLoadedMs": 74
+    },
+    {
+      "route": "/staff",
+      "status": 200,
+      "domContentLoadedMs": 119
+    },
+    {
+      "route": "/attendance",
+      "status": 200,
+      "domContentLoadedMs": 94
+    },
+    {
+      "route": "/reports",
+      "status": 200,
+      "domContentLoadedMs": 82
+    },
+    {
+      "route": "/results",
+      "status": 200,
+      "domContentLoadedMs": 1509
+    },
+    {
+      "route": "/exams",
+      "status": 200,
+      "domContentLoadedMs": 474
+    },
+    {
+      "route": "/tests",
+      "status": 200,
+      "domContentLoadedMs": 58
+    },
+    {
+      "route": "/teacher-assignments",
+      "status": 200,
+      "domContentLoadedMs": 1112
+    },
+    {
+      "route": "/notifications",
+      "status": 200,
+      "domContentLoadedMs": 93
+    },
+    {
+      "route": "/school-certificates",
+      "status": 200,
+      "domContentLoadedMs": 1448
+    }
+  ],
+  "pageErrors": [],
+  "serverErrors": []
+}

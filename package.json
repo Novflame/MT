@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "package:windows": "node scripts/package-windows.cjs",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config drizzle.school.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.school.config.ts",
@@ -58,5 +58,5 @@
   "engines": {
     "node": ">=20.9.0"
   }
-
+  
 }

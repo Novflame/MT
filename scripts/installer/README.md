@@ -54,8 +54,9 @@ The build runs TypeScript checking and the project tests, builds Next.js standal
 
 - The packaging step does not open or migrate school databases. It rejects database files, environment files, credentials, private keys, and runtime-data directories in the deployable payload.
 - Persistent data is outside Program Files. The installer rejects overlapping app/data paths and network/UNC SQLite data paths.
+- Before backup or migration, the installer explicitly grants LocalSystem and local Administrators access to each SQLite database and its `-wal`, `-shm`, and `-journal` sidecars. SQLite may need those sidecars during integrity checks even when the main database file is readable.
 - On legacy installations using `<DataDir>\central.db`, the installer creates a verified backup first, then copies the central database to `central-data\central.db`. The original file is not deleted.
-- Before a central migration, the backup helper snapshots the central database and every tenant database registered in the central `schools` table, validates each backup with SQLite `integrity_check`, copies uploads, verifies their SHA-256 hashes, and writes `manifest.json` with `status: complete` only after all checks pass.
+- Before a central migration, the backup helper uses writable SQLite connections while the service is stopped, snapshots the central database and every tenant database registered in the central `schools` table, validates each backup with SQLite `integrity_check`, copies uploads, verifies their SHA-256 hashes, and writes `manifest.json` with `status: complete` only after all checks pass. Writable connections let SQLite safely access WAL shared-memory files on Windows.
 - Missing registered tenant databases, unregistered `school_N.db` files, corrupt databases, upload symlinks, or failed backup validation stop setup before central migration.
 - School migrations are performed by the application's existing `runSchoolMigrations` logic when each school database is first opened. The installer backs up every registered school database first, but it does not automatically restore a tenant backup if a later school migration fails. Rehearse every upgrade against disposable copies and test restore before production rollout.
 - Uninstall removes the Windows service and its firewall rule but deliberately preserves the data directory, databases, uploads, backups, and secrets.
@@ -63,6 +64,8 @@ The build runs TypeScript checking and the project tests, builds Next.js standal
 ## Network
 
 The installer configures HTTP for a trusted private LAN and creates a Windows Firewall rule restricted to Domain and Private profiles. Do not expose the application port directly to the public internet. Public access requires HTTPS termination with a trusted certificate and a corresponding `BETTER_AUTH_URL`.
+
+Better Auth trusts the configured application origin and `localhost`/`127.0.0.1` on the configured port for local access. If initial school registration is interrupted, retry with the same school slug, principal name, and principal email so the pending provisioning operation can safely recover its principal account.
 
 ## Release validation still required
 

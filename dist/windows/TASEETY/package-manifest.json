@@ -1,0 +1,14 @@
+{
+  "product": "TASEETY",
+  "packageVersion": "1.0.0",
+  "createdAt": "2026-11-10T13:23:31.056Z",
+  "nodeVersion": "v22.21.0",
+  "platform": "win32",
+  "architecture": "x64",
+  "entryPoint": "app/standalone/server.js",
+  "runtimeExecutable": "node.exe",
+  "databaseFilesIncluded": false,
+  "uploadsIncluded": false,
+  "backupsIncluded": false,
+  "migrationsExecuted": false
+}

@@ -131,12 +131,59 @@ export default function TopNavbar({
 
     const [settingsOpen, setSettingsOpen] =
         useState(false)
+    const [unreadNotifications, setUnreadNotifications] = useState(0)
+    const [notificationsOpen, setNotificationsOpen] = useState(false)
+    const [notificationPreview, setNotificationPreview] = useState<Array<{ id: string; title: string; message: string; isRead: boolean; createdAt: string }>>([])
 
     const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light")
 
     useEffect(() => {
         document.documentElement.classList.toggle("dark", theme === "dark")
     }, [theme])
+
+    useEffect(() => {
+        let active = true
+        const refreshUnread = async () => {
+            try {
+                const response = await fetch("/api/notifications?unreadCount=1", { cache: "no-store" })
+                if (!response.ok) return
+                const result = await response.json()
+                if (active && typeof result.count === "number") setUnreadNotifications(result.count)
+            } catch { /* Keep the last known count if the network is temporarily unavailable. */ }
+        }
+        void refreshUnread()
+        const timer = window.setInterval(() => void refreshUnread(), 60_000)
+        return () => { active = false; window.clearInterval(timer) }
+    }, [])
+
+    async function toggleNotifications() {
+        const opening = !notificationsOpen
+        setNotificationsOpen(opening)
+        if (!opening) return
+        try {
+            const response = await fetch("/api/notifications", { cache: "no-store" })
+            if (!response.ok) return
+            const rows = await response.json()
+            if (Array.isArray(rows)) setNotificationPreview(rows.slice(0, 5))
+        } catch { /* The full notifications page remains available if preview loading fails. */ }
+    }
+
+    async function markPreviewRead(id: string) {
+        try {
+            const response = await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) })
+            if (!response.ok) return
+            setNotificationPreview((items) => items.map((item) => item.id === id ? { ...item, isRead: true } : item))
+            setUnreadNotifications((count) => Math.max(0, count - 1))
+        } catch { /* Leave the item unread if the request fails. */ }
+    }
+
+    const currentRole = session?.user?.schoolRole as string | undefined
+    const profileHref = currentRole === "head_of_department" ? "/head-of-department/profile"
+        : currentRole === "head_of_class" ? "/head-of-class/profile"
+        : currentRole === "teacher" ? "/teacher/profile"
+        : currentRole === "parent" ? "/parent/profile"
+        : currentRole === "student" ? "/student/profile"
+        : "/dashboard/profile"
 
     const name =
         session?.user?.name ?? "User"
@@ -192,7 +239,7 @@ export default function TopNavbar({
                         <Search
                             size={18}
                             className="
-                                absolute left-3 top-1/2
+                                absolute start-3 top-1/2
                                 -translate-y-1/2
                                 text-slate-400
                             "
@@ -205,7 +252,7 @@ export default function TopNavbar({
                                 h-9 w-56 rounded-lg
                                 border border-slate-200
                                 bg-slate-50
-                                pl-10 pr-3
+                                ps-10 pe-3
                                 text-sm text-slate-900
                                 outline-none
                                 transition
@@ -226,13 +273,51 @@ export default function TopNavbar({
 
                 <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                     {/* Notifications stay in the TopNavbar */}
-                    <Link
-                        href="/notifications"
-                        className={getControlButtonStyles()}
-                        aria-label="Notifications"
-                    >
-                        <Bell size={19} />
-                    </Link>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => void toggleNotifications()}
+                            className={`${getControlButtonStyles()} relative`}
+                            aria-label={locale === "ar" ? "الإشعارات" : "Notifications"}
+                            title={locale === "ar" ? "الإشعارات" : "Notifications"}
+                            aria-expanded={notificationsOpen}
+                            aria-controls="navbar-notification-preview"
+                        >
+                            <Bell size={19} />
+                            {unreadNotifications > 0 && (
+                                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                                    {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                                </span>
+                            )}
+                        </button>
+                        {notificationsOpen && (
+                            <div id="navbar-notification-preview" className="absolute end-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{locale === "ar" ? "الإشعارات" : locale === "fr" ? "Notifications" : "Notifications"}</p>
+                                    <span className="text-xs text-slate-500">{unreadNotifications} {locale === "ar" ? "غير مقروء" : locale === "fr" ? "non lues" : "unread"}</span>
+                                </div>
+                                {notificationPreview.length === 0 ? (
+                                    <p className="px-4 py-6 text-center text-sm text-slate-500">{locale === "ar" ? "لا توجد إشعارات جديدة" : locale === "fr" ? "Aucune notification" : "No notifications"}</p>
+                                ) : (
+                                    <div className="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800">
+                                        {notificationPreview.map((item) => (
+                                            <div key={item.id} className={`px-4 py-3 ${item.isRead ? "" : "bg-blue-50/70 dark:bg-blue-500/10"}`}>
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{item.title}</p>
+                                                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600 dark:text-slate-300">{item.message}</p>
+                                                        <p className="mt-1 text-[10px] text-slate-400">{new Date(item.createdAt).toLocaleString(locale === "ar" ? "ar" : locale === "fr" ? "fr-FR" : "en-US")}</p>
+                                                    </div>
+                                                    {!item.isRead && <button type="button" onClick={() => void markPreviewRead(item.id)} className="shrink-0 text-[11px] font-semibold text-blue-700 hover:underline dark:text-blue-300">{locale === "ar" ? "قرأت" : locale === "fr" ? "Lu" : "Mark read"}</button>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <Link href="/notifications" onClick={() => setNotificationsOpen(false)} className="block border-t border-slate-100 px-4 py-3 text-center text-sm font-semibold text-blue-700 hover:bg-slate-50 dark:border-slate-800 dark:text-blue-300 dark:hover:bg-slate-800">{locale === "ar" ? "عرض كل الإشعارات" : locale === "fr" ? "Voir toutes les notifications" : "View all notifications"}</Link>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Opens the small right-top settings slide */}
                     <button
@@ -275,7 +360,7 @@ export default function TopNavbar({
                     <aside
                         id="dashboard-settings-panel"
                         className="
-                            fixed right-0 top-16 z-50
+                            fixed end-0 top-16 z-50
                             w-[min(21rem,calc(100vw-1rem))]
                             overflow-hidden
                             rounded-bl-2xl
@@ -459,7 +544,7 @@ export default function TopNavbar({
 
                             {/* User */}
                             <Link
-                                href="/dashboard/profile"
+                                href={profileHref}
                                 onClick={() =>
                                     setSettingsOpen(
                                         false,

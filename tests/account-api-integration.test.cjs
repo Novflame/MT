@@ -205,3 +205,201 @@ test("initial-password change route clears the gate only after Better Auth accep
   assert.equal(mustChangePassword, false)
   assert.equal(changeCalls, 1)
 })
+
+test("head-of-class attendance reads are scoped to the assigned academic year", async () => {
+  const joins = new Map()
+  const classHeads = { userId: "classHeads.userId", classId: "classHeads.classId", academicYearId: "classHeads.academicYearId" }
+  const studentEnrollments = { classId: "studentEnrollments.classId", academicYearId: "studentEnrollments.academicYearId" }
+  const query = {
+    from: () => query,
+    innerJoin: (table, condition) => {
+      joins.set(table, condition)
+      return query
+    },
+    where: async () => [],
+  }
+  const eq = (left, right) => ({ operator: "eq", left, right })
+  const and = (...conditions) => ({ operator: "and", conditions })
+  const mocks = {
+    "next/server": nextResponseMock(),
+    "drizzle-orm": { eq, and },
+    "@/db": { getSchoolDB: async () => ({ select: () => query }) },
+    "@/db/schema": {
+      attendance: { id: {}, studentEnrollmentId: {}, date: {}, status: {}, note: {}, subjectId: {} },
+      teacherAssignments: {},
+      studentEnrollments,
+      students: {},
+      schoolClases: {},
+      classHeads,
+    },
+    "@/auth/permissions": { hasPermission: () => true },
+    "@/auth/authorization": { canManageAttendance: async () => true },
+    "@/lib/student-name": { getStudentFullName: () => "Student Example" },
+    "@/auth/session": {
+      getRequestSession: async () => ({
+        user: { id: "head-1", schoolRole: "head_of_class" },
+      }),
+    },
+  }
+  const route = loadRoute("src/app/api/attendance/route.ts", mocks)
+  const result = await route.GET(new Request("http://localhost/api/attendance?date=2026-11-09"))
+
+  assert.equal(result.status, 200)
+  assert.deepEqual(joins.get(classHeads), and(
+    eq(studentEnrollments.classId, classHeads.classId),
+    eq(studentEnrollments.academicYearId, classHeads.academicYearId),
+  ))
+})
+
+test("school registration recovers a principal after an unrecorded failure", async () => {
+  const operationTable = {}
+  const userTable = {}
+  const schoolsTable = {}
+  const principal = {
+    id: "principal-1",
+    name: "Principal Example",
+    email: "principal@example.test",
+    schoolId: 42,
+    schoolRole: "principal",
+    provisioningStatus: "provisioning",
+    provisioningOperationId: null,
+    banned: false,
+    createdAt: new Date("2026-11-08T10:00:01.000Z"),
+  }
+  const operation = {
+    id: "operation-1",
+    schoolSlug: "recovery-school",
+    adminEmail: principal.email,
+    status: "failed",
+    stage: "principal_account_creation",
+    attempts: 1,
+    schoolId: principal.schoolId,
+    adminUserId: null,
+    createdAt: new Date("2026-11-08T10:00:00.000Z"),
+    metadata: null,
+  }
+  const school = {
+    id: principal.schoolId,
+    name: "Recovery School",
+    slug: operation.schoolSlug,
+  }
+  let operationReads = 0
+  let userReads = 0
+  let schoolReads = 0
+  let recoveryLinked = false
+  let signUpCalled = false
+
+  const centralDb = {
+    insert: () => ({
+      values: () => ({ onConflictDoNothing: async () => {} }),
+    }),
+    select: () => ({
+      from: (table) => ({
+        where: () => ({
+          limit: async () => {
+            if (table === operationTable) {
+              operationReads += 1
+              return operationReads === 1 ? [{ id: operation.id }] : [operation]
+            }
+            if (table === userTable) {
+              userReads += 1
+              return userReads === 1 ? [] : [principal]
+            }
+            if (table === schoolsTable) {
+              schoolReads += 1
+              return [school]
+            }
+            throw new Error("Unexpected central database table")
+          },
+        }),
+      }),
+    }),
+    update: (table) => ({
+      set: (values) => ({
+        where: () => ({
+          returning: async () => {
+            if (table === userTable && values.provisioningOperationId) {
+              recoveryLinked = true
+              principal.provisioningOperationId = values.provisioningOperationId
+            }
+            if (table === userTable && values.provisioningStatus) {
+              principal.provisioningStatus = values.provisioningStatus
+            }
+            Object.assign(table === operationTable ? operation : {}, values)
+            return [{ id: table === userTable ? principal.id : operation.id }]
+          },
+        }),
+      }),
+    }),
+  }
+  const schoolDb = {
+    insert: () => ({
+      values: () => ({ onConflictDoNothing: async () => {} }),
+    }),
+    select: () => ({
+      from: () => ({
+        where: () => ({ limit: async () => [{ id: "profile-1" }] }),
+      }),
+    }),
+  }
+  class MockDatabase {
+    close() {}
+  }
+  const sql = (strings, ...values) => ({ strings, values })
+  const mocks = {
+    "next/server": nextResponseMock(),
+    "node:fs": { mkdirSync: () => {} },
+    "better-sqlite3": MockDatabase,
+    "drizzle-orm": {
+      and: (...conditions) => ({ conditions }),
+      eq: (left, right) => ({ left, right }),
+      gte: (left, right) => ({ left, right }),
+      isNull: (value) => ({ value }),
+      lt: (left, right) => ({ left, right }),
+      or: (...conditions) => ({ conditions }),
+      sql,
+    },
+    "drizzle-orm/better-sqlite3": { drizzle: () => schoolDb },
+    "@/auth/auth": {
+      auth: {
+        api: {
+          signUpEmail: async () => {
+            signUpCalled = true
+            throw new Error("Registration must recover the existing principal")
+          },
+        },
+      },
+    },
+    "@/auth/account-provisioning": {
+      requestAccountEmailVerification: async () => "not_configured",
+    },
+    "@/db/central": { centralDb },
+    "@/db/centeral-schema": {
+      schools: schoolsTable,
+      user: userTable,
+      schoolRegistrationOperations: operationTable,
+    },
+    "@/db/schema": { staffProfiles: {} },
+    "@/db/seed": {
+      seedDepartments: async () => {},
+      seedActiveAcademicYear: async () => {},
+    },
+    "@/db/runtime-migrations": { runSchoolMigrations: () => {} },
+    "@/db/database-path": { getSchoolDatabasePath: () => "C:\\test\\school_42.db" },
+  }
+  const route = loadRoute("src/app/api/register-school/route.ts", mocks)
+  const result = await route.POST(requestWith({
+    name: school.name,
+    slug: operation.schoolSlug,
+    principalName: principal.name,
+    principalEmail: principal.email,
+    password: "example-password",
+  }))
+
+  assert.equal(result.status, 201)
+  assert.equal(result.body.success, true)
+  assert.equal(recoveryLinked, true)
+  assert.equal(signUpCalled, false)
+  assert.equal(principal.provisioningOperationId, operation.id)
+  assert.equal(principal.provisioningStatus, "active")
+})

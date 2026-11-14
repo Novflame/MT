@@ -622,14 +622,15 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {},
-      "grade_score_nonnegative": {
-        "name": "grade_score_nonnegative",
-        "value": "\"grades\".\"score\" >= 0"
-      },
-      "grade_exactly_one_assessment": {
-        "name": "grade_exactly_one_assessment",
-        "value": "(\"grades\".\"test_id\" IS NOT NULL AND \"grades\".\"exam_id\" IS NULL) OR (\"grades\".\"test_id\" IS NULL AND \"grades\".\"exam_id\" IS NOT NULL)"
+      "checkConstraints": {
+        "grade_score_nonnegative": {
+          "name": "grade_score_nonnegative",
+          "value": "\"grades\".\"score\" >= 0"
+        },
+        "grade_exactly_one_assessment": {
+          "name": "grade_exactly_one_assessment",
+          "value": "(\"grades\".\"test_id\" IS NOT NULL AND \"grades\".\"exam_id\" IS NULL) OR (\"grades\".\"test_id\" IS NULL AND \"grades\".\"exam_id\" IS NOT NULL)"
+        }
       }
     },
     "notifications": {

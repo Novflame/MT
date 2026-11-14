@@ -126,38 +126,46 @@ export async function PATCH(
                 },
             )
         }
+// Update the student's identity and active-year enrollment atomically.
+const updatedStudent = db.transaction((tx) => {
+    const updated = tx.update(students).set({
+        firstName,
+        middleName,
+        lastName,
+        updatedAt: new Date().toISOString(),
+    })
+        .where(eq(students.id, id))
+        .returning()
+        .get()
 
-        // Update the student's identity and active-year enrollment atomically.
-        const updatedStudent = await db.transaction(async (tx) => {
-            const [updated] = await tx.update(students).set({
-                firstName,
-                middleName,
-                lastName,
-                updatedAt: new Date().toISOString(),
-            }).where(eq(students.id, id)).returning()
+    const enrollment = tx.select({
+        id: studentEnrollments.id,
+    })
+        .from(studentEnrollments)
+        .where(
+            and(
+                eq(studentEnrollments.studentId, id),
+                eq(studentEnrollments.academicYearId, academicYear.id),
+            ),
+        )
+        .get()
 
-            const enrollment = await tx.query.studentEnrollments.findFirst({
-                where: and(
-                    eq(studentEnrollments.studentId, id),
-                    eq(studentEnrollments.academicYearId, academicYear.id),
-                ),
-            })
+    if (!enrollment) {
+        tx.insert(studentEnrollments).values({
+            id: globalThis.crypto.randomUUID(),
+            studentId: id,
+            academicYearId: academicYear.id,
+            classId,
+        }).run()
+    } else {
+        tx.update(studentEnrollments)
+            .set({ classId })
+            .where(eq(studentEnrollments.id, enrollment.id))
+            .run()
+    }
 
-            if (!enrollment) {
-                await tx.insert(studentEnrollments).values({
-                    id: globalThis.crypto.randomUUID(),
-                    studentId: id,
-                    academicYearId: academicYear.id,
-                    classId,
-                })
-            } else {
-                await tx.update(studentEnrollments).set({ classId }).where(
-                    eq(studentEnrollments.id, enrollment.id),
-                )
-            }
-
-            return updated
-        })
+    return updated
+})
 
         return NextResponse.json({
             success: true,

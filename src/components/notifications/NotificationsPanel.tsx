@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { useLanguage } from "@/components/providers/LanguageProvider"
 import { Bell, CheckCheck, Clock3, Info, TriangleAlert, CheckCircle2, AlertCircle } from "lucide-react"
 
-export type NotificationType = "general" | "info" | "success" | "warning" | "error"
+export type NotificationType = "general" | "info" | "success" | "warning" | "error" | "attendance" | "grade" | string
 
 export type NotificationItem = {
     id: string
@@ -18,7 +19,7 @@ type Props = {
     initialItems?: NotificationItem[]
 }
 
-const typeClasses: Record<NotificationType, string> = {
+const typeClasses: Partial<Record<string, string>> = {
     general: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200",
     info: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-200",
     success: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200",
@@ -26,7 +27,7 @@ const typeClasses: Record<NotificationType, string> = {
     error: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200",
 }
 
-const typeIcons: Record<NotificationType, typeof Info> = {
+const typeIcons: Partial<Record<string, typeof Info>> = {
     general: Info,
     info: Info,
     success: CheckCircle2,
@@ -36,19 +37,24 @@ const typeIcons: Record<NotificationType, typeof Info> = {
 
 export default function NotificationsPanel({ initialItems = [] }: Props) {
     const [items, setItems] = useState<NotificationItem[]>(initialItems)
+    const [actionError, setActionError] = useState("")
+    const { locale } = useLanguage()
+    const labels = {
+        en: { title: "Notifications", unread: "unread", allRead: "Mark all as read", empty: "No notifications yet", caughtUp: "You are all caught up for now.", new: "New", markRead: "Mark read", general: "General", attendance: "Attendance", grade: "Grade", info: "Information", success: "Success", warning: "Warning", error: "Error", failed: "Could not update notifications. Please try again." },
+        ar: { title: "الإشعارات", unread: "غير مقروء", allRead: "تحديد الكل كمقروء", empty: "لا توجد إشعارات بعد", caughtUp: "لا توجد إشعارات جديدة حالياً.", new: "جديد", markRead: "تحديد كمقروء", general: "عام", attendance: "الحضور", grade: "الدرجات", info: "معلومات", success: "نجاح", warning: "تنبيه", error: "خطأ", failed: "تعذر تحديث الإشعارات. حاول مرة أخرى." },
+        fr: { title: "Notifications", unread: "non lues", allRead: "Tout marquer comme lu", empty: "Aucune notification", caughtUp: "Vous êtes à jour pour le moment.", new: "Nouveau", markRead: "Marquer comme lu", general: "Général", attendance: "Présence", grade: "Notes", info: "Information", success: "Succès", warning: "Avertissement", error: "Erreur", failed: "Impossible de mettre à jour les notifications. Réessayez." },
+    }[locale]
+    const typeLabel = (type?: string) => labels[type as "general" | "attendance" | "grade" | "info" | "success" | "warning" | "error"] ?? labels.general
 
     const unreadCount = items.filter((item) => !item.isRead).length
 
     async function markAsRead(id: string) {
+        setActionError("")
         try {
-            await fetch("/api/notifications", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id }),
-            })
-        } finally {
-            setItems((current) => current.map((item) => (item.id === id ? { ...item, isRead: true } : item)))
-        }
+            const response = await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) })
+            if (!response.ok) throw new Error("Request failed")
+            setItems((current) => current.map((item) => item.id === id ? { ...item, isRead: true } : item))
+        } catch { setActionError(labels.failed) }
     }
 
     async function markAllAsRead() {
@@ -58,17 +64,12 @@ export default function NotificationsPanel({ initialItems = [] }: Props) {
             return
         }
 
-        await Promise.all(
-            unreadIds.map((id) =>
-                fetch("/api/notifications", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id }),
-                }),
-            ),
-        )
-
-        setItems((current) => current.map((item) => ({ ...item, isRead: true })))
+        setActionError("")
+        try {
+            const response = await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ markAll: true }) })
+            if (!response.ok) throw new Error("Request failed")
+            setItems((current) => current.map((item) => ({ ...item, isRead: true })))
+        } catch { setActionError(labels.failed) }
     }
 
     return (
@@ -81,10 +82,10 @@ export default function NotificationsPanel({ initialItems = [] }: Props) {
 
                     <div>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                            Notifications
+                            {labels.title}
                         </h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {unreadCount} unread
+                            {unreadCount} {labels.unread}
                         </p>
                     </div>
                 </div>
@@ -96,26 +97,28 @@ export default function NotificationsPanel({ initialItems = [] }: Props) {
                         className="inline-flex items-center gap-2 self-start rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                         <CheckCheck className="h-4 w-4" />
-                        Mark all as read
+                        {labels.allRead}
                     </button>
                 )}
             </div>
 
+            {actionError && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{actionError}</p>}
             <div className="mt-4 space-y-3">
                 {items.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-600 dark:bg-slate-950/50">
                         <Bell className="mx-auto h-8 w-8 text-slate-400 dark:text-slate-500" />
                         <p className="mt-4 text-base font-medium text-slate-700 dark:text-slate-200">
-                            No notifications yet
+                            {labels.empty}
                         </p>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            You are all caught up for now.
+                            {labels.caughtUp}
                         </p>
                     </div>
                 ) : (
                     items.map((notification) => {
-                        const ItemIcon = typeIcons[(notification.type ?? "general") as NotificationType]
-                        const typeClass = typeClasses[(notification.type ?? "general") as NotificationType]
+                        const normalizedType = notification.type === "attendance" || notification.type === "grade" ? "info" : notification.type
+                        const ItemIcon = typeIcons[normalizedType as NotificationType] ?? Info
+                        const typeClass = typeClasses[normalizedType as NotificationType] ?? typeClasses.general
 
                         return (
                             <article
@@ -140,7 +143,7 @@ export default function NotificationsPanel({ initialItems = [] }: Props) {
                                                     </h3>
                                                     {!notification.isRead && (
                                                         <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:bg-blue-500/20 dark:text-blue-200">
-                                                            New
+                                                            {labels.new}
                                                         </span>
                                                     )}
                                                 </div>
@@ -155,7 +158,7 @@ export default function NotificationsPanel({ initialItems = [] }: Props) {
                                                     onClick={() => markAsRead(notification.id)}
                                                     className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
                                                 >
-                                                    Mark read
+                                                    {labels.markRead}
                                                 </button>
                                             )}
                                         </div>

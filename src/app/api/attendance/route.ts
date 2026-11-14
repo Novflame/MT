@@ -422,9 +422,15 @@ export async function GET(
 
                     .innerJoin(
                         classHeads,
-                        eq(
-                            studentEnrollments.classId,
-                            classHeads.classId,
+                        and(
+                            eq(
+                                studentEnrollments.classId,
+                                classHeads.classId,
+                            ),
+                            eq(
+                                studentEnrollments.academicYearId,
+                                classHeads.academicYearId,
+                            ),
                         ),
                     )
 

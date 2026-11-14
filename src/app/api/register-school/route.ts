@@ -4,7 +4,7 @@ import fs from "node:fs"
 import path from "node:path"
 
 import Database from "better-sqlite3"
-import { and, eq, isNull, lt, or, sql , gte, lte} from "drizzle-orm"
+import { and, eq, isNull, lt, or, sql , gte} from "drizzle-orm"
 import { drizzle } from "drizzle-orm/better-sqlite3"
 
 import { auth } from "@/auth/auth"
@@ -567,60 +567,32 @@ if (!principalId) {
   if (linkedPrincipal) {
     principalId = linkedPrincipal.id
   } else {
-    // Look for the first recorded failure.
-    // A timestamp is only needed when recovering an unlinked account.
-    let firstFailureAt: number | null = null
-
-    try {
-      const metadata = parseMetadata(operation.metadata) as {
-        attemptHistory?: Array<{ failedAt?: string }>
-      }
-
-      const failedAt = metadata.attemptHistory?.[0]?.failedAt
-
-      if (typeof failedAt === "string") {
-        const parsed = Date.parse(failedAt)
-
-        if (Number.isFinite(parsed)) {
-          firstFailureAt = parsed
-        }
-      }
-    } catch {
-      firstFailureAt = null
-    }
-
-    // Only adopt an unlinked account if its creation time can
-    // be verified against a previously recorded failure.
-    if (firstFailureAt !== null) {
-      const [recoveredPrincipal] = await centralDb
-        .update(centralUser)
-        .set({
-          provisioningOperationId: operation.id,
-        })
-        .where(
-          and(
-            eq(centralUser.email, normalizedEmail),
-            eq(centralUser.schoolId, schoolId),
-            eq(centralUser.schoolRole, "principal"),
-            eq(centralUser.provisioningStatus, "provisioning"),
-            isNull(centralUser.provisioningOperationId),
-            eq(centralUser.name, normalizedPrincipalName),
-            gte(centralUser.createdAt, operation.createdAt),
-            lte(
-              centralUser.createdAt,
-              new Date(firstFailureAt),
-            ),
-            or(
-              eq(centralUser.banned, false),
-              isNull(centralUser.banned),
-            ),
+    // The operation is created before provisioning starts, so its timestamp
+    // bounds recovery even if the process stopped before recording a failure.
+    const [recoveredPrincipal] = await centralDb
+      .update(centralUser)
+      .set({
+        provisioningOperationId: operation.id,
+      })
+      .where(
+        and(
+          eq(centralUser.email, normalizedEmail),
+          eq(centralUser.schoolId, schoolId),
+          eq(centralUser.schoolRole, "principal"),
+          eq(centralUser.provisioningStatus, "provisioning"),
+          isNull(centralUser.provisioningOperationId),
+          eq(centralUser.name, normalizedPrincipalName),
+          gte(centralUser.createdAt, operation.createdAt),
+          or(
+            eq(centralUser.banned, false),
+            isNull(centralUser.banned),
           ),
-        )
-        .returning({ id: centralUser.id })
+        ),
+      )
+      .returning({ id: centralUser.id })
 
-      if (recoveredPrincipal) {
-        principalId = recoveredPrincipal.id
-      }
+    if (recoveredPrincipal) {
+      principalId = recoveredPrincipal.id
     }
 
     // If recovery did not find a verifiable account,

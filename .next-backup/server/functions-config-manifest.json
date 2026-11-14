@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/backups/import": {},
+    "/api/backups/[id]/download": {},
+    "/api/backups/[id]/verify": {},
+    "/api/backups": {},
+    "/api/school-certificates/final-year-preview": {},
+    "/api/school-certificates": {},
+    "/certificates/batch": {}
+  }
+}

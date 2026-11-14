@@ -1,0 +1,536 @@
+.attendancePage {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    padding: 20px;
+    background: #f1f5f9;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.attendanceCard {
+    width: 100%;
+    max-width: 1200px;
+    height: 100%;
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+/* =========================
+   HEADER
+   ========================= */
+
+.attendanceHeader {
+    flex: 0 0 20%;
+    min-height: 150px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 30px;
+    padding: 24px 30px;
+
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.headerLabel {
+    margin: 0 0 6px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+
+    color: #64748b;
+}
+
+.headerTitle {
+    margin: 0;
+
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.1;
+    font-weight: 700;
+
+    color: #0f172a;
+}
+
+.headerSubtitle {
+    margin: 8px 0 0;
+
+    font-size: 14px;
+    color: #64748b;
+}
+
+.dateContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    min-width: 190px;
+}
+
+.dateLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.dateInput {
+    height: 42px;
+
+    padding: 0 12px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #0f172a;
+
+    font-size: 14px;
+    outline: none;
+}
+
+.dateInput:focus {
+    border-color: #64748b;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
+}
+
+/* =========================
+   SUMMARY
+   ========================= */
+
+.attendanceSummary {
+    flex: 0 0 auto;
+
+    display: flex;
+    align-items: stretch;
+
+    gap: 10px;
+
+    padding: 10px 30px;
+
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.attendanceSummary > div {
+    min-width: 100px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 12px;
+
+    padding: 8px 12px;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+
+    background: #ffffff;
+}
+
+.attendanceSummary strong {
+    font-size: 15px;
+    color: #0f172a;
+}
+
+.summaryLabel,
+.presentBox span,
+.absentBox span {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.summaryLabel {
+    color: #64748b;
+}
+
+.presentBox {
+    border-color: #bbf7d0 !important;
+}
+
+.presentBox span,
+.presentBox strong {
+    color: #15803d;
+}
+
+.absentBox {
+    border-color: #fecaca !important;
+}
+
+.absentBox span,
+.absentBox strong {
+    color: #dc2626;
+}
+
+/* =========================
+   MESSAGES
+   ========================= */
+
+.errorMessage,
+.successMessage {
+    flex: 0 0 auto;
+
+    margin: 8px 30px 0;
+    padding: 8px 12px;
+
+    border-radius: 7px;
+
+    font-size: 13px;
+}
+
+.errorMessage {
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.successMessage {
+    color: #166534;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+/* =========================
+   STUDENT SECTION
+   ========================= */
+
+.studentSection {
+    min-height: 0;
+    flex: 1 1 auto;
+
+    display: flex;
+    flex-direction: column;
+
+    margin: 10px 30px 0;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+
+    overflow: hidden;
+}
+
+/* Fixed list header */
+
+.studentListHeader {
+    flex: 0 0 44px;
+
+    display: grid;
+    grid-template-columns: 55px minmax(0, 1fr) 150px;
+    align-items: center;
+
+    padding: 0 16px;
+
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+
+    color: #64748b;
+
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Only this part scrolls */
+
+.studentList {
+    min-height: 0;
+    flex: 1 1 auto;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.studentList::-webkit-scrollbar {
+    width: 7px;
+}
+
+.studentList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.studentList::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* =========================
+   STUDENT ROW
+   ========================= */
+
+.studentRow {
+    min-height: 58px;
+
+    display: grid;
+    grid-template-columns: 55px minmax(0, 1fr) 150px;
+    align-items: center;
+
+    padding: 0 16px;
+
+    border-bottom: 1px solid #f1f5f9;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.studentRow:last-child {
+    border-bottom: none;
+}
+
+.studentRow:hover {
+    background: #f8fafc;
+}
+
+.rowPresent {
+    background: #ffffff;
+}
+
+.rowAbsent {
+    background: #fffafa;
+}
+
+.studentNumber {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.studentName {
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    color: #1e293b;
+}
+
+.attendanceControl {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    gap: 9px;
+
+    position: relative;
+}
+
+.attendanceControl input {
+    position: absolute;
+
+    width: 1px;
+    height: 1px;
+
+    opacity: 0;
+    pointer-events: none;
+}
+
+.customCheckbox {
+    width: 20px;
+    height: 20px;
+
+    flex: 0 0 20px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 2px solid #94a3b8;
+    border-radius: 5px;
+
+    background: #ffffff;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.attendanceControl input:checked + .customCheckbox {
+    border-color: #16a34a;
+    background: #16a34a;
+}
+
+.attendanceControl input:checked + .customCheckbox::after {
+    content: "";
+
+    width: 5px;
+    height: 9px;
+
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.rowAbsent .customCheckbox {
+    border-color: #ef4444;
+    background: #ffffff;
+}
+
+.statusText {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.rowPresent .statusText {
+    color: #15803d;
+}
+
+.rowAbsent .statusText {
+    color: #dc2626;
+}
+
+/* =========================
+   FOOTER
+   ========================= */
+
+.attendanceFooter {
+    flex: 0 0 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 30px;
+
+    border-top: 1px solid #e2e8f0;
+
+    background: #ffffff;
+
+    font-size: 12px;
+    color: #64748b;
+}
+
+.attendanceFooter span:last-child {
+    font-weight: 600;
+    color: #475569;
+}
+
+/* =========================
+   EMPTY / LOADING
+   ========================= */
+
+.emptyState,
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #64748b;
+    font-size: 14px;
+}
+
+.emptyState {
+    min-height: 160px;
+}
+
+.loading {
+    height: 100%;
+}
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width: 700px) {
+    .attendancePage {
+        padding: 0;
+    }
+
+    .attendanceCard {
+        border: none;
+        border-radius: 0;
+    }
+
+    .attendanceHeader {
+        flex-basis: 20%;
+        min-height: 140px;
+
+        padding: 18px;
+        gap: 15px;
+    }
+
+    .headerTitle {
+        font-size: 25px;
+    }
+
+    .headerSubtitle {
+        font-size: 12px;
+    }
+
+    .dateContainer {
+        min-width: 145px;
+    }
+
+    .attendanceSummary {
+        padding: 8px 18px;
+    }
+
+    .studentSection {
+        margin: 8px 18px 0;
+    }
+
+    .studentListHeader,
+    .studentRow {
+        grid-template-columns: 40px minmax(0, 1fr) 125px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .attendanceFooter {
+        padding: 0 18px;
+    }
+}
+
+@media (max-width: 520px) {
+    .attendanceHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .dateContainer {
+        width: 100%;
+    }
+
+    .dateInput {
+        width: 100%;
+    }
+
+    .studentListHeader {
+        grid-template-columns: 35px minmax(0, 1fr) 110px;
+    }
+
+    .studentRow {
+        grid-template-columns: 35px minmax(0, 1fr) 110px;
+    }
+
+    .statusText {
+        font-size: 12px;
+    }
+
+    .attendanceFooter {
+        font-size: 11px;
+    }
+}

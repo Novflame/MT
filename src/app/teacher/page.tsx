@@ -1,9 +1,9 @@
 import { requireSession } from "@/auth/session"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
 import { assertTimetableEnabled } from "@/lib/timetable/access"
-
+import { getTeacherAssignments } from "@/lib/teacher-assignments"
+import type { Role } from "@/auth/permissions"
 
 type Assignment = {
     teacherId: string
@@ -31,7 +31,6 @@ export default async function TeacherPage() {
         redirect("/login")
     }
 
-
     // =========================
     // Authorization
     // =========================
@@ -43,53 +42,35 @@ export default async function TeacherPage() {
         redirect("/")
     }
 
-
     // =========================
     // Get assignments
     // =========================
 
-    const response =
-        await fetch(
-            "http://localhost:3000/api/teacher-assignments",
-            {
-                headers: {
-                    cookie:
-                        (await headers()).get(
-                            "cookie",
-                        ) ?? "",
-                },
+  const assignmentData =
+    await getTeacherAssignments({
+        userId: session.user.id,
+        schoolId: session.user.schoolId,
+        schoolRole: session.user.schoolRole as Role,
+    })
 
-                cache: "no-store",
-            },
-        )
-
-
-    if (!response.ok) {
-    // const error = await response.text()
-
-    
-    throw new Error(
-        "Failed to load teacher assignments",
-    )
+if (!assignmentData) {
+    throw new Error("Active academic year not found")
 }
 
-
-    const data =
-        await response.json()
-
-
-    const assignments:
-        Assignment[] =
-        data.assignments ?? []
+const assignments: Assignment[] =
+    assignmentData.assignments
+    // =========================
+    // Timetable access
+    // =========================
 
     let timetableEnabled = false
+
     try {
         await assertTimetableEnabled(session.user.id)
         timetableEnabled = true
     } catch {
         timetableEnabled = false
     }
-
 
     // =========================
     // Dashboard
@@ -112,10 +93,17 @@ export default async function TeacherPage() {
                         Welcome,{" "}
                         {session.user.name}
                     </p>
-                    {timetableEnabled && <Link href="/timetable" className="mt-4 inline-flex items-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800">Timetable & Class Sessions</Link>}
+
+                    {timetableEnabled && (
+                        <Link
+                            href="/timetable"
+                            className="mt-4 inline-flex items-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800"
+                        >
+                            Timetable & Class Sessions
+                        </Link>
+                    )}
 
                 </header>
-
 
                 {/* Statistics */}
 
@@ -126,8 +114,7 @@ export default async function TeacherPage() {
                         value={
                             new Set(
                                 assignments.map(
-                                    assignment =>
-                                        assignment.classId,
+                                    assignment => assignment.classId,
                                 ),
                             ).size
                         }
@@ -138,8 +125,7 @@ export default async function TeacherPage() {
                         value={
                             new Set(
                                 assignments.map(
-                                    assignment =>
-                                        assignment.subjectId,
+                                    assignment => assignment.subjectId,
                                 ),
                             ).size
                         }
@@ -147,13 +133,10 @@ export default async function TeacherPage() {
 
                     <StatCard
                         title="Assignments"
-                        value={
-                            assignments.length
-                        }
+                        value={assignments.length}
                     />
 
                 </section>
-
 
                 {/* Assignments */}
 
@@ -162,7 +145,6 @@ export default async function TeacherPage() {
                     <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
                         My Teaching Assignments
                     </h2>
-
 
                     {assignments.length === 0 ? (
 
@@ -180,18 +162,14 @@ export default async function TeacherPage() {
 
                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
-                            {assignments.map(
-                                assignment => (
+                            {assignments.map(assignment => (
 
-                                    <AssignmentCard
-                                        key={`${assignment.classId}-${assignment.subjectId}`}
-                                        assignment={
-                                            assignment
-                                        }
-                                    />
+                                <AssignmentCard
+                                    key={`${assignment.classId}-${assignment.subjectId}`}
+                                    assignment={assignment}
+                                />
 
-                                ),
-                            )}
+                            ))}
 
                         </div>
 
@@ -248,9 +226,7 @@ function AssignmentCard({
     return (
 
         <Link
-            href={
-                `/teacher/class/${assignment.classId}/subject/${assignment.subjectId}`
-            }
+            href={`/teacher/class/${assignment.classId}/subject/${assignment.subjectId}`}
             className="block rounded-lg border bg-white p-6 shadow-sm transition hover:shadow-md"
         >
 
@@ -270,8 +246,8 @@ function AssignmentCard({
 
             </div>
 
-            <p className="mt-4 text-sm text-blue-700 font-medium">
-                Open class 
+            <p className="mt-4 text-sm font-medium text-blue-700">
+                Open class
             </p>
 
         </Link>

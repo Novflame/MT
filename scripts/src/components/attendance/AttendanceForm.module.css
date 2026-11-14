@@ -1,0 +1,1409 @@
+
+/* ================================================================
+   ATTENDANCE FORM
+   Mobile-first / blue-white school-system UI
+================================================================ */
+
+.container {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.book {
+    width: min(100%, 1100px);
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 auto;
+
+    background: #ffffff;
+
+    border: 1px solid #dbe4f0;
+    border-radius: 16px;
+
+    box-shadow:
+        0 12px 35px rgba(15, 23, 42, 0.07),
+        0 2px 8px rgba(15, 23, 42, 0.03);
+
+    overflow: hidden;
+}
+
+.page {
+    width: 100%;
+    min-width: 0;
+    padding: 2rem;
+}
+
+
+/* ================================================================
+   HEADER
+================================================================ */
+
+.header {
+    width: 100%;
+    min-width: 0;
+}
+
+.headerTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1.5rem;
+}
+
+.headerText {
+    min-width: 0;
+}
+
+.eyebrow {
+    margin: 0;
+
+    color: #2563eb;
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.title {
+    margin: 0.3rem 0 0;
+
+    color: #0f172a;
+
+    font-size: clamp(1.6rem, 4vw, 2.25rem);
+    line-height: 1.15;
+
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+
+.subtitle {
+    max-width: 560px;
+    margin: 0.5rem 0 0;
+
+    color: #64748b;
+
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
+
+.headerStats {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: stretch;
+
+    border: 1px solid #dbe4f0;
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background: #ffffff;
+}
+
+.totalStat,
+.presentStat,
+.absentStat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.45rem;
+
+    min-height: 48px;
+
+    padding: 0.55rem 0.8rem;
+
+    font-size: 0.68rem;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.totalStat {
+    color: #475569;
+    background: #f8fafc;
+}
+
+.presentStat {
+    color: #15803d;
+    background: #f0fdf4;
+    border-inline-start: 1px solid #dcfce7;
+}
+
+.absentStat {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-inline-start: 1px solid #fee2e2;
+}
+
+.totalStat strong,
+.presentStat strong,
+.absentStat strong {
+    font-size: 0.9rem;
+}
+
+.headerDivider {
+    width: 100%;
+    height: 1px;
+
+    margin-top: 1.35rem;
+
+    background: #e2e8f0;
+}
+
+.context {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.55rem;
+
+    margin-top: 0.75rem;
+
+    color: #475569;
+
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.context i {
+    width: 4px;
+    height: 4px;
+
+    flex: 0 0 auto;
+
+    border-radius: 50%;
+
+    background: #94a3b8;
+}
+
+
+/* ================================================================
+   SELECTION
+================================================================ */
+
+.selection {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        auto;
+
+    align-items: end;
+
+    gap: 0.75rem;
+
+    margin-top: 1.25rem;
+}
+
+.field {
+    min-width: 0;
+}
+
+.label {
+    display: block;
+
+    margin-bottom: 0.4rem;
+
+    color: #334155;
+
+    font-size: 0.73rem;
+    font-weight: 800;
+}
+
+.input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+
+    padding: 0.65rem 0.75rem;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+
+    outline: none;
+
+    background: #ffffff;
+    color: #0f172a;
+
+    font-size: 0.8rem;
+
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
+}
+
+.input:hover:not(:disabled) {
+    border-color: #94a3b8;
+}
+
+.input:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.12);
+}
+
+.input:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+
+    cursor: not-allowed;
+}
+
+
+/* ================================================================
+   LOAD BUTTON
+================================================================ */
+
+.loadButton {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 44px;
+
+    padding: 0.65rem 1rem;
+
+    border: 1px solid #2563eb;
+    border-radius: 8px;
+
+    background: #2563eb;
+    color: #ffffff;
+
+    font-size: 0.76rem;
+    font-weight: 800;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 4px 10px
+        rgba(37, 99, 235, 0.14);
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.loadButton:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+
+    box-shadow:
+        0 6px 14px
+        rgba(37, 99, 235, 0.18);
+}
+
+.loadButton:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.loadButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+
+/* ================================================================
+   MESSAGES
+================================================================ */
+
+.error,
+.success {
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.25rem;
+
+    margin-top: 1rem;
+
+    padding: 0.75rem 0.9rem;
+
+    border-radius: 8px;
+
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+.error {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.error strong {
+    color: #991b1b;
+}
+
+.success {
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+
+/* ================================================================
+   ATTENDANCE SECTION
+================================================================ */
+
+.attendanceSection {
+    width: 100%;
+    min-width: 0;
+
+    margin-top: 1.25rem;
+}
+
+.tableShell {
+    width: 100%;
+    min-width: 0;
+
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+
+    overflow: hidden;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 5px 18px
+        rgba(37, 99, 235, 0.06);
+}
+
+
+/* ================================================================
+   TABLE HEADER
+================================================================ */
+
+.tableHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    padding: 0.9rem 1rem;
+
+    border-top: 3px solid #2563eb;
+    border-bottom: 1px solid #dbeafe;
+
+    background:
+        linear-gradient(
+            90deg,
+            #eff6ff 0%,
+            #ffffff 100%
+        );
+}
+
+.tableEyebrow {
+    display: block;
+
+    color: #2563eb;
+
+    font-size: 0.62rem;
+    font-weight: 800;
+
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.tableTitle {
+    margin: 0.2rem 0 0;
+
+    color: #0f172a;
+
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.tableMeta {
+    flex: 0 0 auto;
+
+    padding: 0.3rem 0.55rem;
+
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+
+    background: #ffffff;
+    color: #2563eb;
+
+    font-size: 0.66rem;
+    font-weight: 800;
+}
+
+
+/* ================================================================
+   TABLE COLUMNS
+================================================================ */
+
+.tableColumns {
+    display: grid;
+
+    grid-template-columns: minmax(0, 1fr) 140px;
+
+    align-items: center;
+
+    min-height: 38px;
+
+    padding: 0 1rem;
+
+    border-bottom: 1px solid #e2e8f0;
+
+    background: #f8fafc;
+
+    color: #64748b;
+
+    font-size: 0.65rem;
+    font-weight: 800;
+
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.tableColumns span:last-child {
+    text-align: center;
+}
+
+
+/* ================================================================
+   STUDENT SCROLL AREA
+================================================================ */
+
+.students {
+    width: 100%;
+    min-width: 0;
+
+    max-height: 58vh;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    overscroll-behavior: contain;
+
+    scrollbar-width: thin;
+    scrollbar-color:
+        #cbd5e1
+        transparent;
+}
+
+.students::-webkit-scrollbar {
+    width: 7px;
+}
+
+.students::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.students::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+
+/* ================================================================
+   STUDENT ROW
+================================================================ */
+
+.student {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        140px;
+
+    align-items: center;
+
+    gap: 1rem;
+
+    width: 100%;
+    min-width: 0;
+
+    padding: 0.7rem 1rem;
+
+    border-bottom: 1px solid #e2e8f0;
+
+    background: #ffffff;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.student:last-child {
+    border-bottom: none;
+}
+
+.student:hover {
+    background: #f8fafc;
+}
+
+.studentPresent {
+    background: #fbfffc;
+}
+
+.studentPresent:hover {
+    background: #f0fdf4;
+}
+
+.studentAbsent {
+    background: #fffdfd;
+}
+
+.studentAbsent:hover {
+    background: #fef2f2;
+}
+
+
+/* ================================================================
+   STUDENT INFO
+================================================================ */
+
+.studentInfo {
+    display: flex;
+    align-items: center;
+
+    gap: 0.7rem;
+
+    min-width: 0;
+}
+
+.number {
+    display: grid;
+    place-items: center;
+
+    flex: 0 0 auto;
+
+    width: 32px;
+    height: 32px;
+
+    border: 1px solid #bfdbfe;
+    border-radius: 50%;
+
+    background: #eff6ff;
+    color: #2563eb;
+
+    font-size: 0.64rem;
+    font-weight: 800;
+}
+
+.studentDetails {
+    min-width: 0;
+}
+
+.studentName {
+    margin: 0;
+
+    color: #0f172a;
+
+    font-size: 0.82rem;
+    line-height: 1.35;
+    font-weight: 750;
+
+    overflow-wrap: anywhere;
+}
+
+.current {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.3rem;
+
+    margin: 0.18rem 0 0;
+
+    color: #94a3b8;
+
+    font-size: 0.65rem;
+    line-height: 1.35;
+}
+
+.current span {
+    font-weight: 800;
+}
+
+.statusPresent {
+    color: #15803d;
+}
+
+.statusAbsent {
+    color: #b91c1c;
+}
+
+.statusOther {
+    color: #2563eb;
+}
+
+
+/* ================================================================
+   ATTENDANCE TOGGLE
+================================================================ */
+
+.attendanceToggle {
+    position: relative;
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.45rem;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+
+    padding: 0.45rem 0.6rem;
+
+    border: 1px solid;
+    border-radius: 8px;
+
+    cursor: pointer;
+    user-select: none;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.attendanceToggle:hover {
+    transform: translateY(-1px);
+}
+
+.attendanceToggle input {
+    position: absolute;
+
+    width: 1px;
+    height: 1px;
+
+    opacity: 0;
+    pointer-events: none;
+}
+
+.attendanceToggle:has(input:focus-visible) {
+    outline: 3px solid
+        rgba(37, 99, 235, 0.2);
+
+    outline-offset: 2px;
+}
+
+.checkbox {
+    display: grid;
+    place-items: center;
+
+    width: 18px;
+    height: 18px;
+
+    flex: 0 0 auto;
+
+    border: 2px solid;
+    border-radius: 4px;
+
+    background: #ffffff;
+}
+
+.checkbox::after {
+    content: "✓";
+
+    font-size: 10px;
+    font-weight: 900;
+
+    opacity: 0;
+
+    transform: scale(0.5);
+
+    transition:
+        opacity 0.12s ease,
+        transform 0.12s ease;
+}
+
+.toggleText {
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    white-space: nowrap;
+}
+
+
+/* ================================================================
+   PRESENT
+================================================================ */
+
+.togglePresent {
+    border-color: #86efac;
+
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.togglePresent:hover {
+    background: #dcfce7;
+}
+
+.togglePresent .checkbox {
+    border-color: #22c55e;
+    background: #22c55e;
+    color: #ffffff;
+}
+
+.togglePresent .checkbox::after {
+    opacity: 1;
+    transform: scale(1);
+}
+
+
+/* ================================================================
+   ABSENT
+================================================================ */
+
+.toggleAbsent {
+    border-color: #fca5a5;
+
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.toggleAbsent:hover {
+    background: #fee2e2;
+}
+
+.toggleAbsent .checkbox {
+    border-color: #ef4444;
+
+    background: #ffffff;
+    color: #ef4444;
+}
+
+.toggleAbsent .checkbox::after {
+    content: "×";
+
+    opacity: 1;
+    transform: scale(1);
+}
+
+
+/* ================================================================
+   OTHER STATUS
+================================================================ */
+
+.toggleOther {
+    border-color: #bfdbfe;
+
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+
+/* ================================================================
+   TABLE FOOTER
+================================================================ */
+
+.tableFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    min-height: 46px;
+
+    padding: 0.7rem 1rem;
+
+    border-top: 1px solid #e2e8f0;
+
+    background: #f8fafc;
+
+    color: #64748b;
+
+    font-size: 0.68rem;
+}
+
+.tableFooter strong {
+    color: #0f172a;
+    font-size: 0.8rem;
+}
+
+.footerStats {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.7rem;
+}
+
+.footerPresent {
+    color: #15803d;
+    font-weight: 800;
+}
+
+.footerAbsent {
+    color: #b91c1c;
+    font-weight: 800;
+}
+
+
+/* ================================================================
+   EMPTY
+================================================================ */
+
+.empty {
+    margin-top: 1.25rem;
+
+    padding: 2rem 1rem;
+
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+
+    background: #f8fafc;
+
+    text-align: center;
+}
+
+.empty h3 {
+    margin: 0;
+
+    color: #334155;
+
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.empty p {
+    max-width: 420px;
+
+    margin: 0.45rem auto 0;
+
+    color: #64748b;
+
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+
+/* ================================================================
+   LOADING
+================================================================ */
+
+.loading {
+    min-height: 260px;
+
+    display: grid;
+    place-items: center;
+
+    padding: 2rem;
+
+    color: #64748b;
+
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+
+/* ================================================================
+   DARK MODE
+================================================================ */
+
+:global(.dark) .book {
+    background: #0f172a;
+    border-color: #1e293b;
+
+    box-shadow:
+        0 12px 35px
+        rgba(0, 0, 0, 0.28);
+}
+
+:global(.dark) .title,
+:global(.dark) .tableTitle,
+:global(.dark) .studentName {
+    color: #f8fafc;
+}
+
+:global(.dark) .subtitle,
+:global(.dark) .current {
+    color: #94a3b8;
+}
+
+:global(.dark) .headerDivider {
+    background: #1e293b;
+}
+
+:global(.dark) .context {
+    color: #cbd5e1;
+}
+
+:global(.dark) .input {
+    border-color: #334155;
+    background: #111827;
+    color: #f8fafc;
+}
+
+:global(.dark) .input:disabled {
+    background: #1e293b;
+    color: #64748b;
+}
+
+:global(.dark) .headerStats {
+    border-color: #334155;
+}
+
+:global(.dark) .totalStat {
+    background: #111827;
+    color: #cbd5e1;
+}
+
+:global(.dark) .presentStat {
+    background: #0d1f16;
+    border-color: #14532d;
+}
+
+:global(.dark) .absentStat {
+    background: #241313;
+    border-color: #7f1d1d;
+}
+
+:global(.dark) .tableShell {
+    border-color: #1d4ed8;
+    background: #0f172a;
+}
+
+:global(.dark) .tableHeader {
+    border-color: #1d4ed8;
+
+    background:
+        linear-gradient(
+            90deg,
+            #172554 0%,
+            #0f172a 100%
+        );
+}
+
+:global(.dark) .tableMeta {
+    border-color: #334155;
+    background: #111827;
+}
+
+:global(.dark) .tableColumns {
+    border-color: #1e293b;
+    background: #111827;
+    color: #94a3b8;
+}
+
+:global(.dark) .student {
+    border-color: #1e293b;
+    background: #0f172a;
+}
+
+:global(.dark) .student:hover {
+    background: #111827;
+}
+
+:global(.dark) .studentPresent {
+    background: #0d1f16;
+}
+
+:global(.dark) .studentPresent:hover {
+    background: #0f2a1a;
+}
+
+:global(.dark) .studentAbsent {
+    background: #241313;
+}
+
+:global(.dark) .studentAbsent:hover {
+    background: #2b1515;
+}
+
+:global(.dark) .number {
+    border-color: #1d4ed8;
+    background: #172554;
+    color: #60a5fa;
+}
+
+:global(.dark) .tableFooter {
+    border-color: #1e293b;
+    background: #111827;
+}
+
+:global(.dark) .tableFooter strong {
+    color: #f8fafc;
+}
+
+:global(.dark) .empty {
+    border-color: #334155;
+    background: #111827;
+}
+
+:global(.dark) .empty h3 {
+    color: #e2e8f0;
+}
+
+:global(.dark) .empty p,
+:global(.dark) .loading {
+    color: #94a3b8;
+}
+
+
+/* ================================================================
+   TABLET
+================================================================ */
+
+@media (max-width: 900px) {
+    .page {
+        padding: 1.5rem;
+    }
+
+    .headerTop {
+        gap: 1rem;
+    }
+
+    .selection {
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        align-items: stretch;
+    }
+
+    .loadButton {
+        width: 100%;
+    }
+
+    .students {
+        max-height: 60vh;
+    }
+}
+
+
+/* ================================================================
+   MOBILE
+================================================================ */
+
+@media (max-width: 640px) {
+    .container {
+        padding: 0;
+    }
+
+    .book {
+        border-radius: 12px;
+    }
+
+    .page {
+        padding: 1rem 0.75rem 1.25rem;
+    }
+
+    .headerTop {
+        flex-direction: column;
+        gap: 0.9rem;
+    }
+
+    .eyebrow {
+        font-size: 0.58rem;
+    }
+
+    .title {
+        font-size: 1.45rem;
+    }
+
+    .subtitle {
+        margin-top: 0.4rem;
+
+        font-size: 0.75rem;
+    }
+
+    /*
+     * The three statistics remain in ONE LINE
+     * on normal phones.
+     */
+    .headerStats {
+        width: 100%;
+    }
+
+    .totalStat,
+    .presentStat,
+    .absentStat {
+        flex: 1;
+
+        min-width: 0;
+
+        padding-inline: 0.45rem;
+
+        gap: 0.25rem;
+
+        font-size: 0.61rem;
+    }
+
+    .totalStat strong,
+    .presentStat strong,
+    .absentStat strong {
+        font-size: 0.82rem;
+    }
+
+    .headerDivider {
+        margin-top: 1rem;
+    }
+
+    .context {
+        gap: 0.4rem;
+
+        margin-top: 0.65rem;
+
+        font-size: 0.68rem;
+    }
+
+    .selection {
+        grid-template-columns: 1fr;
+
+        gap: 0.7rem;
+
+        margin-top: 1rem;
+    }
+
+    .input {
+        min-height: 46px;
+
+        font-size: 0.82rem;
+    }
+
+    .loadButton {
+        min-height: 46px;
+
+        width: 100%;
+    }
+
+    .error,
+    .success {
+        margin-top: 0.8rem;
+
+        font-size: 0.72rem;
+    }
+
+    .attendanceSection {
+        margin-top: 1rem;
+    }
+
+    .tableShell {
+        border-radius: 10px;
+    }
+
+    .tableHeader {
+        align-items: flex-start;
+
+        padding: 0.8rem;
+
+        gap: 0.6rem;
+    }
+
+    .tableTitle {
+        font-size: 0.95rem;
+    }
+
+    .tableMeta {
+        padding: 0.28rem 0.45rem;
+
+        font-size: 0.6rem;
+    }
+
+    /*
+     * Hide desktop-style column labels on phones.
+     * Each row identifies its own information.
+     */
+    .tableColumns {
+        display: none;
+    }
+
+    /*
+     * Only this area scrolls.
+     * Individual student rows never get a max-height.
+     */
+    .students {
+        max-height: 58vh;
+
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .student {
+        grid-template-columns: 1fr;
+
+        gap: 0.65rem;
+
+        padding: 0.75rem;
+    }
+
+    .studentInfo {
+        width: 100%;
+    }
+
+    .number {
+        width: 30px;
+        height: 30px;
+
+        font-size: 0.6rem;
+    }
+
+    .studentName {
+        font-size: 0.8rem;
+    }
+
+    .current {
+        font-size: 0.63rem;
+    }
+
+    /*
+     * Large touch target.
+     * Full width is much easier to use on mobile.
+     */
+    .attendanceToggle {
+        width: 100%;
+
+        min-height: 44px;
+    }
+
+    .toggleText {
+        font-size: 0.7rem;
+    }
+
+    .tableFooter {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 0.5rem;
+
+        padding: 0.7rem 0.75rem;
+    }
+
+    .footerStats {
+        width: 100%;
+
+        justify-content: space-between;
+    }
+
+    .empty {
+        margin-top: 1rem;
+
+        padding: 1.5rem 0.8rem;
+    }
+}
+
+
+/* ================================================================
+   SMALL PHONES — 375px / 390px
+================================================================ */
+
+@media (max-width: 390px) {
+    .page {
+        padding-inline: 0.6rem;
+    }
+
+    .title {
+        font-size: 1.35rem;
+    }
+
+    .totalStat,
+    .presentStat,
+    .absentStat {
+        padding-inline: 0.35rem;
+
+        gap: 0.2rem;
+
+        font-size: 0.56rem;
+    }
+
+    .totalStat strong,
+    .presentStat strong,
+    .absentStat strong {
+        font-size: 0.78rem;
+    }
+
+    .tableHeader {
+        padding: 0.7rem;
+    }
+
+    .student {
+        padding: 0.7rem;
+    }
+
+    .studentName {
+        font-size: 0.78rem;
+    }
+
+    .attendanceToggle {
+        min-height: 44px;
+    }
+}
+
+
+/* ================================================================
+   VERY SMALL PHONES
+================================================================ */
+
+@media (max-width: 350px) {
+    .headerStats {
+        overflow-x: auto;
+    }
+
+    .totalStat,
+    .presentStat,
+    .absentStat {
+        flex: 0 0 auto;
+    }
+}
+
+
+/* ================================================================
+   RTL
+================================================================ */
+
+:global(html[dir="rtl"]) .headerText,
+:global(html[dir="rtl"]) .studentDetails,
+:global(html[dir="rtl"]) .tableHeader,
+:global(html[dir="rtl"]) .tableFooter {
+    text-align: right;
+}
+
+:global(html[dir="rtl"]) .tableColumns span:last-child {
+    text-align: center;
+}
+
+:global(html[dir="rtl"]) .student {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .studentInfo {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .attendanceToggle {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .context {
+    direction: rtl;
+}
+
+:global(html[dir="rtl"]) .error,
+:global(html[dir="rtl"]) .success {
+    text-align: right;
+}
+
